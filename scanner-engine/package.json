@@ -1,9 +1,26 @@
 {
   "name": "scanner-engine",
   "version": "1.0.0",
-  "main": "index.js",
-  "license": "MIT",
+  "description": "Smart Contract Security Scanner Engine",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "test": "jest"
+  },
   "dependencies": {
-    "solidity-parser-antlr": "^0.4.11"
+    "@solidity-parser/parser": "^0.16.0",
+    "solc": "^0.8.24",
+    "ethers": "^6.11.1",
+    "slither-analyzer": "^0.9.3",
+    "typescript": "^5.3.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.19",
+    "@types/jest": "^29.5.12",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "ts-node": "^10.9.2"
   }
 }
