@@ -1,4 +1,4 @@
-import { Parser } from '@solidity-parser/parser';
+import { parse } from '@solidity-parser/parser';
 import * as solc from 'solc';
 import { ethers } from 'ethers';
 
@@ -40,7 +40,7 @@ export class ContractScanner {
 
   constructor(contractCode: string) {
     this.contractCode = contractCode;
-    this.ast = Parser.parse(contractCode);
+    this.ast = parse(contractCode);
     this.lineMap = this.createLineMap();
   }
 
