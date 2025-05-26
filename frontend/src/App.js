@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Editor from '@monaco-editor/react';
 import axios from 'axios';
 
 function App() {
@@ -21,12 +22,20 @@ function App() {
   return (
     <div className="min-h-screen p-6 bg-gray-100 text-gray-800">
       <h1 className="text-2xl font-bold mb-4">Smart Contract Scanner</h1>
-      <textarea
-        className="w-full h-64 p-4 border border-gray-300 rounded mb-4"
-        placeholder="Paste your Solidity code here..."
-        value={code}
-        onChange={(e) => setCode(e.target.value)}
-      />
+        <div className="h-96 mb-4">
+          <Editor
+            height="100%"
+            defaultLanguage="sol"
+            value={code}
+            onChange={(val) => setCode(val)}
+          />
+        </div>
+//      <textarea
+//        className="w-full h-64 p-4 border border-gray-300 rounded mb-4"
+//        placeholder="Paste your Solidity code here..."
+//        value={code}
+//        onChange={(e) => setCode(e.target.value)}
+//      />
       <button
         onClick={handleScan}
         disabled={loading}
