@@ -36,10 +36,40 @@ export interface CodeQualityIssue {
 export class ContractScanner {
   private contractCode: string;
   private ast: any;
+  private lineMap: Map<number, number>;
 
   constructor(contractCode: string) {
     this.contractCode = contractCode;
     this.ast = Parser.parse(contractCode);
+    this.lineMap = this.createLineMap();
+  }
+
+  private createLineMap(): Map<number, number> {
+    const lines = this.contractCode.split('\n');
+    const map = new Map<number, number>();
+    let currentPosition = 0;
+
+    lines.forEach((line, index) => {
+      map.set(currentPosition, index + 1);
+      currentPosition += line.length + 1; // +1 for newline
+    });
+
+    return map;
+  }
+
+  private getLineNumber(position: number): number {
+    const positions = Array.from(this.lineMap.keys()).sort((a, b) => a - b);
+    let lineNumber = 1;
+
+    for (const pos of positions) {
+      if (position >= pos) {
+        lineNumber = this.lineMap.get(pos) || 1;
+      } else {
+        break;
+      }
+    }
+
+    return lineNumber;
   }
 
   public async scan(): Promise<ScanResult> {
@@ -88,19 +118,275 @@ export class ContractScanner {
   }
 
   private checkReentrancy(vulnerabilities: Vulnerability[]): void {
-    // Implementation for reentrancy detection
-    // This will analyze the contract for potential reentrancy vulnerabilities
-    // by looking for external calls followed by state changes
+    const functions = this.findFunctions(this.ast);
+    
+    functions.forEach(func => {
+      const stateChanges = this.findStateChanges(func);
+      const externalCalls = this.findExternalCalls(func);
+      
+      // Check if there are external calls followed by state changes
+      externalCalls.forEach(call => {
+        const callPosition = call.loc?.start?.offset || 0;
+        const callLine = this.getLineNumber(callPosition);
+        
+        // Find state changes that occur after the external call
+        const subsequentStateChanges = stateChanges.filter(change => {
+          const changePosition = change.loc?.start?.offset || 0;
+          return changePosition > callPosition;
+        });
+
+        if (subsequentStateChanges.length > 0) {
+          vulnerabilities.push({
+            type: 'reentrancy',
+            severity: 'HIGH',
+            description: 'Potential reentrancy vulnerability: State changes after external call',
+            lineNumber: callLine,
+            recommendation: 'Consider using the checks-effects-interactions pattern. Update state variables before making external calls.'
+          });
+        }
+      });
+    });
+  }
+
+  private findFunctions(node: any): any[] {
+    const functions: any[] = [];
+    
+    if (node.type === 'FunctionDefinition') {
+      functions.push(node);
+    }
+    
+    if (node.children) {
+      node.children.forEach((child: any) => {
+        functions.push(...this.findFunctions(child));
+      });
+    }
+    
+    return functions;
+  }
+
+  private findStateChanges(node: any): any[] {
+    const stateChanges: any[] = [];
+    
+    if (node.type === 'Assignment' || 
+        node.type === 'VariableDeclaration' ||
+        node.type === 'ExpressionStatement' && 
+        node.expression.type === 'Assignment') {
+      stateChanges.push(node);
+    }
+    
+    if (node.children) {
+      node.children.forEach((child: any) => {
+        stateChanges.push(...this.findStateChanges(child));
+      });
+    }
+    
+    return stateChanges;
+  }
+
+  private findExternalCalls(node: any): any[] {
+    const externalCalls: any[] = [];
+    
+    if (node.type === 'FunctionCall' && 
+        (node.expression.type === 'MemberAccess' || 
+         node.expression.type === 'Identifier')) {
+      const callName = node.expression.name || 
+                      (node.expression.memberName || '');
+      
+      if (['call', 'send', 'transfer', 'delegatecall'].includes(callName)) {
+        externalCalls.push(node);
+      }
+    }
+    
+    if (node.children) {
+      node.children.forEach((child: any) => {
+        externalCalls.push(...this.findExternalCalls(child));
+      });
+    }
+    
+    return externalCalls;
   }
 
   private checkIntegerOverflow(vulnerabilities: Vulnerability[]): void {
-    // Implementation for integer overflow/underflow detection
-    // This will analyze arithmetic operations for potential overflow/underflow
+    const functions = this.findFunctions(this.ast);
+    
+    functions.forEach(func => {
+      const arithmeticOps = this.findArithmeticOperations(func);
+      
+      arithmeticOps.forEach(op => {
+        const opPosition = op.loc?.start?.offset || 0;
+        const opLine = this.getLineNumber(opPosition);
+        
+        // Check if the operation is protected by SafeMath or similar
+        const isProtected = this.isOperationProtected(op);
+        
+        if (!isProtected) {
+          vulnerabilities.push({
+            type: 'integer-overflow',
+            severity: 'HIGH',
+            description: 'Potential integer overflow/underflow in arithmetic operation',
+            lineNumber: opLine,
+            recommendation: 'Use SafeMath library or Solidity 0.8.0+ for automatic overflow checks. Consider adding explicit checks for overflow/underflow conditions.'
+          });
+        }
+      });
+    });
+  }
+
+  private findArithmeticOperations(node: any): any[] {
+    const operations: any[] = [];
+    
+    if (node.type === 'BinaryOperation' && 
+        ['+', '-', '*', '/', '%'].includes(node.operator)) {
+      operations.push(node);
+    }
+    
+    if (node.children) {
+      node.children.forEach((child: any) => {
+        operations.push(...this.findArithmeticOperations(child));
+      });
+    }
+    
+    return operations;
+  }
+
+  private isOperationProtected(node: any): boolean {
+    // Check if the operation is wrapped in a SafeMath call
+    let parent = node.parent;
+    while (parent) {
+      if (parent.type === 'FunctionCall' && 
+          parent.expression.type === 'MemberAccess' &&
+          ['add', 'sub', 'mul', 'div', 'mod'].includes(parent.expression.memberName)) {
+        return true;
+      }
+      parent = parent.parent;
+    }
+    
+    // Check if the contract is using Solidity 0.8.0 or higher
+    const pragmaDirective = this.findPragmaDirective(this.ast);
+    if (pragmaDirective) {
+      const version = pragmaDirective.value;
+      return version.startsWith('^0.8.') || version.startsWith('>=0.8.');
+    }
+    
+    return false;
+  }
+
+  private findPragmaDirective(node: any): any {
+    if (node.type === 'PragmaDirective') {
+      return node;
+    }
+    
+    if (node.children) {
+      for (const child of node.children) {
+        const pragma = this.findPragmaDirective(child);
+        if (pragma) return pragma;
+      }
+    }
+    
+    return null;
   }
 
   private checkUnprotectedSelfdestruct(vulnerabilities: Vulnerability[]): void {
-    // Implementation for unprotected selfdestruct detection
-    // This will check if selfdestruct calls are properly protected
+    const functions = this.findFunctions(this.ast);
+    
+    functions.forEach(func => {
+      const selfdestructCalls = this.findSelfdestructCalls(func);
+      
+      selfdestructCalls.forEach(call => {
+        const callPosition = call.loc?.start?.offset || 0;
+        const callLine = this.getLineNumber(callPosition);
+        
+        // Check if the function has proper access control
+        const hasAccessControl = this.hasAccessControl(func);
+        
+        if (!hasAccessControl) {
+          vulnerabilities.push({
+            type: 'unprotected-selfdestruct',
+            severity: 'HIGH',
+            description: 'Unprotected selfdestruct call: Function lacks proper access control',
+            lineNumber: callLine,
+            recommendation: 'Add access control modifiers (e.g., onlyOwner) to functions containing selfdestruct calls. Consider implementing a timelock mechanism for critical operations.'
+          });
+        }
+      });
+    });
+  }
+
+  private findSelfdestructCalls(node: any): any[] {
+    const calls: any[] = [];
+    
+    if (node.type === 'FunctionCall' && 
+        node.expression.type === 'Identifier' &&
+        node.expression.name === 'selfdestruct') {
+      calls.push(node);
+    }
+    
+    if (node.children) {
+      node.children.forEach((child: any) => {
+        calls.push(...this.findSelfdestructCalls(child));
+      });
+    }
+    
+    return calls;
+  }
+
+  private hasAccessControl(node: any): boolean {
+    // Check for common access control modifiers
+    const accessControlModifiers = [
+      'onlyOwner',
+      'onlyAdmin',
+      'onlyAuthorized',
+      'onlyRole',
+      'requireAuth'
+    ];
+    
+    if (node.modifiers) {
+      return node.modifiers.some((mod: any) => 
+        accessControlModifiers.includes(mod.name)
+      );
+    }
+    
+    // Check for require statements with owner checks
+    const requireStatements = this.findRequireStatements(node);
+    return requireStatements.some((stmt: any) => {
+      const condition = stmt.condition;
+      return (
+        (condition.type === 'BinaryOperation' && 
+         condition.operator === '==' &&
+         (this.isOwnerCheck(condition.left) || this.isOwnerCheck(condition.right))) ||
+        (condition.type === 'FunctionCall' &&
+         condition.expression.type === 'Identifier' &&
+         accessControlModifiers.includes(condition.expression.name))
+      );
+    });
+  }
+
+  private findRequireStatements(node: any): any[] {
+    const statements: any[] = [];
+    
+    if (node.type === 'FunctionCall' && 
+        node.expression.type === 'Identifier' &&
+        node.expression.name === 'require') {
+      statements.push(node);
+    }
+    
+    if (node.children) {
+      node.children.forEach((child: any) => {
+        statements.push(...this.findRequireStatements(child));
+      });
+    }
+    
+    return statements;
+  }
+
+  private isOwnerCheck(node: any): boolean {
+    if (node.type === 'MemberAccess') {
+      return node.memberName === 'owner' || 
+             (node.expression.type === 'Identifier' && 
+              node.expression.name === 'msg' && 
+              node.memberName === 'sender');
+    }
+    return false;
   }
 
   private checkTxOriginUsage(vulnerabilities: Vulnerability[]): void {
