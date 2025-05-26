@@ -13,7 +13,6 @@
     "@solidity-parser/parser": "^0.16.0",
     "solc": "^0.8.24",
     "ethers": "^6.11.1",
-    "slither-analyzer": "^0.9.3",
     "typescript": "^5.3.3"
   },
   "devDependencies": {
