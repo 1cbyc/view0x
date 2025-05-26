@@ -1,0 +1,39 @@
+{
+    "name": "secure-audit-frontend",
+    "version": "1.0.0",
+    "description": "Frontend for Secure Audit application",
+    "private": true,
+    "scripts": {
+        "start": "react-scripts start",
+        "build": "react-scripts build",
+        "test": "react-scripts test",
+        "eject": "react-scripts eject"
+    },
+    "dependencies": {
+        "@tanstack/react-query": "^5.77.2",
+        "axios": "^1.9.0",
+        "lucide-react": "^0.511.0",
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0",
+        "react-router-dom": "^7.6.1",
+        "react-scripts": "^5.0.1",
+        "tailwindcss": "^4.1.7"
+    },
+    "devDependencies": {
+        "autoprefixer": "^10.4.21",
+        "eslint": "^8.0.0",
+        "postcss": "^8.5.3"
+    },
+    "browserslist": {
+        "production": [
+            ">0.2%",
+            "not dead",
+            "not op_mini all"
+        ],
+        "development": [
+            "last 1 chrome version",
+            "last 1 firefox version",
+            "last 1 safari version"
+        ]
+    }
+}
