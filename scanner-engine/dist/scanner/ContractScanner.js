@@ -5,7 +5,7 @@ const parser_1 = require("@solidity-parser/parser");
 class ContractScanner {
     constructor(contractCode) {
         this.contractCode = contractCode;
-        this.ast = parser_1.Parser.parse(contractCode);
+        this.ast = (0, parser_1.parse)(contractCode);
         this.lineMap = this.createLineMap();
     }
     createLineMap() {
