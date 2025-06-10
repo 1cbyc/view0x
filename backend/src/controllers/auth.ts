@@ -6,7 +6,7 @@ import { User } from '../models/User';
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 // Helper function to generate JWT token
-const generateToken = (userId: string) => {
+const generateToken = (userId: number) => {
   return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '24h' });
 };
 
@@ -16,7 +16,7 @@ export const login = async (req: Request, res: Response) => {
     const { email, password } = req.body;
 
     // Find user by email
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ where: { email } });
     if (!user) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
@@ -28,13 +28,13 @@ export const login = async (req: Request, res: Response) => {
     }
 
     // Generate token
-    const token = generateToken(user._id);
+    const token = generateToken(user.id);
 
     // Return user data and token
     res.json({
       token,
       user: {
-        id: user._id,
+        id: user.id,
         name: user.name,
         email: user.email,
       },
@@ -51,7 +51,7 @@ export const register = async (req: Request, res: Response) => {
     const { name, email, password } = req.body;
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
@@ -61,22 +61,20 @@ export const register = async (req: Request, res: Response) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     // Create new user
-    const user = new User({
+    const user = await User.create({
       name,
       email,
       password: hashedPassword,
     });
 
-    await user.save();
-
     // Generate token
-    const token = generateToken(user._id);
+    const token = generateToken(user.id);
 
     // Return user data and token
     res.status(201).json({
       token,
       user: {
-        id: user._id,
+        id: user.id,
         name: user.name,
         email: user.email,
       },
@@ -92,14 +90,14 @@ export const requestPasswordReset = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ where: { email } });
     if (!user) {
       // Don't reveal that the user doesn't exist
       return res.json({ message: 'If your email is registered, you will receive a password reset link' });
     }
 
     // Generate reset token
-    const resetToken = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '1h' });
+    const resetToken = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '1h' });
 
     // In a real application, you would:
     // 1. Save the reset token to the user document
@@ -118,8 +116,8 @@ export const resetPassword = async (req: Request, res: Response) => {
     const { token, password } = req.body;
 
     // Verify token
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
-    const user = await User.findById(decoded.userId);
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+    const user = await User.findByPk(decoded.userId);
 
     if (!user) {
       return res.status(400).json({ message: 'Invalid or expired reset token' });
@@ -130,8 +128,7 @@ export const resetPassword = async (req: Request, res: Response) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     // Update password
-    user.password = hashedPassword;
-    await user.save();
+    await user.update({ password: hashedPassword });
 
     res.json({ message: 'Password has been reset successfully' });
   } catch (error) {
@@ -149,13 +146,16 @@ export const getCurrentUser = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Not authenticated' });
     }
 
-    const user = await User.findById(userId).select('-password');
+    const user = await User.findByPk(userId, {
+      attributes: { exclude: ['password'] }
+    });
+    
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
     res.json({
-      id: user._id,
+      id: user.id,
       name: user.name,
       email: user.email,
     });
