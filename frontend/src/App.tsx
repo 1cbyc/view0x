@@ -5,6 +5,7 @@ import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import ContractAnalysisForm from './components/ContractAnalysisForm';
 import LoginForm from './components/auth/LoginForm';
+import RegisterForm from './components/auth/RegisterForm';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { logout } from './store/slices/authSlice';
 import { useAppDispatch, useAppSelector } from './store';
@@ -76,6 +77,7 @@ const App: React.FC = () => {
         <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <Routes>
             <Route path="/login" element={!token ? <LoginForm /> : <Navigate to="/" replace />} />
+            <Route path="/register" element={!token ? <RegisterForm /> : <Navigate to="/" replace />} />
             
             <Route
               path="/"

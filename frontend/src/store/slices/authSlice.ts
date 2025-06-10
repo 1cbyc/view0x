@@ -14,6 +14,17 @@ interface AuthState {
   error: string | null;
 }
 
+interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+interface RegisterCredentials {
+  name: string;
+  email: string;
+  password: string;
+}
+
 const initialState: AuthState = {
   user: null,
   token: localStorage.getItem('token'),
@@ -23,8 +34,18 @@ const initialState: AuthState = {
 
 export const login = createAsyncThunk(
   'auth/login',
-  async (credentials: { email: string; password: string }) => {
+  async (credentials: LoginCredentials) => {
     const response = await api.post('/auth/login', credentials);
+    const { token, user } = response.data;
+    localStorage.setItem('token', token);
+    return { token, user };
+  }
+);
+
+export const register = createAsyncThunk(
+  'auth/register',
+  async (credentials: RegisterCredentials) => {
+    const response = await api.post('/auth/register', credentials);
     const { token, user } = response.data;
     localStorage.setItem('token', token);
     return { token, user };
@@ -63,6 +84,19 @@ const authSlice = createSlice({
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Login failed';
+      })
+      .addCase(register.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(register.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload.user;
+        state.token = action.payload.token;
+      })
+      .addCase(register.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Registration failed';
       })
       .addCase(logout.fulfilled, (state) => {
         state.user = null;
