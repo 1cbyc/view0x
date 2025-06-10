@@ -42,13 +42,21 @@ const LoginForm: React.FC = () => {
       return;
     }
 
-    const result = await dispatch(login({
-      email: formData.email,
-      password: formData.password,
-    }));
+    try {
+      console.log('Attempting login with:', { email: formData.email });
+      const result = await dispatch(login({
+        email: formData.email,
+        password: formData.password,
+      }));
 
-    if (login.fulfilled.match(result)) {
-      navigate('/');
+      if (login.fulfilled.match(result)) {
+        console.log('Login successful:', result.payload);
+        navigate('/');
+      } else if (login.rejected.match(result)) {
+        console.error('Login failed:', result.error);
+      }
+    } catch (err) {
+      console.error('Login error:', err);
     }
   };
 
@@ -152,6 +160,14 @@ const LoginForm: React.FC = () => {
               <div className="flex">
                 <div className="ml-3">
                   <h3 className="text-sm font-medium text-red-800">{error}</h3>
+                  <div className="mt-2 text-sm text-red-700">
+                    <p>Please check if:</p>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>The backend server is running at http://localhost:3001</li>
+                      <li>Your email and password are correct</li>
+                      <li>You have an active internet connection</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>

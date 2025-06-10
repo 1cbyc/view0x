@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { api } from '../../services/api';
+import { contractApi } from '../../services/api';
 
 export interface AnalysisResult {
   id: string;
@@ -34,7 +34,7 @@ const initialState: AnalysisState = {
 export const analyzeContract = createAsyncThunk(
   'analysis/analyzeContract',
   async (contractAddress: string) => {
-    const response = await api.post('/analyze', { contractAddress });
+    const response = await contractApi.analyzeContract({ contractCode: contractAddress, options: {} });
     return response.data;
   }
 );
@@ -42,7 +42,7 @@ export const analyzeContract = createAsyncThunk(
 export const getAnalysisHistory = createAsyncThunk(
   'analysis/getHistory',
   async () => {
-    const response = await api.get('/analysis/history');
+    const response = await contractApi.getAnalysisHistory();
     return response.data;
   }
 );
