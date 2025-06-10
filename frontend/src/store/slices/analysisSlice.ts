@@ -1,20 +1,18 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { contractApi } from '../../services/api';
+import { api } from '../../services/api';
 
-export interface AnalysisResult {
-  id: string;
+interface Vulnerability {
+  type: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  description: string;
+  recommendations: string[];
+}
+
+interface AnalysisResult {
   contractAddress: string;
-  vulnerabilities: {
-    type: string;
-    severity: 'high' | 'medium' | 'low';
-    description: string;
-    location: {
-      line: number;
-      column: number;
-    };
-  }[];
+  vulnerabilities: Vulnerability[];
   timestamp: string;
-  status: 'completed' | 'failed' | 'in_progress';
+  analysisId: number;
 }
 
 interface AnalysisState {
@@ -34,15 +32,15 @@ const initialState: AnalysisState = {
 export const analyzeContract = createAsyncThunk(
   'analysis/analyzeContract',
   async (contractAddress: string) => {
-    const response = await contractApi.analyzeContract({ contractCode: contractAddress, options: {} });
-    return response.data;
+    const response = await api.post('/analysis/analyze', { contractAddress });
+    return response.data.results;
   }
 );
 
 export const getAnalysisHistory = createAsyncThunk(
   'analysis/getHistory',
   async () => {
-    const response = await contractApi.getAnalysisHistory();
+    const response = await api.get('/analysis/history');
     return response.data;
   }
 );
@@ -53,11 +51,11 @@ const analysisSlice = createSlice({
   reducers: {
     clearCurrentAnalysis: (state) => {
       state.currentAnalysis = null;
-      state.error = null;
     },
   },
   extraReducers: (builder) => {
     builder
+      // Analyze Contract
       .addCase(analyzeContract.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -69,10 +67,20 @@ const analysisSlice = createSlice({
       })
       .addCase(analyzeContract.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Analysis failed';
+        state.error = action.error.message || 'Failed to analyze contract';
+      })
+      // Get Analysis History
+      .addCase(getAnalysisHistory.pending, (state) => {
+        state.loading = true;
+        state.error = null;
       })
       .addCase(getAnalysisHistory.fulfilled, (state, action) => {
+        state.loading = false;
         state.results = action.payload;
+      })
+      .addCase(getAnalysisHistory.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to fetch analysis history';
       });
   },
 });

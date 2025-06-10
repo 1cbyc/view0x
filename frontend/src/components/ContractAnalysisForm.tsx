@@ -2,9 +2,16 @@ import React, { useState } from 'react';
 import { analyzeContract } from '../store/slices/analysisSlice';
 import { useAppDispatch, useAppSelector } from '../store';
 
+interface Vulnerability {
+  type: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  description: string;
+  recommendations: string[];
+}
+
 const ContractAnalysisForm: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { loading, error } = useAppSelector((state) => state.analysis);
+  const { loading, error, currentAnalysis } = useAppSelector((state) => state.analysis);
   const [contractAddress, setContractAddress] = useState('');
   const [contractCode, setContractCode] = useState('');
 
@@ -12,6 +19,21 @@ const ContractAnalysisForm: React.FC = () => {
     e.preventDefault();
     if (contractAddress) {
       dispatch(analyzeContract(contractAddress));
+    }
+  };
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'critical':
+        return 'bg-red-100 text-red-800';
+      case 'high':
+        return 'bg-orange-100 text-orange-800';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'low':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -96,6 +118,49 @@ const ContractAnalysisForm: React.FC = () => {
           </button>
         </div>
       </form>
+
+      {currentAnalysis && (
+        <div className="mt-8">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Analysis Results</h3>
+          
+          {currentAnalysis.vulnerabilities.length === 0 ? (
+            <div className="rounded-md bg-green-50 p-4">
+              <div className="flex">
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-green-800">No Vulnerabilities Found</h3>
+                  <div className="mt-2 text-sm text-green-700">
+                    <p>The contract appears to be secure based on our analysis.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {currentAnalysis.vulnerabilities.map((vulnerability: Vulnerability, index: number) => (
+                <div key={index} className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-lg font-medium text-gray-900">{vulnerability.type}</h4>
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getSeverityColor(vulnerability.severity)}`}>
+                      {vulnerability.severity}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm text-gray-600">{vulnerability.description}</p>
+                  {vulnerability.recommendations.length > 0 && (
+                    <div className="mt-4">
+                      <h5 className="text-sm font-medium text-gray-900">Recommendations:</h5>
+                      <ul className="mt-2 list-disc list-inside text-sm text-gray-600">
+                        {vulnerability.recommendations.map((rec, i) => (
+                          <li key={i}>{rec}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
