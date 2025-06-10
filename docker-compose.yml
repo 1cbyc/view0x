@@ -10,16 +10,13 @@ services:
       - backend
 
   backend:
-    build: 
-      context: ./backend
-      dockerfile: Dockerfile
+    build: ./backend
     ports:
-      - "3001:3001"
+      - "4000:4000"
     volumes:
       - ./backend:/app
-      - ./scanner-engine:/app/scanner-engine
     environment:
-      - PORT=3001
+      - PORT=4000
       - DATABASE_URL=postgres://postgres:postgres@postgres:5432/secure_audit
       - REDIS_URL=redis://redis:6379
     depends_on:

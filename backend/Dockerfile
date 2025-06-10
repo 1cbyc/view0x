@@ -1,4 +1,4 @@
-FROM node:20
+FROM node:18
 
 WORKDIR /app
 
@@ -9,9 +9,6 @@ RUN yarn install
 # Copy all source files
 COPY . .
 
-# Build TypeScript
-RUN yarn tsc
-
-EXPOSE 3001
+EXPOSE 5000
 
 CMD ["yarn", "start"]
