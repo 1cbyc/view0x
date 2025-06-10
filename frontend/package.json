@@ -21,6 +21,7 @@
         "tailwindcss": "^4.1.7"
     },
     "devDependencies": {
+        "@tailwindcss/postcss": "^4.1.7",
         "autoprefixer": "^10.4.21",
         "eslint": "^8.0.0",
         "postcss": "^8.5.3"
