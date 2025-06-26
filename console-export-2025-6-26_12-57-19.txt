@@ -1,0 +1,131 @@
+[vite] connecting... client:495:9
+[vite] connected. client:618:15
+Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools chunk-BCXODTBQ.js:21549:25
+Uncaught Error: Objects are not valid as a React child (found: object with keys {line, column}). If you meant to render a collection of children, use an array instead.
+    React 15
+    workLoop scheduler.development.js:266
+    flushWork scheduler.development.js:239
+    performWorkUntilDeadline scheduler.development.js:533
+    js scheduler.development.js:571
+    js scheduler.development.js:633
+    __require chunk-2YIMICFJ.js:8
+    js index.js:6
+    __require chunk-2YIMICFJ.js:8
+    React 2
+    __require chunk-2YIMICFJ.js:8
+    js React
+    __require chunk-2YIMICFJ.js:8
+    js React
+    __require chunk-2YIMICFJ.js:8
+    <anonymous> react-dom_client.js:37
+chunk-BCXODTBQ.js:9932:17
+    React 15
+    workLoop scheduler.development.js:266
+    flushWork scheduler.development.js:239
+    performWorkUntilDeadline scheduler.development.js:533
+    (Async: EventHandlerNonNull)
+    js scheduler.development.js:571
+    js scheduler.development.js:633
+    __require chunk-2YIMICFJ.js:8
+    js index.js:6
+    __require chunk-2YIMICFJ.js:8
+    React 2
+    __require chunk-2YIMICFJ.js:8
+    js React
+    __require chunk-2YIMICFJ.js:8
+    js React
+    __require chunk-2YIMICFJ.js:8
+    <anonymous> react-dom_client.js:37
+Uncaught Error: Objects are not valid as a React child (found: object with keys {line, column}). If you meant to render a collection of children, use an array instead.
+    React 15
+    workLoop scheduler.development.js:266
+    flushWork scheduler.development.js:239
+    performWorkUntilDeadline scheduler.development.js:533
+    js scheduler.development.js:571
+    js scheduler.development.js:633
+    __require chunk-2YIMICFJ.js:8
+    js index.js:6
+    __require chunk-2YIMICFJ.js:8
+    React 2
+    __require chunk-2YIMICFJ.js:8
+    js React
+    __require chunk-2YIMICFJ.js:8
+    js React
+    __require chunk-2YIMICFJ.js:8
+    <anonymous> react-dom_client.js:37
+chunk-BCXODTBQ.js:9932:17
+Uncaught Error: Objects are not valid as a React child (found: object with keys {line, column}). If you meant to render a collection of children, use an array instead.
+    React 16
+    workLoop scheduler.development.js:266
+    flushWork scheduler.development.js:239
+    performWorkUntilDeadline scheduler.development.js:533
+    js scheduler.development.js:571
+    js scheduler.development.js:633
+    __require chunk-2YIMICFJ.js:8
+    js index.js:6
+    __require chunk-2YIMICFJ.js:8
+    React 2
+    __require chunk-2YIMICFJ.js:8
+    js React
+    __require chunk-2YIMICFJ.js:8
+    js React
+    __require chunk-2YIMICFJ.js:8
+    <anonymous> react-dom_client.js:37
+chunk-BCXODTBQ.js:9932:17
+Uncaught Error: Objects are not valid as a React child (found: object with keys {line, column}). If you meant to render a collection of children, use an array instead.
+    React 16
+    workLoop scheduler.development.js:266
+    flushWork scheduler.development.js:239
+    performWorkUntilDeadline scheduler.development.js:533
+    js scheduler.development.js:571
+    js scheduler.development.js:633
+    __require chunk-2YIMICFJ.js:8
+    js index.js:6
+    __require chunk-2YIMICFJ.js:8
+    React 2
+    __require chunk-2YIMICFJ.js:8
+    js React
+    __require chunk-2YIMICFJ.js:8
+    js React
+    __require chunk-2YIMICFJ.js:8
+    <anonymous> react-dom_client.js:37
+chunk-BCXODTBQ.js:9932:17
+The above error occurred in the <div> component:
+
+div
+div
+div
+div
+div
+div
+div
+div
+ContractAnalyzer@http://localhost:3000/src/pages/ContractAnalyzer.tsx:30:51
+RenderedRoute@http://localhost:3000/node_modules/.vite/deps/react-router-dom.js?v=e28b254c:5453:23
+Routes@http://localhost:3000/node_modules/.vite/deps/react-router-dom.js?v=e28b254c:6185:16
+main
+div
+Router@http://localhost:3000/node_modules/.vite/deps/react-router-dom.js?v=e28b254c:6128:16
+BrowserRouter@http://localhost:3000/node_modules/.vite/deps/react-router-dom.js?v=e28b254c:9146:23
+App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries. 2 chunk-BCXODTBQ.js:14030:23
+Uncaught Error: Objects are not valid as a React child (found: object with keys {line, column}). If you meant to render a collection of children, use an array instead.
+    React 13
+    workLoop scheduler.development.js:266
+    flushWork scheduler.development.js:239
+    performWorkUntilDeadline scheduler.development.js:533
+    js scheduler.development.js:571
+    js scheduler.development.js:633
+    __require chunk-2YIMICFJ.js:8
+    js index.js:6
+    __require chunk-2YIMICFJ.js:8
+    React 2
+    __require chunk-2YIMICFJ.js:8
+    js React
+    __require chunk-2YIMICFJ.js:8
+    js React
+    __require chunk-2YIMICFJ.js:8
+    <anonymous> react-dom_client.js:37
+chunk-BCXODTBQ.js:9932:17
