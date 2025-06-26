@@ -17,6 +17,7 @@
     "jsonwebtoken": "^9.0.0",
     "pg": "^8.11.0",
     "pg-hstore": "^2.3.4",
+    "scanner-engine": "file:../scanner-engine",
     "sequelize": "^6.31.1"
   },
   "devDependencies": {

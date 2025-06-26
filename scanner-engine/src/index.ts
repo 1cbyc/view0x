@@ -1,6 +1,10 @@
 import { ContractScanner } from './scanner/ContractScanner';
+import { ScannerEngine } from './ScannerEngine';
 import * as fs from 'fs';
 import * as path from 'path';
+
+// Export ScannerEngine for use as a library
+export { ScannerEngine };
 
 async function main() {
   // Check if a file path was provided
@@ -71,4 +75,6 @@ async function main() {
   }
 }
 
-main().catch(console.error); 
+if (require.main === module) {
+  main().catch(console.error);
+} 
