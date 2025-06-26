@@ -7,7 +7,15 @@ const Footer: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
           <div className="flex items-center space-x-2 text-gray-600">
-            <span>© 2025 by Isaac Emmanuel</span>
+            <span>© 2025 by </span>
+            <a
+              href="https://nsisong.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-700 font-medium transition-colors"
+            >
+              Isaac Emmanuel
+            </a>
             <span className="hidden sm:inline">•</span>
             <span className="hidden sm:inline">Made with</span>
             <Heart className="w-4 h-4 text-red-500" />
@@ -37,7 +45,7 @@ const Footer: React.FC = () => {
         </div>
         
         <div className="mt-4 text-center text-sm text-gray-500">
-          <p>Secure Audit - Professional Smart Contract Security Scanner</p>
+          <p>Secure Audit by Nsisong Labs - Smart Contract Vuln Scanner</p>
         </div>
       </div>
     </footer>
