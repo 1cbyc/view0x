@@ -125,7 +125,7 @@ export class ReentrancyAnalyzer extends VulnerabilityAnalyzer {
     private isStateVariableInContract(varName: string): boolean {
         // Check if the variable is declared as a state variable in the contract
         return this.contract.subNodes.some((node: Node) => {
-            if (node.type === 'StateVariableDeclaration') {
+            if (node.type === 'StateVariableDeclaration' && node.variables) {
                 return node.variables.some((v: any) => v.name === varName);
             }
             return false;
