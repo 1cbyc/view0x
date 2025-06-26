@@ -4,6 +4,8 @@ import { VulnerabilityReport } from './types/VulnerabilityReport';
 import { ReentrancyAnalyzer } from './analyzers/ReentrancyAnalyzer';
 import { IntegerOverflowAnalyzer } from './analyzers/IntegerOverflowAnalyzer';
 import { AccessControlAnalyzer } from './analyzers/AccessControlAnalyzer';
+import { TxOriginAnalyzer } from './analyzers/TxOriginAnalyzer';
+import { WeakRandomnessAnalyzer } from './analyzers/WeakRandomnessAnalyzer';
 import { VulnerabilityAnalyzer } from './analyzers/VulnerabilityAnalyzer';
 
 export class ScannerEngine {
@@ -14,7 +16,9 @@ export class ScannerEngine {
         this.analyzers = [
             new ReentrancyAnalyzer(null as any),
             new IntegerOverflowAnalyzer(null as any),
-            new AccessControlAnalyzer(null as any)
+            new AccessControlAnalyzer(null as any),
+            new TxOriginAnalyzer(null as any),
+            new WeakRandomnessAnalyzer(null as any)
         ];
     }
 
