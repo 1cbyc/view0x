@@ -41,6 +41,7 @@ export interface Expression {
     operator?: string;
     name?: string;
     arguments?: Expression[];
+    loc?: Location;
 }
 
 export interface Node {
@@ -51,4 +52,10 @@ export interface Node {
         statements: Statement[];
     };
     modifiers?: Modifier[];
+    variables?: Variable[];
+}
+
+export interface Variable {
+    name: string;
+    type: string;
 } 
