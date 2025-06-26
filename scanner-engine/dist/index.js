@@ -33,7 +33,10 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.ScannerEngine = void 0;
 const ContractScanner_1 = require("./scanner/ContractScanner");
+const ScannerEngine_1 = require("./ScannerEngine");
+Object.defineProperty(exports, "ScannerEngine", { enumerable: true, get: function () { return ScannerEngine_1.ScannerEngine; } });
 const fs = __importStar(require("fs"));
 async function main() {
     // Check if a file path was provided
@@ -97,4 +100,6 @@ async function main() {
         process.exit(1);
     }
 }
-main().catch(console.error);
+if (require.main === module) {
+    main().catch(console.error);
+}
