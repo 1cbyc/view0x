@@ -3,46 +3,47 @@ import {
   FileText, 
   AlertTriangle, 
   CheckCircle, 
-  Zap, 
-  Code, 
   Loader2, 
   Copy, 
-  Download,
   Shield,
-  TrendingUp,
-  AlertCircle,
   Info
 } from 'lucide-react';
 
 interface Vulnerability {
-  type: string;
-    severity: 'HIGH' | 'MEDIUM' | 'LOW';
-    description: string;
-  lineNumber: number;
-    recommendation: string;
-}
-
-interface GasOptimization {
-  type: string;
-  potentialSavings: string;
-    description: string;
-  lineNumber: number;
-    recommendation: string;
-}
-
-interface CodeQualityIssue {
-  type: string;
   severity: 'HIGH' | 'MEDIUM' | 'LOW';
-    description: string;
-  lineNumber: number;
-    recommendation: string;
+  title: string;
+  description: string;
+  location: {
+    start: number;
+    end: number;
+  };
+  recommendation: string;
+}
+
+interface Warning {
+  title: string;
+  description: string;
+  location: {
+    start: number;
+    end: number;
+  };
+  recommendation: string;
+}
+
+interface Suggestion {
+  title: string;
+  description: string;
+  location: {
+    start: number;
+    end: number;
+  };
+  recommendation: string;
 }
 
 interface AnalysisResult {
   vulnerabilities: Vulnerability[];
-  gasOptimizations: GasOptimization[];
-  codeQuality: CodeQualityIssue[];
-  overallScore: number;
+  warnings: Warning[];
+  suggestions: Suggestion[];
 }
 
 const ContractAnalyzer: React.FC = () => {
@@ -50,7 +51,6 @@ const ContractAnalyzer: React.FC = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'input' | 'results'>('input');
 
   const sampleContract = `// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
@@ -107,7 +107,6 @@ contract VulnerableContract {
     setContractCode('');
     setAnalysisResult(null);
     setError(null);
-    setActiveTab('input');
   };
 
   const copyToClipboard = () => {
@@ -119,7 +118,6 @@ contract VulnerableContract {
 
     setIsAnalyzing(true);
     setError(null);
-    setActiveTab('results');
 
     try {
       const response = await fetch('http://localhost:3001/api/analysis/public', {
@@ -162,10 +160,20 @@ contract VulnerableContract {
     }
   };
 
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600';
-    if (score >= 60) return 'text-yellow-600';
-    return 'text-red-600';
+  // Helper to format location
+  const formatLocation = (location: any) => {
+    if (!location) return '';
+    const start = location.start;
+    const end = location.end;
+    // If start/end are objects with line/column
+    if (start && typeof start === 'object' && 'line' in start && 'column' in start && end && typeof end === 'object' && 'line' in end && 'column' in end) {
+      return `Line ${start.line}:${start.column} - ${end.line}:${end.column}`;
+    }
+    // If start/end are numbers
+    if (typeof start === 'number' && typeof end === 'number') {
+      return `Line ${start}-${end}`;
+    }
+    return '';
   };
 
   return (
@@ -276,25 +284,6 @@ contract VulnerableContract {
 
           {analysisResult && !isAnalyzing && (
             <div className="space-y-4">
-              {/* Overall Score */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Security Score</h3>
-                  <div className={`text-3xl font-bold ${getScoreColor(analysisResult.overallScore)}`}>
-                    {analysisResult.overallScore}/100
-                  </div>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div 
-                    className={`h-3 rounded-full transition-all duration-500 ${
-                      analysisResult.overallScore >= 80 ? 'bg-green-500' :
-                      analysisResult.overallScore >= 60 ? 'bg-yellow-500' : 'bg-red-500'
-                    }`}
-                    style={{ width: `${analysisResult.overallScore}%` }}
-                  />
-                </div>
-              </div>
-
               {/* Vulnerabilities */}
               {analysisResult.vulnerabilities.length > 0 && (
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -309,13 +298,15 @@ contract VulnerableContract {
                     {analysisResult.vulnerabilities.map((vuln, index) => (
                       <div key={index} className="border rounded-lg p-4">
                         <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-medium text-gray-900">{vuln.type}</h4>
+                          <h4 className="font-medium text-gray-900">{vuln.title}</h4>
                           <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getSeverityColor(vuln.severity)}`}>
                             {vuln.severity}
                           </span>
                         </div>
                         <p className="text-sm text-gray-600 mb-2">{vuln.description}</p>
-                        <div className="text-xs text-gray-500 mb-2">Line {vuln.lineNumber}</div>
+                        <div className="text-xs text-gray-500 mb-2">
+                          {formatLocation(vuln.location)}
+                        </div>
                         <div className="bg-blue-50 border border-blue-200 rounded p-3">
                           <div className="flex items-start space-x-2">
                             <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
@@ -328,31 +319,33 @@ contract VulnerableContract {
                 </div>
               )}
 
-              {/* Gas Optimizations */}
-              {analysisResult.gasOptimizations.length > 0 && (
+              {/* Warnings */}
+              {analysisResult.warnings.length > 0 && (
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                   <div className="flex items-center space-x-2 mb-4">
-                    <Zap className="w-5 h-5 text-yellow-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">Gas Optimizations</h3>
+                    <AlertTriangle className="w-5 h-5 text-yellow-600" />
+                    <h3 className="text-lg font-semibold text-gray-900">Warnings</h3>
                     <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
-                      {analysisResult.gasOptimizations.length}
+                      {analysisResult.warnings.length}
                     </span>
                   </div>
                   <div className="space-y-3">
-                    {analysisResult.gasOptimizations.map((opt, index) => (
+                    {analysisResult.warnings.map((warning, index) => (
                       <div key={index} className="border rounded-lg p-4">
                         <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-medium text-gray-900">{opt.type}</h4>
-                          <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                            {opt.potentialSavings}
+                          <h4 className="font-medium text-gray-900">{warning.title}</h4>
+                          <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
+                            {warning.description}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-600 mb-2">{opt.description}</p>
-                        <div className="text-xs text-gray-500 mb-2">Line {opt.lineNumber}</div>
-                        <div className="bg-green-50 border border-green-200 rounded p-3">
+                        <p className="text-sm text-gray-600 mb-2">{warning.recommendation}</p>
+                        <div className="text-xs text-gray-500 mb-2">
+                          {formatLocation(warning.location)}
+                        </div>
+                        <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
                           <div className="flex items-start space-x-2">
-                            <TrendingUp className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                            <p className="text-sm text-green-800">{opt.recommendation}</p>
+                            <Info className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                            <p className="text-sm text-yellow-800">{warning.recommendation}</p>
                           </div>
                         </div>
                       </div>
@@ -361,31 +354,33 @@ contract VulnerableContract {
                 </div>
               )}
 
-              {/* Code Quality */}
-              {analysisResult.codeQuality.length > 0 && (
+              {/* Suggestions */}
+              {analysisResult.suggestions.length > 0 && (
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                   <div className="flex items-center space-x-2 mb-4">
-                    <Code className="w-5 h-5 text-blue-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">Code Quality</h3>
-                    <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                      {analysisResult.codeQuality.length}
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    <h3 className="text-lg font-semibold text-gray-900">Suggestions</h3>
+                    <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                      {analysisResult.suggestions.length}
                     </span>
                   </div>
                   <div className="space-y-3">
-                    {analysisResult.codeQuality.map((issue, index) => (
+                    {analysisResult.suggestions.map((suggestion, index) => (
                       <div key={index} className="border rounded-lg p-4">
                         <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-medium text-gray-900">{issue.type}</h4>
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getSeverityColor(issue.severity)}`}>
-                            {issue.severity}
+                          <h4 className="font-medium text-gray-900">{suggestion.title}</h4>
+                          <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                            {suggestion.description}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-600 mb-2">{issue.description}</p>
-                        <div className="text-xs text-gray-500 mb-2">Line {issue.lineNumber}</div>
-                        <div className="bg-purple-50 border border-purple-200 rounded p-3">
+                        <p className="text-sm text-gray-600 mb-2">{suggestion.recommendation}</p>
+                        <div className="text-xs text-gray-500 mb-2">
+                          {formatLocation(suggestion.location)}
+                        </div>
+                        <div className="bg-green-50 border border-green-200 rounded p-3">
                           <div className="flex items-start space-x-2">
-                            <AlertCircle className="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" />
-                            <p className="text-sm text-purple-800">{issue.recommendation}</p>
+                            <Info className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                            <p className="text-sm text-green-800">{suggestion.recommendation}</p>
                           </div>
                         </div>
                       </div>
@@ -396,8 +391,8 @@ contract VulnerableContract {
 
               {/* No Issues Found */}
               {analysisResult.vulnerabilities.length === 0 && 
-               analysisResult.gasOptimizations.length === 0 && 
-               analysisResult.codeQuality.length === 0 && (
+               analysisResult.warnings.length === 0 && 
+               analysisResult.suggestions.length === 0 && (
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
                   <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">No Issues Found!</h3>
