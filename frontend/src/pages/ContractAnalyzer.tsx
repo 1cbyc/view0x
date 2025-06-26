@@ -16,26 +16,26 @@ import {
 
 interface Vulnerability {
   type: string;
-  severity: 'HIGH' | 'MEDIUM' | 'LOW';
-  description: string;
+    severity: 'HIGH' | 'MEDIUM' | 'LOW';
+    description: string;
   lineNumber: number;
-  recommendation: string;
+    recommendation: string;
 }
 
 interface GasOptimization {
   type: string;
   potentialSavings: string;
-  description: string;
+    description: string;
   lineNumber: number;
-  recommendation: string;
+    recommendation: string;
 }
 
 interface CodeQualityIssue {
   type: string;
   severity: 'HIGH' | 'MEDIUM' | 'LOW';
-  description: string;
+    description: string;
   lineNumber: number;
-  recommendation: string;
+    recommendation: string;
 }
 
 interface AnalysisResult {
@@ -249,8 +249,8 @@ contract VulnerableContract {
                 )}
               </button>
             </div>
+            </div>
           </div>
-        </div>
 
         {/* Results Panel */}
         <div className="space-y-4">
