@@ -34,7 +34,8 @@ app.use(express.json());
 
 // Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/analysis', auth, analysisRoutes);
+app.use('/api/analysis', analysisRoutes); // Public routes
+app.use('/api/analysis/protected', auth, analysisRoutes); // Protected routes
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
