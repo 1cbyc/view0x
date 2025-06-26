@@ -118,7 +118,7 @@ export const analyzeContract = async (req: Request, res: Response) => {
         res.status(500).json({ 
             status: 'error',
             message: 'Internal server error',
-            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+            details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
         });
     }
 }; 
