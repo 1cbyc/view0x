@@ -35,7 +35,7 @@ export class IntegerOverflowAnalyzer extends VulnerabilityAnalyzer {
         // Check for arithmetic operations
         if (expression.type === 'BinaryOperation') {
             const operator = expression.operator;
-            if (['+', '-', '*', '/'].includes(operator)) {
+            if (operator && ['+', '-', '*', '/'].includes(operator)) {
                 this.checkArithmeticOperation(expression);
             }
         }
