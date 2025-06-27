@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { analyzeContract } from '../controllers/analysisController';
-import { ScannerEngine } from 'scanner-engine';
+import { SimpleScanner } from '../services/simpleScanner';
 
 const router = Router();
 
@@ -16,11 +16,11 @@ router.post('/public', async (req, res) => {
             });
         }
 
-        // Use the real scanner engine
-        const engine = new ScannerEngine();
+        // Use the simple scanner
+        const scanner = new SimpleScanner();
         let analysisResult;
         try {
-            analysisResult = await engine.analyzeContract(contractCode);
+            analysisResult = await scanner.analyzeContract(contractCode);
         } catch (err: any) {
             return res.status(400).json({
                 status: 'error',
