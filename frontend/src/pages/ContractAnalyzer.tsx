@@ -10,34 +10,34 @@ import {
 } from 'lucide-react';
 
 interface Vulnerability {
-  severity: 'HIGH' | 'MEDIUM' | 'LOW';
-  title: string;
-  description: string;
+    severity: 'HIGH' | 'MEDIUM' | 'LOW';
+    title: string;
+    description: string;
   location: {
     start: number;
     end: number;
   };
-  recommendation: string;
+    recommendation: string;
 }
 
 interface Warning {
-  title: string;
-  description: string;
+    title: string;
+    description: string;
   location: {
     start: number;
     end: number;
   };
-  recommendation: string;
+    recommendation: string;
 }
 
 interface Suggestion {
-  title: string;
-  description: string;
+    title: string;
+    description: string;
   location: {
     start: number;
     end: number;
   };
-  recommendation: string;
+    recommendation: string;
 }
 
 interface AnalysisResult {
