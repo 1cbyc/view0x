@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: secure-audit-backend
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    rootDir: backend
+    envVars:
+      - key: PORT
+        value: 3001
+      - key: NODE_ENV
+        value: production 
