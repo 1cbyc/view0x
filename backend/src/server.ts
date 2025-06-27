@@ -18,7 +18,7 @@ const corsOptions = {
   origin: [
     'http://localhost:3000',
     'https://secure-audit.nsisonglabs.xyz',
-    'https://secure-audit-frontend.pages.dev'
+    'https://secure-audit.pages.dev'
   ],
   credentials: true,
   optionsSuccessStatus: 200
