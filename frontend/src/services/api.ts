@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance with default config
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api', // Backend API URL
+  baseURL: import.meta.env.VITE_API_URL || 'https://secure-audit-backend.onrender.com/api', // Backend API URL
   headers: {
     'Content-Type': 'application/json',
   },
