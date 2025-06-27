@@ -19,6 +19,8 @@
     "pg-hstore": "^2.3.4",
     "scanner-engine": "file:../scanner-engine",
     "sequelize": "^6.31.1",
+    "@solidity-parser/parser": "^0.16.0",
+    "solc": "^0.8.24",
     "@types/bcryptjs": "^2.4.2",
     "@types/cors": "^2.8.13",
     "@types/express": "^4.17.17",
