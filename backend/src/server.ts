@@ -7,11 +7,22 @@ import { auth } from './middleware/auth';
 
 // Set environment variables
 // process.env.DATABASE_URL = 'postgres://postgres:postgres@postgres:5432/secure_audit';
-process.env.PORT = '3001';
-process.env.NODE_ENV = 'development';
+process.env.PORT = process.env.PORT || '3001';
+process.env.NODE_ENV = process.env.NODE_ENV || 'development';
 
 const app = express();
 const port = process.env.PORT || 3001;
+
+// CORS configuration
+const corsOptions = {
+  origin: [
+    'http://localhost:3000',
+    'https://secure-audit.nsisonglabs.xyz',
+    'https://secure-audit-frontend.pages.dev'
+  ],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
 
 // Connect to PostgreSQL (disabled for now)
 // sequelize.authenticate()
@@ -29,7 +40,7 @@ const port = process.env.PORT || 3001;
 //   });
 
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Routes
