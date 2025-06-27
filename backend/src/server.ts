@@ -48,6 +48,20 @@ app.use('/api/auth', authRoutes);
 app.use('/api/analysis', analysisRoutes); // Public routes
 app.use('/api/analysis/protected', auth, analysisRoutes); // Protected routes
 
+// Root endpoint
+app.get('/', (req, res) => {
+    res.json({ 
+        message: 'Secure Audit Backend API',
+        version: '1.0.0',
+        status: 'running',
+        endpoints: {
+            health: '/api/health',
+            analysis: '/api/analysis',
+            auth: '/api/auth'
+        }
+    });
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok' });
