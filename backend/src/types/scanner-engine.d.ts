@@ -1,27 +1,39 @@
 declare module 'scanner-engine' {
+  export interface Vulnerability {
+    severity: 'HIGH' | 'MEDIUM' | 'LOW';
+    title: string;
+    description: string;
+    location: {
+      start: number;
+      end: number;
+    };
+    recommendation: string;
+  }
+
+  export interface Warning {
+    title: string;
+    description: string;
+    location: {
+      start: number;
+      end: number;
+    };
+    recommendation: string;
+  }
+
+  export interface Suggestion {
+    title: string;
+    description: string;
+    location: {
+      start: number;
+      end: number;
+    };
+    recommendation: string;
+  }
+
   export interface VulnerabilityReport {
-    vulnerabilities: Array<{
-      type: string;
-      severity: 'high' | 'medium' | 'low';
-      description: string;
-      lineNumber?: number;
-      recommendation?: string;
-    }>;
-    gasOptimizations: Array<{
-      type: string;
-      description: string;
-      lineNumber?: number;
-      potentialSavings?: string;
-      recommendation?: string;
-    }>;
-    codeQuality: Array<{
-      type: string;
-      severity: 'high' | 'medium' | 'low';
-      description: string;
-      lineNumber?: number;
-      recommendation?: string;
-    }>;
-    overallScore: number;
+    vulnerabilities: Vulnerability[];
+    warnings: Warning[];
+    suggestions: Suggestion[];
   }
 
   export interface AnalysisOptions {
