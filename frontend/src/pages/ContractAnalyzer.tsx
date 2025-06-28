@@ -8,6 +8,7 @@ import {
   Shield,
   Info
 } from 'lucide-react';
+import { contractApi } from '../services/api';
 
 interface Vulnerability {
     severity: 'HIGH' | 'MEDIUM' | 'LOW';
@@ -120,28 +121,19 @@ contract VulnerableContract {
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:3001/api/analysis/public', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ contractCode }),
+      const response = await contractApi.analyzeContract({ 
+        contractCode, 
+        options: {} 
       });
-
-      if (!response.ok) {
-        throw new Error('Analysis failed');
-      }
-
-      const data = await response.json();
       
-      if (data.status === 'success') {
-        setAnalysisResult(data.results);
+      if (response.data.status === 'success') {
+        setAnalysisResult(response.data.results);
       } else {
-        throw new Error(data.message || 'Analysis failed');
+        throw new Error(response.data.message || 'Analysis failed');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Analysis failed:', error);
-      setError(error instanceof Error ? error.message : 'Analysis failed');
+      setError(error.message || 'Analysis failed');
     } finally {
       setIsAnalyzing(false);
     }

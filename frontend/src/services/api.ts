@@ -57,7 +57,7 @@ api.interceptors.response.use(
     } else if (error.request) {
       // The request was made but no response was received
       return Promise.reject({ 
-        message: 'Network error. Please check if the backend server is running at http://localhost:3001' 
+        message: 'Network error. Please check if the backend server is running.' 
       });
     } else {
       // Something happened in setting up the request that triggered an Error
@@ -89,13 +89,13 @@ export const authApi = {
 // Contract Analysis API endpoints
 export const contractApi = {
   analyzeContract: (data: { contractCode: string; options: any }) =>
-    api.post('/contracts/analyze', data),
+    api.post('/analysis/public', data),
 
   getAnalysisResults: (analysisId: string) =>
-    api.get(`/contracts/analysis/${analysisId}`),
+    api.get(`/analysis/${analysisId}`),
 
   getAnalysisHistory: () =>
-    api.get('/contracts/analysis/history'),
+    api.get('/analysis/history'),
 };
 
 export default api; 
