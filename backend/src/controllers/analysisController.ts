@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { User } from "../models/User";
 import { Analysis } from "../models/Analysis";
+import { analysisService } from "../services/analysisService";
 import {
   AuthenticationError,
   AuthorizationError,
@@ -8,129 +9,68 @@ import {
   ValidationError,
 } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
-import { SimpleScanner } from "../services/simpleScanner";
-
-// MOCK: In the future, this will come from a queue/worker service
-const analysisService = {
-  queueAnalysis: async (analysis: Analysis) => {
-    logger.info(`Mock queuing analysis job: ${analysis.id}`);
-    // Simulate processing
-    setTimeout(async () => {
-      const job = await Analysis.findByPk(analysis.id);
-      if (job) {
-        await job.setStarted();
-        logger.info(`Mock processing analysis job: ${job.id}`);
-      }
-    }, 5000); // 5 seconds delay
-
-    setTimeout(async () => {
-      const job = await Analysis.findByPk(analysis.id);
-      if (job) {
-        // Mock result
-        const mockResult = {
-          summary: {
-            totalVulnerabilities: 2,
-            highSeverity: 1,
-            mediumSeverity: 1,
-            lowSeverity: 0,
-            overallScore: 75,
-            riskLevel: "MEDIUM",
-          },
-          vulnerabilities: [
-            {
-              type: "reentrancy-eth",
-              severity: "HIGH",
-              title: "Reentrancy Vulnerability",
-              description: "A mock reentrancy vulnerability was found.",
-              recommendation: "Use the checks-effects-interactions pattern.",
-            },
-            {
-              type: "tx-origin",
-              severity: "MEDIUM",
-              title: "Dangerous use of tx.origin",
-              description: "tx.origin is used for authentication.",
-              recommendation: "Use msg.sender instead.",
-            },
-          ],
-        };
-        await job.setCompleted(mockResult);
-        logger.info(`Mock completed analysis job: ${job.id}`);
-      }
-    }, 15000); // 15 seconds delay
-  },
-};
 
 /**
- * @description Create a new analysis job
+ * @description Create a new analysis job by adding it to the queue.
  * @route POST /api/analysis
  */
 export const createAnalysis = async (req: Request, res: Response) => {
-  const { contractCode, contractName, options } = req.body;
   const userId = req.user?.userId;
 
+  // This should not happen if `auth` middleware is used, but it's a good safeguard.
   if (!userId) {
     throw new AuthenticationError(
-      "Authentication required to create analysis.",
+      "Authentication is required to perform an analysis.",
     );
   }
 
-  // Find the user to check their limits
+  // 1. Check if the user is allowed to perform a new analysis
   const user = await User.findByPk(userId);
   if (!user) {
     throw new AuthenticationError("User not found.");
   }
-
-  // Check if user has analysis credits
   if (!user.canAnalyze()) {
     throw new AuthorizationError(
-      "Analysis limit reached. Please upgrade your plan.",
+      "You have reached your analysis limit for this month. Please upgrade your plan.",
     );
   }
 
-  // Create analysis job in the database
-  const analysis = await Analysis.create({
-    userId,
-    contractCode,
-    contractName: contractName || "Untitled Contract",
-    options: options || {},
-    status: "queued",
-  });
+  // 2. Pass the request to the AnalysisService
+  const analysisJob = await analysisService.create(userId, req.body);
 
-  // Increment user's usage count
+  // 3. Increment the user's usage count
   await user.incrementUsage();
 
-  // MOCK: Add job to the queue
-  await analysisService.queueAnalysis(analysis);
+  logger.info(
+    `[CONTROLLER] Analysis job created for user ${userId}: ${analysisJob.id}`,
+  );
 
-  logger.info(`Analysis job created: ${analysis.id} for user ${userId}`);
-
+  // 4. Respond to the user immediately with the job ID and status
   res.status(202).json({
     success: true,
-    message: "Analysis job accepted.",
+    message: "Analysis job has been queued successfully.",
     data: {
-      jobId: analysis.id,
-      status: analysis.status,
-      estimatedTime: 30, // seconds
+      jobId: analysisJob.id,
+      status: analysisJob.status,
+      estimatedTime: 30, // Provide an estimated time in seconds
     },
   });
 };
 
 /**
- * @description Get the result or status of a specific analysis
+ * @description Get the result or status of a specific analysis.
  * @route GET /api/analysis/:id
  */
 export const getAnalysis = async (req: Request, res: Response) => {
   const { id } = req.params;
   const userId = req.user?.userId;
 
-  const analysis = await Analysis.findByPk(id);
+  const analysis = await analysisService.getById(id);
 
-  if (!analysis) {
-    throw new NotFoundError("Analysis job not found.");
-  }
-
-  // Ensure the user owns this analysis
-  if (analysis.userId !== userId) {
+  // Authorization: Ensure the user owns this analysis
+  // The 'as any' is a temporary workaround for type inconsistencies that might arise
+  // from different ways the user object is attached.
+  if ((analysis as any).userId !== userId) {
     throw new AuthorizationError(
       "You are not authorized to view this analysis.",
     );
@@ -138,12 +78,12 @@ export const getAnalysis = async (req: Request, res: Response) => {
 
   res.status(200).json({
     success: true,
-    data: analysis.toJSON(),
+    data: analysis,
   });
 };
 
 /**
- * @description Get the status of an analysis job (lightweight)
+ * @description Get the lightweight status of an analysis job.
  * @route GET /api/analysis/:id/status
  */
 export const getAnalysisStatus = async (req: Request, res: Response) => {
@@ -151,14 +91,7 @@ export const getAnalysisStatus = async (req: Request, res: Response) => {
   const userId = req.user?.userId;
 
   const analysis = await Analysis.findByPk(id, {
-    attributes: [
-      "id",
-      "status",
-      "progress",
-      "currentStep",
-      "createdAt",
-      "completedAt",
-    ],
+    attributes: ["id", "status", "progress", "currentStep", "userId"],
   });
 
   if (!analysis) {
@@ -171,12 +104,17 @@ export const getAnalysisStatus = async (req: Request, res: Response) => {
 
   res.status(200).json({
     success: true,
-    data: analysis,
+    data: {
+      id: analysis.id,
+      status: analysis.status,
+      progress: analysis.progress,
+      currentStep: analysis.currentStep,
+    },
   });
 };
 
 /**
- * @description Get a paginated list of the user's analysis history
+ * @description Get a paginated list of the user's analysis history.
  * @route GET /api/analysis
  */
 export const getUserAnalyses = async (req: Request, res: Response) => {
@@ -185,27 +123,31 @@ export const getUserAnalyses = async (req: Request, res: Response) => {
   const limit = parseInt(req.query.limit as string) || 10;
   const offset = (page - 1) * limit;
 
-  const { analyses, total } = await Analysis.findByUser(userId!, {
+  const { count, rows } = await Analysis.findAndCountAll({
+    where: { userId },
+    order: [["createdAt", "DESC"]],
     limit,
     offset,
   });
 
   res.status(200).json({
     success: true,
-    data: analyses.map((a) => a.toSummary()),
+    data: rows.map((a) => a.toSummary()),
     meta: {
       pagination: {
         page,
         limit,
-        total,
-        totalPages: Math.ceil(total / limit),
+        total: count,
+        totalPages: Math.ceil(count / limit),
+        hasNext: page * limit < count,
+        hasPrev: page > 1,
       },
     },
   });
 };
 
 /**
- * @description Delete an analysis job
+ * @description Delete an analysis job.
  * @route DELETE /api/analysis/:id
  */
 export const deleteAnalysis = async (req: Request, res: Response) => {
@@ -225,18 +167,16 @@ export const deleteAnalysis = async (req: Request, res: Response) => {
   }
 
   await analysis.destroy();
+  logger.info(`[CONTROLLER] Analysis job deleted: ${id} by user ${userId}`);
 
-  logger.info(`Analysis job deleted: ${id} by user ${userId}`);
-
-  res.status(204).send();
+  res.status(204).send(); // No content
 };
 
 /**
- * @description Generate a report for an analysis
+ * @description Generate a report for an analysis. (Not Implemented)
  * @route POST /api/analysis/:id/report
  */
 export const generateReport = async (req: Request, res: Response) => {
-  // This is a placeholder for a future feature
   res.status(501).json({
     success: false,
     error: {
@@ -244,57 +184,4 @@ export const generateReport = async (req: Request, res: Response) => {
       message: "Report generation is not yet implemented.",
     },
   });
-};
-
-/**
- * @description Public analysis endpoint (no authentication required)
- * @route POST /api/analysis/public
- */
-export const publicAnalysis = async (req: Request, res: Response) => {
-  try {
-    const { contractCode } = req.body;
-
-    if (!contractCode || typeof contractCode !== "string") {
-      return res.status(400).json({
-        success: false,
-        error: {
-          code: "VALIDATION_ERROR",
-          message: "Contract code is required",
-        },
-      });
-    }
-
-    // Use SimpleScanner for public analysis
-    const scanner = new SimpleScanner();
-    const result = await scanner.analyzeContract(contractCode);
-
-    logger.info(`Public analysis completed - found ${result.vulnerabilities.length} vulnerabilities`);
-
-    res.json({
-      success: true,
-      message: "Analysis completed",
-      data: {
-        summary: {
-          totalVulnerabilities: result.vulnerabilities.length,
-          highSeverity: result.vulnerabilities.filter(v => v.severity === 'HIGH').length,
-          mediumSeverity: result.vulnerabilities.filter(v => v.severity === 'MEDIUM').length,
-          lowSeverity: result.vulnerabilities.filter(v => v.severity === 'LOW').length,
-          totalWarnings: result.warnings.length,
-          totalSuggestions: result.suggestions.length,
-        },
-        vulnerabilities: result.vulnerabilities,
-        warnings: result.warnings,
-        suggestions: result.suggestions,
-      },
-    });
-  } catch (error: any) {
-    logger.error("Public analysis error:", error);
-    res.status(500).json({
-      success: false,
-      error: {
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Internal server error",
-      },
-    });
-  }
 };

@@ -11,37 +11,36 @@ import {
 import { contractApi } from '../services/api';
 
 interface Vulnerability {
+    type: string;
     severity: 'HIGH' | 'MEDIUM' | 'LOW';
-    title: string;
     description: string;
-  location: {
-    start: number;
-    end: number;
-  };
+    lineNumber?: number;
     recommendation: string;
 }
 
 interface Warning {
-    title: string;
+    type: string;
     description: string;
-  location: {
-    start: number;
-    end: number;
-  };
+    lineNumber?: number;
     recommendation: string;
 }
 
 interface Suggestion {
-    title: string;
+    type: string;
     description: string;
-  location: {
-    start: number;
-    end: number;
-  };
+    lineNumber?: number;
     recommendation: string;
 }
 
 interface AnalysisResult {
+  summary: {
+    totalVulnerabilities: number;
+    highSeverity: number;
+    mediumSeverity: number;
+    lowSeverity: number;
+    totalWarnings: number;
+    totalSuggestions: number;
+  };
   vulnerabilities: Vulnerability[];
   warnings: Warning[];
   suggestions: Suggestion[];
@@ -122,18 +121,17 @@ contract VulnerableContract {
 
     try {
       const response = await contractApi.analyzeContract({ 
-        contractCode, 
-        options: {} 
+        contractCode
       });
       
-      if (response.data.status === 'success') {
-        setAnalysisResult(response.data.results);
+      if (response.data.success) {
+        setAnalysisResult(response.data.data);
       } else {
         throw new Error(response.data.message || 'Analysis failed');
       }
     } catch (error: any) {
       console.error('Analysis failed:', error);
-      setError(error.message || 'Analysis failed');
+      setError(error.message || error.error?.message || 'Analysis failed. Please check if the backend is running.');
     } finally {
       setIsAnalyzing(false);
     }
@@ -153,17 +151,9 @@ contract VulnerableContract {
   };
 
   // Helper to format location
-  const formatLocation = (location: any) => {
-    if (!location) return '';
-    const start = location.start;
-    const end = location.end;
-    // If start/end are objects with line/column
-    if (start && typeof start === 'object' && 'line' in start && 'column' in start && end && typeof end === 'object' && 'line' in end && 'column' in end) {
-      return `Line ${start.line}:${start.column} - ${end.line}:${end.column}`;
-    }
-    // If start/end are numbers
-    if (typeof start === 'number' && typeof end === 'number') {
-      return `Line ${start}-${end}`;
+  const formatLocation = (lineNumber?: number) => {
+    if (lineNumber) {
+      return `Line ${lineNumber}`;
     }
     return '';
   };
@@ -290,15 +280,17 @@ contract VulnerableContract {
                     {analysisResult.vulnerabilities.map((vuln, index) => (
                       <div key={index} className="border rounded-lg p-4">
                         <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-medium text-gray-900">{vuln.title}</h4>
+                          <h4 className="font-medium text-gray-900">{vuln.type}</h4>
                           <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getSeverityColor(vuln.severity)}`}>
                             {vuln.severity}
                           </span>
                         </div>
                         <p className="text-sm text-gray-600 mb-2">{vuln.description}</p>
-                        <div className="text-xs text-gray-500 mb-2">
-                          {formatLocation(vuln.location)}
-                        </div>
+                        {vuln.lineNumber && (
+                          <div className="text-xs text-gray-500 mb-2">
+                            {formatLocation(vuln.lineNumber)}
+                          </div>
+                        )}
                         <div className="bg-blue-50 border border-blue-200 rounded p-3">
                           <div className="flex items-start space-x-2">
                             <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
@@ -325,15 +317,14 @@ contract VulnerableContract {
                     {analysisResult.warnings.map((warning, index) => (
                       <div key={index} className="border rounded-lg p-4">
                         <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-medium text-gray-900">{warning.title}</h4>
-                          <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
-                            {warning.description}
-                          </span>
+                          <h4 className="font-medium text-gray-900">{warning.type}</h4>
                         </div>
-                        <p className="text-sm text-gray-600 mb-2">{warning.recommendation}</p>
-                        <div className="text-xs text-gray-500 mb-2">
-                          {formatLocation(warning.location)}
-                        </div>
+                        <p className="text-sm text-gray-600 mb-2">{warning.description}</p>
+                        {warning.lineNumber && (
+                          <div className="text-xs text-gray-500 mb-2">
+                            {formatLocation(warning.lineNumber)}
+                          </div>
+                        )}
                         <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
                           <div className="flex items-start space-x-2">
                             <Info className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
@@ -360,15 +351,14 @@ contract VulnerableContract {
                     {analysisResult.suggestions.map((suggestion, index) => (
                       <div key={index} className="border rounded-lg p-4">
                         <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-medium text-gray-900">{suggestion.title}</h4>
-                          <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                            {suggestion.description}
-                          </span>
+                          <h4 className="font-medium text-gray-900">{suggestion.type}</h4>
                         </div>
-                        <p className="text-sm text-gray-600 mb-2">{suggestion.recommendation}</p>
-                        <div className="text-xs text-gray-500 mb-2">
-                          {formatLocation(suggestion.location)}
-                        </div>
+                        <p className="text-sm text-gray-600 mb-2">{suggestion.description}</p>
+                        {suggestion.lineNumber && (
+                          <div className="text-xs text-gray-500 mb-2">
+                            {formatLocation(suggestion.lineNumber)}
+                          </div>
+                        )}
                         <div className="bg-green-50 border border-green-200 rounded p-3">
                           <div className="flex items-start space-x-2">
                             <Info className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />

@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { publicAnalysis } from "../controllers/analysisController";
+
 import { asyncHandler } from "../middleware/errorHandler";
 
 const router = Router();
