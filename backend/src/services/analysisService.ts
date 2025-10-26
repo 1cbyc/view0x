@@ -6,7 +6,7 @@ import { NotFoundError } from "../middleware/errorHandler";
 import { cacheRedis } from "../config/database";
 import { env } from "../config/environment";
 import { CreateAnalysisRequest } from "../shared/types/api";
-import { AnalysisJob, ContractInfo } from "../shared/types/analysis";
+import { AnalysisJob } from "../shared/types/analysis";
 
 const ANALYSIS_CACHE_TTL = env.REDIS_TTL; // Time to live for cached results in seconds
 
@@ -23,13 +23,11 @@ export class AnalysisService {
   ): Promise<AnalysisJob> {
     const { contractCode, contractName, options } = analysisData;
 
-    // 1. Check for a cached result first to avoid re-analyzing
     const cacheKey = this.generateCacheKey(contractCode, options);
     const cachedResult = await this.getCachedResult(cacheKey);
 
     if (cachedResult) {
       logger.info(`[AnalysisService] Cache hit for analysis: ${cacheKey}`);
-      // If a cached result is found, we can create a 'completed' record instantly
       const analysis = await Analysis.create({
         userId,
         contractCode,
@@ -39,14 +37,13 @@ export class AnalysisService {
         result: cachedResult,
         cacheHit: true,
         completedAt: new Date(),
-        processingTimeMs: 0, // Instant
+        processingTimeMs: 0,
       });
       return this.toAnalysisJob(analysis);
     }
 
     logger.info(`[AnalysisService] Cache miss for analysis: ${cacheKey}`);
 
-    // 2. Create the analysis job in the database
     const analysis = await Analysis.create({
       userId,
       contractCode,
@@ -55,18 +52,14 @@ export class AnalysisService {
       status: "queued",
     });
 
-    // 3. Add the job to the Bull queue for processing
-    const job = await analysisQueue.add("analyze-contract", {
+    await analysisQueue.add("analyze-contract", {
       analysisId: analysis.id,
       contractCode,
       options,
     });
 
-    logger.info(
-      `[AnalysisService] Analysis job ${analysis.id} queued with Bull job ID ${job.id}`,
-    );
+    logger.info(`[AnalysisService] Analysis job ${analysis.id} queued.`);
 
-    // 4. Return the initial job state to the user
     return this.toAnalysisJob(analysis);
   }
 
@@ -74,7 +67,6 @@ export class AnalysisService {
    * Retrieves an analysis job by its ID.
    * @param analysisId - The ID of the analysis job.
    * @returns The analysis job object.
-   * @throws NotFoundError if the analysis job is not found.
    */
   public async getById(analysisId: string): Promise<AnalysisJob> {
     const analysis = await Analysis.findByPk(analysisId, {
@@ -121,17 +113,29 @@ export class AnalysisService {
 
   /**
    * Converts a Sequelize Analysis model instance to a plain AnalysisJob object.
+   * This function ensures type compatibility between the model and the shared interface.
    * @param analysis - The Sequelize model instance.
    * @returns A plain object matching the AnalysisJob interface.
    */
   private toAnalysisJob(analysis: Analysis): AnalysisJob {
-    const plainAnalysis = analysis.toJSON() as Omit<
-      AnalysisJob,
-      "contractInfo"
-    >;
     return {
-      ...plainAnalysis,
+      id: analysis.id,
+      userId: analysis.userId,
+      status: analysis.status,
+      progress: analysis.progress,
+      currentStep: analysis.currentStep,
       contractInfo: analysis.getContractInfo(),
+      options: analysis.options,
+      result: analysis.result,
+      error: analysis.errorMessage,
+      estimatedTime: analysis.estimatedTime,
+      createdAt: analysis.createdAt.toISOString(),
+      startedAt: analysis.startedAt
+        ? analysis.startedAt.toISOString()
+        : undefined,
+      completedAt: analysis.completedAt
+        ? analysis.completedAt.toISOString()
+        : undefined,
     };
   }
 
