@@ -182,7 +182,9 @@ export class User extends Model<
     const user = new User();
     user.email = userData.email.toLowerCase();
     user.name = userData.name;
-    user.company = userData.company || undefined;
+    if (userData.company) {
+      user.company = userData.company;
+    }
     user.plan = userData.plan || "free";
     user.generateApiKey();
     user.generateEmailVerificationToken();

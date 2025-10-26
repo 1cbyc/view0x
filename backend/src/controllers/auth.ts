@@ -359,8 +359,8 @@ export const resetPassword = async (req: Request, res: Response) => {
 
     // Update password and clear reset token
     await user.setPassword(password);
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpires = undefined;
+    user.resetPasswordToken = null as any;
+    user.resetPasswordExpires = null as any;
     await user.save();
 
     logger.info(`Password reset completed for: ${user.email}`);
@@ -434,8 +434,8 @@ export const logout = async (req: Request, res: Response) => {
       // Clear refresh token
       const user = await User.findByPk(userId);
       if (user) {
-        user.refreshToken = undefined;
-        user.refreshTokenExpires = undefined;
+        user.refreshToken = null as any;
+        user.refreshTokenExpires = null as any;
         await user.save();
       }
     }

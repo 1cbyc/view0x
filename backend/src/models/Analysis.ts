@@ -256,7 +256,7 @@ export class Analysis extends Model<
       where: {
         processingTimeMs: {
           [Op.ne]: null,
-        },
+        } as any,
       },
       raw: true,
     });
@@ -483,7 +483,7 @@ Analysis.init(
         where: {
           expiresAt: {
             [Op.gt]: new Date(),
-          },
+          } as any,
         },
       },
     },
