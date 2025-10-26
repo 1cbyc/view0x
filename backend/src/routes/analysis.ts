@@ -10,7 +10,7 @@ import {
   deleteAnalysis,
   generateReport,
 } from "../controllers/analysisController";
-import { validateCreateAnalysis } from "../middleware/validation";
+// import { validateCreateAnalysis } from "../middleware/validation";
 
 const router = Router();
 
@@ -18,8 +18,8 @@ const router = Router();
 router.post(
   "/public",
   analysisRateLimiter,
-  validateCreateAnalysis,
-  asyncHandler(async (req, res) => {
+  // validateCreateAnalysis,
+  asyncHandler(async (req: Request, res: Response) => {
     const { contractCode, contractName, options } = req.body;
 
     // Create anonymous analysis
@@ -46,7 +46,7 @@ router.post(
   "/",
   auth,
   analysisRateLimiter,
-  validateCreateAnalysis,
+  // validateCreateAnalysis,
   asyncHandler(createAnalysis),
 );
 
