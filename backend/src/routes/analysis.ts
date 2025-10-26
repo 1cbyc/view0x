@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, Request, Response } from "express";
 import { asyncHandler } from "../middleware/errorHandler";
 import { analysisRateLimiter } from "../middleware/rateLimit";
 import { auth } from "../middleware/auth";
@@ -30,14 +30,14 @@ router.post(
       userId: null, // Anonymous
     };
 
-    res.json({
-      success: true,
-      message: "Analysis request received",
-      data: {
-        message: "Anonymous analysis functionality coming soon",
-        suggestion: "Create an account for full analysis features",
-      },
-    });
+          return res.json({
+        success: true,
+        message: "Analysis request received",
+        data: {
+          message: "Anonymous analysis functionality coming soon",
+          suggestion: "Create an account for full analysis features",
+        },
+      });
   }),
 );
 
