@@ -5,12 +5,11 @@ import {
   InferAttributes,
   InferCreationAttributes,
   ForeignKey,
-  BelongsToAssociation,
-  HasManyAssociation,
 } from "sequelize";
 import { sequelize } from "../config/database";
 import { User } from "./User";
 import { v4 as uuidv4 } from "uuid";
+import { Op } from "sequelize";
 
 export class Analysis extends Model<
   InferAttributes<Analysis>,
@@ -38,9 +37,6 @@ export class Analysis extends Model<
 
   // Associations
   declare user?: User;
-  declare static associations: {
-    user: BelongsToAssociation<Analysis, User>;
-  };
 
   // Instance methods
   updateProgress(progress: number, currentStep?: string): Promise<Analysis> {
@@ -132,7 +128,7 @@ export class Analysis extends Model<
       offset?: number;
       status?: Analysis["status"];
       includeExpired?: boolean;
-    }
+    },
   ): Promise<{ analyses: Analysis[]; total: number }> {
     const where: any = { userId };
 
@@ -175,7 +171,9 @@ export class Analysis extends Model<
     });
   }
 
-  static async findQueuedForProcessing(limit: number = 10): Promise<Analysis[]> {
+  static async findQueuedForProcessing(
+    limit: number = 10,
+  ): Promise<Analysis[]> {
     return this.findAll({
       where: {
         status: "queued",
@@ -188,25 +186,21 @@ export class Analysis extends Model<
   static async getAnalyticsForUser(userId: string) {
     const analyses = await this.findAll({
       where: { userId },
-      attributes: [
-        "status",
-        "processingTimeMs",
-        "createdAt",
-        "result",
-      ],
+      attributes: ["status", "processingTimeMs", "createdAt", "result"],
     });
 
     const total = analyses.length;
-    const completed = analyses.filter(a => a.status === "completed").length;
-    const failed = analyses.filter(a => a.status === "failed").length;
-    const avgProcessingTime = analyses
-      .filter(a => a.processingTimeMs)
-      .reduce((sum, a) => sum + (a.processingTimeMs || 0), 0) /
-      Math.max(1, analyses.filter(a => a.processingTimeMs).length);
+    const completed = analyses.filter((a) => a.status === "completed").length;
+    const failed = analyses.filter((a) => a.status === "failed").length;
+    const avgProcessingTime =
+      analyses
+        .filter((a) => a.processingTimeMs)
+        .reduce((sum, a) => sum + (a.processingTimeMs || 0), 0) /
+      Math.max(1, analyses.filter((a) => a.processingTimeMs).length);
 
     // Extract vulnerability counts from results
     const vulnerabilityCounts = analyses
-      .filter(a => a.result && (a.result as any).vulnerabilities)
+      .filter((a) => a.result && (a.result as any).vulnerabilities)
       .reduce((counts: any, a) => {
         const result = a.result as any;
         if (result.vulnerabilities) {
@@ -224,7 +218,7 @@ export class Analysis extends Model<
       successRate: total > 0 ? (completed / total) * 100 : 0,
       avgProcessingTime: Math.round(avgProcessingTime),
       vulnerabilityCounts,
-      recentAnalyses: analyses.slice(-10).map(a => a.toSummary()),
+      recentAnalyses: analyses.slice(-10).map((a) => a.toSummary()),
     };
   }
 
@@ -232,7 +226,7 @@ export class Analysis extends Model<
     const result = await this.destroy({
       where: {
         expiresAt: {
-          [sequelize.Sequelize.Op.lt]: new Date(),
+          [Op.lt]: new Date(),
         },
       },
     });
@@ -261,7 +255,7 @@ export class Analysis extends Model<
       ],
       where: {
         processingTimeMs: {
-          [sequelize.Sequelize.Op.ne]: null,
+          [Op.ne]: null,
         },
       },
       raw: true,
@@ -451,7 +445,9 @@ Analysis.init(
       },
       afterCreate: (analysis: Analysis) => {
         // Log analysis creation
-        console.log(`📊 Analysis created: ${analysis.id} for user ${analysis.userId || 'anonymous'}`);
+        console.log(
+          `📊 Analysis created: ${analysis.id} for user ${analysis.userId || "anonymous"}`,
+        );
       },
     },
     scopes: {
@@ -486,12 +482,12 @@ Analysis.init(
       notExpired: {
         where: {
           expiresAt: {
-            [sequelize.Sequelize.Op.gt]: new Date(),
+            [Op.gt]: new Date(),
           },
         },
       },
     },
-  }
+  },
 );
 
 // Define associations

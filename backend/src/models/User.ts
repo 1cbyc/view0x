@@ -11,6 +11,7 @@ import { sequelize } from "../config/database";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
 import { env } from "../config/environment";
+import { Op } from "sequelize";
 
 export class User extends Model<
   InferAttributes<User>,
@@ -157,7 +158,7 @@ export class User extends Model<
       where: {
         resetPasswordToken: token,
         resetPasswordExpires: {
-          [sequelize.Sequelize.Op.gt]: new Date(),
+          [Op.gt]: new Date(),
         },
       },
     });
@@ -181,7 +182,7 @@ export class User extends Model<
     const user = new User();
     user.email = userData.email.toLowerCase();
     user.name = userData.name;
-    user.company = userData.company;
+    user.company = userData.company || undefined;
     user.plan = userData.plan || "free";
     user.generateApiKey();
     user.generateEmailVerificationToken();
@@ -351,7 +352,7 @@ User.init(
         fields: ["api_key"],
         where: {
           api_key: {
-            [sequelize.Sequelize.Op.ne]: null,
+            [Op.ne]: null,
           },
         },
       },
@@ -365,7 +366,7 @@ User.init(
         fields: ["reset_password_token"],
         where: {
           reset_password_token: {
-            [sequelize.Sequelize.Op.ne]: null,
+            [Op.ne]: null,
           },
         },
       },
@@ -373,7 +374,7 @@ User.init(
         fields: ["email_verification_token"],
         where: {
           email_verification_token: {
-            [sequelize.Sequelize.Op.ne]: null,
+            [Op.ne]: null,
           },
         },
       },
