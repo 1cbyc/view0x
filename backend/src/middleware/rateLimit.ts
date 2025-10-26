@@ -1,7 +1,12 @@
-import rateLimit from 'express-rate-limit';
+import rateLimit, { RateLimitRequestHandler } from 'express-rate-limit';
 import { Request, Response } from 'express';
 import { logger } from '../utils/logger';
 import { env } from '../config/environment';
+
+// Helper function to get the IP address from the request
+const getIpAddress = (req: Request): string => {
+  return req.ip || req.socket.remoteAddress || 'unknown';
+};
 
 // Create different rate limiters for different endpoints
 export const createRateLimiter = (options: {
@@ -10,7 +15,7 @@ export const createRateLimiter = (options: {
   message: string;
   skipSuccessfulRequests?: boolean;
   keyGenerator?: (req: Request) => string;
-}) => {
+}): RateLimitRequestHandler => {
   return rateLimit({
     windowMs: options.windowMs,
     max: options.max,
@@ -30,7 +35,7 @@ export const createRateLimiter = (options: {
       if (apiKey && apiKey.startsWith('sa_')) {
         return `api_${apiKey}`;
       }
-      return req.ip || 'unknown';
+      return getIpAddress(req);
     }),
     skip: (req: Request) => {
       // Skip rate limiting for health checks
@@ -65,7 +70,7 @@ export const analysisRateLimiter = createRateLimiter({
     if (userId) {
       return `user_${userId}`;
     }
-    return req.ip || 'unknown';
+    return getIpAddress(req);
   },
 });
 
