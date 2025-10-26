@@ -9,12 +9,16 @@ import {
   getUserAnalyses,
   deleteAnalysis,
   generateReport,
+  publicAnalysis,
 } from "../controllers/analysisController";
 import { validateCreateAnalysis } from "../middleware/validation";
 
 const router = Router();
 
-// Create new analysis (authenticated)
+// Public analysis endpoint (no auth required)
+router.post("/public", asyncHandler(publicAnalysis));
+
+// Create new analysis (authenticated) - follows system design: creates job and queues it
 router.post(
   "/",
   auth,
