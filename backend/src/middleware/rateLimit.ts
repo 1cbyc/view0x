@@ -30,19 +30,11 @@ export const createRateLimiter = (options: {
       if (apiKey && apiKey.startsWith('sa_')) {
         return `api_${apiKey}`;
       }
-      return req.ip;
+      return req.ip || 'unknown';
     }),
     skip: (req: Request) => {
       // Skip rate limiting for health checks
       return req.path === '/health';
-    },
-    onLimitReached: (req: Request, res: Response) => {
-      logger.warn('Rate limit exceeded', {
-        ip: req.ip,
-        userAgent: req.get('User-Agent'),
-        path: req.path,
-        method: req.method,
-      });
     },
   });
 };
@@ -73,7 +65,7 @@ export const analysisRateLimiter = createRateLimiter({
     if (userId) {
       return `user_${userId}`;
     }
-    return req.ip;
+    return req.ip || 'unknown';
   },
 });
 
