@@ -91,6 +91,14 @@ temp/
 *.swo
 *~
 
+# Test scripts with sensitive data
+backend/test-*.js
+backend/test-*.ts
+test-supabase-*.js
+test-db*.js
+test-session-*.js
+*test-session*
+
 # Uploads (user uploaded contracts)
 uploads/
 backend/uploads/
