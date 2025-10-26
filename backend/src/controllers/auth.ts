@@ -1,21 +1,27 @@
 import { Request, Response } from "express";
-import jwt from "jsonwebtoken";
+import jwt, { SignOptions } from "jsonwebtoken";
 import { User } from "../models/User";
 import { env } from "../config/environment";
 import { logger } from "../utils/logger";
 
 // Helper function to generate JWT token
 const generateToken = (userId: string): string => {
-  return jwt.sign({ userId }, env.JWT_SECRET as string, {
+  const payload = { userId };
+  const secret = env.JWT_SECRET as string;
+  const options: SignOptions = {
     expiresIn: env.JWT_EXPIRES_IN,
-  });
+  };
+  return jwt.sign(payload, secret, options);
 };
 
 // Helper function to generate refresh token
 const generateRefreshToken = (userId: string): string => {
-  return jwt.sign({ userId, type: "refresh" }, env.REFRESH_TOKEN_SECRET as string, {
+  const payload = { userId, type: "refresh" };
+  const secret = env.REFRESH_TOKEN_SECRET as string;
+  const options: SignOptions = {
     expiresIn: env.REFRESH_TOKEN_EXPIRES_IN,
-  });
+  };
+  return jwt.sign(payload, secret, options);
 };
 
 // Login controller
