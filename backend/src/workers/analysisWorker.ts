@@ -2,7 +2,7 @@ import Queue from "bull";
 import { Analysis } from "../models/Analysis";
 import { logger } from "../utils/logger";
 import { env } from "../config/environment";
-import { queueRedis } from "../config/database";
+import { bullQueueClient, bullQueueSubscriber } from "../config/database";
 import { analysisService } from "../services/analysisService";
 import axios from "axios";
 
@@ -15,11 +15,17 @@ interface AnalysisJobPayload {
 
 // 2. Create the Bull Queue
 export const analysisQueue = new Queue<AnalysisJobPayload>("analysis-jobs", {
-  redis: {
-    host: queueRedis.options.host,
-    port: queueRedis.options.port,
-    password: queueRedis.options.password,
-    db: queueRedis.options.db,
+  createClient: (type) => {
+    switch (type) {
+      case "client":
+        return bullQueueClient;
+      case "subscriber":
+        return bullQueueSubscriber;
+      default:
+        // For bclient, Bull creates its own connection.
+        // We can return a standard client here if needed, or let Bull handle it.
+        return new (require("ioredis"))(bullQueueClient.options);
+    }
   },
   defaultJobOptions: {
     attempts: 3, // Retry failed jobs up to 3 times
@@ -43,7 +49,9 @@ const processAnalysisJob = async (job: Queue.Job<AnalysisJobPayload>) => {
 
   const analysis = await Analysis.findByPk(analysisId);
   if (!analysis) {
-    logger.error(`[WORKER] Analysis record not found for job ${analysisId}. Aborting.`);
+    logger.error(
+      `[WORKER] Analysis record not found for job ${analysisId}. Aborting.`,
+    );
     throw new Error(`Analysis record ${analysisId} not found.`);
   }
 
@@ -55,7 +63,9 @@ const processAnalysisJob = async (job: Queue.Job<AnalysisJobPayload>) => {
 
     // B. Call the Python analysis service
     const pythonApiUrl = "http://localhost:8000/analyze"; // This should be in .env
-    logger.info(`[WORKER] Sending analysis request to Python service at ${pythonApiUrl}`);
+    logger.info(
+      `[WORKER] Sending analysis request to Python service at ${pythonApiUrl}`,
+    );
 
     const response = await axios.post(pythonApiUrl, {
       job_id: analysisId,
@@ -75,16 +85,19 @@ const processAnalysisJob = async (job: Queue.Job<AnalysisJobPayload>) => {
     // E. Cache the result for future identical requests
     await analysisService.cacheResult(analysis);
 
-    logger.info(`[WORKER] ✅ Analysis job ${analysisId} completed successfully.`);
+    logger.info(
+      `[WORKER] ✅ Analysis job ${analysisId} completed successfully.`,
+    );
     job.progress(100);
 
     return { success: true, result };
-
   } catch (error: any) {
     logger.error(`[WORKER] ❌ Analysis job ${analysisId} failed:`, error);
 
     if (analysis) {
-      await analysis.setFailed(error.message || "An unknown error occurred during analysis.");
+      await analysis.setFailed(
+        error.message || "An unknown error occurred during analysis.",
+      );
     }
 
     // Re-throw the error to let Bull handle the retry logic
@@ -96,23 +109,30 @@ const processAnalysisJob = async (job: Queue.Job<AnalysisJobPayload>) => {
  * Polls Redis for the result of the analysis.
  * The Python worker is expected to write the result to a specific Redis key.
  */
-const pollForResult = async (analysisId: string, timeout = 60000, interval = 2000): Promise<object> => {
-    const startTime = Date.now();
-    const resultKey = `analysis_result:${analysisId}`;
+const pollForResult = async (
+  analysisId: string,
+  timeout = 60000,
+  interval = 2000,
+): Promise<object> => {
+  const pollForResult = async (analysisId: string, timeout = 60000, interval = 2000): Promise<object> => {
+      const startTime = Date.now();
+      const resultKey = `analysis_result:${analysisId}`;
 
-    while (Date.now() - startTime < timeout) {
-        const result = await queueRedis.get(resultKey);
-        if (result) {
-            logger.info(`[WORKER] Result found in Redis for job ${analysisId}`);
-            await queueRedis.del(resultKey); // Clean up the key
-            return JSON.parse(result);
-        }
-        await new Promise(resolve => setTimeout(resolve, interval));
-    }
+      // Use the main client for polling, not the subscriber
+      const redisClient = bullQueueClient;
 
-    throw new Error(`Polling for result of job ${analysisId} timed out after ${timeout / 1000} seconds.`);
-};
+      while (Date.now() - startTime < timeout) {
+          const result = await redisClient.get(resultKey);
+          if (result) {
+              logger.info(`[WORKER] Result found in Redis for job ${analysisId}`);
+              await redisClient.del(resultKey); // Clean up the key
+              return JSON.parse(result);
+          }
+          await new Promise(resolve => setTimeout(resolve, interval));
+      }
 
+      throw new Error(`Polling for result of job ${analysisId} timed out after ${timeout / 1000} seconds.`);
+  };
 
 // 4. Start the Worker
 analysisQueue.process("analyze-contract", processAnalysisJob);
@@ -123,7 +143,9 @@ analysisQueue.on("active", (job) => {
 });
 
 analysisQueue.on("completed", (job, result) => {
-  logger.info(`[QUEUE] Job ${job.id} (${job.data.analysisId}) completed successfully.`);
+  logger.info(
+    `[QUEUE] Job ${job.id} (${job.data.analysisId}) completed successfully.`,
+  );
 });
 
 analysisQueue.on("failed", (job, error) => {

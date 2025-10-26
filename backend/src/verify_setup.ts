@@ -2,7 +2,7 @@ import "dotenv/config";
 import {
   sequelize,
   testDatabaseConnection,
-  queueRedis,
+  bullQueueClient, // Correctly import bullQueueClient
 } from "./config/database";
 import { User } from "./models/User";
 import { Analysis } from "./models/Analysis";
@@ -123,7 +123,7 @@ async function verifyPhase1And2() {
       }
 
       // Verify the job exists in the Redis queue
-      const queueJob = await queueRedis.lrange(
+      const queueJob = await bullQueueClient.lrange(
         "bull:analysis-jobs:wait",
         0,
         -1,
@@ -163,7 +163,7 @@ async function verifyPhase1And2() {
 
   // Clean up and close connections
   await sequelize.close();
-  await queueRedis.quit();
+  await bullQueueClient.quit();
   process.exit(hasFailed ? 1 : 0);
 }
 

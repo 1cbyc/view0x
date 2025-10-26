@@ -73,9 +73,19 @@ export const redis = new Redis(redisConfig.url, {
   keyPrefix: "secure-audit:",
 });
 
-// Separate Redis client for Bull queue
-const queueRedis = new Redis(redisConfig.url, {
+// Separate Redis clients for Bull queue as per library requirements
+// See: https://github.com/OptimalBits/bull/issues/1873
+export const bullQueueClient = new Redis(redisConfig.url, {
   ...redisConfig.options,
+  maxRetriesPerRequest: null, // Bull manages its own retries
+  enableReadyCheck: false,
+  keyPrefix: "secure-audit:queue:",
+});
+
+export const bullQueueSubscriber = new Redis(redisConfig.url, {
+  ...redisConfig.options,
+  maxRetriesPerRequest: null, // Bull manages its own retries
+  enableReadyCheck: false,
   keyPrefix: "secure-audit:queue:",
 });
 
@@ -140,7 +150,8 @@ export const closeConnections = async (): Promise<void> => {
     logger.info("📴 Database connection closed");
 
     redis.disconnect();
-    queueRedis.disconnect();
+    bullQueueClient.disconnect();
+    bullQueueSubscriber.disconnect();
     cacheRedis.disconnect();
     logger.info("📴 Redis connections closed");
   } catch (error) {
