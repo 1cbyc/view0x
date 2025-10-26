@@ -5,15 +5,15 @@ import { env } from "../config/environment";
 import { logger } from "../utils/logger";
 
 // Helper function to generate JWT token
-const generateToken = (userId: string) => {
-  return jwt.sign({ userId }, env.JWT_SECRET, {
+const generateToken = (userId: string): string => {
+  return jwt.sign({ userId }, env.JWT_SECRET as string, {
     expiresIn: env.JWT_EXPIRES_IN,
   });
 };
 
 // Helper function to generate refresh token
-const generateRefreshToken = (userId: string) => {
-  return jwt.sign({ userId, type: "refresh" }, env.REFRESH_TOKEN_SECRET, {
+const generateRefreshToken = (userId: string): string => {
+  return jwt.sign({ userId, type: "refresh" }, env.REFRESH_TOKEN_SECRET as string, {
     expiresIn: env.REFRESH_TOKEN_EXPIRES_IN,
   });
 };
