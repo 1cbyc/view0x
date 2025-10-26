@@ -4,49 +4,45 @@ import { logger } from "../utils/logger";
 
 // Database configuration
 const dbUrl =
-  process.env.DATABASE_URL || "sqlite:./database/secure_audit_dev.sqlite";
+  process.env.DATABASE_URL ||
+  "postgresql://postgres:password@localhost:5432/secure_audit_dev";
 const isPostgres = dbUrl.startsWith("postgres");
-const isSQLite = dbUrl.startsWith("sqlite");
+const isSQLite = false;
 
 const dbConfig = {
   url: dbUrl,
   options: {
-    dialect: isPostgres ? ("postgres" as const) : ("sqlite" as const),
-    storage: isSQLite ? dbUrl.replace("sqlite:", "") : undefined,
+    dialect: "postgres" as const,
     logging:
       process.env.NODE_ENV === "development"
         ? (sql: string) => logger.debug("SQL:", sql)
         : false,
-    pool: isPostgres
-      ? {
-          max: parseInt(process.env.DB_POOL_MAX || "10"),
-          min: parseInt(process.env.DB_POOL_MIN || "2"),
-          acquire: parseInt(process.env.DB_POOL_ACQUIRE || "30000"),
-          idle: parseInt(process.env.DB_POOL_IDLE || "10000"),
-        }
-      : undefined,
-    retry: isPostgres
-      ? {
-          max: 3,
-          match: [
-            /ETIMEDOUT/,
-            /EHOSTUNREACH/,
-            /ECONNRESET/,
-            /ECONNREFUSED/,
-            /ETIMEDOUT/,
-            /ESOCKETTIMEDOUT/,
-            /EHOSTUNREACH/,
-            /EPIPE/,
-            /EAI_AGAIN/,
-            /SequelizeConnectionError/,
-            /SequelizeConnectionRefusedError/,
-            /SequelizeHostNotFoundError/,
-            /SequelizeHostNotReachableError/,
-            /SequelizeInvalidConnectionError/,
-            /SequelizeConnectionTimedOutError/,
-          ],
-        }
-      : undefined,
+    pool: {
+      max: parseInt(process.env.DB_POOL_MAX || "10"),
+      min: parseInt(process.env.DB_POOL_MIN || "2"),
+      acquire: parseInt(process.env.DB_POOL_ACQUIRE || "30000"),
+      idle: parseInt(process.env.DB_POOL_IDLE || "10000"),
+    },
+    retry: {
+      max: 3,
+      match: [
+        /ETIMEDOUT/,
+        /EHOSTUNREACH/,
+        /ECONNRESET/,
+        /ECONNREFUSED/,
+        /ETIMEDOUT/,
+        /ESOCKETTIMEDOUT/,
+        /EHOSTUNREACH/,
+        /EPIPE/,
+        /EAI_AGAIN/,
+        /SequelizeConnectionError/,
+        /SequelizeConnectionRefusedError/,
+        /SequelizeHostNotFoundError/,
+        /SequelizeHostNotReachableError/,
+        /SequelizeInvalidConnectionError/,
+        /SequelizeConnectionTimedOutError/,
+      ],
+    },
     define: {
       timestamps: true,
       underscored: true,
@@ -69,14 +65,7 @@ const redisConfig = {
 };
 
 // Initialize Sequelize
-export const sequelize = isSQLite
-  ? new Sequelize({
-      dialect: "sqlite",
-      storage: dbConfig.options.storage,
-      logging: dbConfig.options.logging,
-      define: dbConfig.options.define,
-    })
-  : new Sequelize(dbConfig.url, dbConfig.options);
+export const sequelize = new Sequelize(dbConfig.url, dbConfig.options);
 
 // Initialize Redis clients
 export const redis = new Redis(redisConfig.url, {
