@@ -6,22 +6,16 @@ import { logger } from "../utils/logger";
 
 // Helper function to generate JWT token
 const generateToken = (userId: string): string => {
-  const payload = { userId };
-  const secret = env.JWT_SECRET;
-  const options: jwt.SignOptions = {
-    expiresIn: env.JWT_EXPIRES_IN,
-  };
-  return jwt.sign(payload, secret, options);
+  return jwt.sign({ userId }, env.JWT_SECRET, {
+    expiresIn: "24h",
+  });
 };
 
 // Helper function to generate refresh token
 const generateRefreshToken = (userId: string): string => {
-  const payload = { userId, type: "refresh" };
-  const secret = env.REFRESH_TOKEN_SECRET;
-  const options: jwt.SignOptions = {
-    expiresIn: env.REFRESH_TOKEN_EXPIRES_IN,
-  };
-  return jwt.sign(payload, secret, options);
+  return jwt.sign({ userId, type: "refresh" }, env.REFRESH_TOKEN_SECRET, {
+    expiresIn: "7d",
+  });
 };
 
 // Login controller
