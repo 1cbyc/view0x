@@ -6,7 +6,7 @@ import { NotFoundError } from "../middleware/errorHandler";
 import { cacheRedis } from "../config/database";
 import { env } from "../config/environment";
 import { CreateAnalysisRequest } from "../shared/types/api";
-import { AnalysisJob } from "../shared/types/analysis";
+import { AnalysisJob, ContractInfo } from "../shared/types/analysis";
 
 const ANALYSIS_CACHE_TTL = env.REDIS_TTL; // Time to live for cached results in seconds
 
@@ -125,11 +125,14 @@ export class AnalysisService {
    * @returns A plain object matching the AnalysisJob interface.
    */
   private toAnalysisJob(analysis: Analysis): AnalysisJob {
-    const plainAnalysis = analysis.toJSON();
+    const plainAnalysis = analysis.toJSON() as Omit<
+      AnalysisJob,
+      "contractInfo"
+    >;
     return {
       ...plainAnalysis,
       contractInfo: analysis.getContractInfo(),
-    } as AnalysisJob;
+    };
   }
 
   /**
