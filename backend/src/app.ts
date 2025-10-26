@@ -19,7 +19,7 @@ import { requestLogger } from './middleware/logging';
 // Routes
 import authRoutes from './routes/auth';
 import analysisRoutes from './routes/analysis';
-import userRoutes from './routes/users';
+// import userRoutes from './routes/users';
 
 // Initialize Express app
 const app = express();
@@ -99,7 +99,7 @@ app.get('/health', async (req, res) => {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/analysis', analysisRoutes);
-app.use('/api/users', userRoutes);
+// app.use('/api/users', userRoutes);
 
 // Root endpoint with API information
 app.get('/', (req, res) => {
