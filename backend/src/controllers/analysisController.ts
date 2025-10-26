@@ -8,6 +8,7 @@ import {
   ValidationError,
 } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
+import { SimpleScanner } from "../services/simpleScanner";
 
 // MOCK: In the future, this will come from a queue/worker service
 const analysisService = {
@@ -243,4 +244,57 @@ export const generateReport = async (req: Request, res: Response) => {
       message: "Report generation is not yet implemented.",
     },
   });
+};
+
+/**
+ * @description Public analysis endpoint (no authentication required)
+ * @route POST /api/analysis/public
+ */
+export const publicAnalysis = async (req: Request, res: Response) => {
+  try {
+    const { contractCode } = req.body;
+
+    if (!contractCode || typeof contractCode !== "string") {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Contract code is required",
+        },
+      });
+    }
+
+    // Use SimpleScanner for public analysis
+    const scanner = new SimpleScanner();
+    const result = await scanner.analyzeContract(contractCode);
+
+    logger.info(`Public analysis completed - found ${result.vulnerabilities.length} vulnerabilities`);
+
+    res.json({
+      success: true,
+      message: "Analysis completed",
+      data: {
+        summary: {
+          totalVulnerabilities: result.vulnerabilities.length,
+          highSeverity: result.vulnerabilities.filter(v => v.severity === 'HIGH').length,
+          mediumSeverity: result.vulnerabilities.filter(v => v.severity === 'MEDIUM').length,
+          lowSeverity: result.vulnerabilities.filter(v => v.severity === 'LOW').length,
+          totalWarnings: result.warnings.length,
+          totalSuggestions: result.suggestions.length,
+        },
+        vulnerabilities: result.vulnerabilities,
+        warnings: result.warnings,
+        suggestions: result.suggestions,
+      },
+    });
+  } catch (error: any) {
+    logger.error("Public analysis error:", error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Internal server error",
+      },
+    });
+  }
 };
