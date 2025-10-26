@@ -98,6 +98,8 @@ test-supabase-*.js
 test-db*.js
 test-session-*.js
 *test-session*
+test-phase1.sh
+*phase*.sh
 
 # Uploads (user uploaded contracts)
 uploads/
@@ -113,6 +115,9 @@ backend/uploads/
 .idea/
 *.sublime-*
 .DS_Store
+.vs/
+*.db
+CopilotIndices/
 
 # personal
 docs/

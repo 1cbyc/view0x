@@ -32,11 +32,15 @@ jobs:
         with:
           node-version: 18
 
-      - name: Install dependencies
-        run: yarn install
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm install
+
+      - name: Build backend
+        working-directory: backend
+        run: npm run build
 
       - name: Run backend tests
         working-directory: backend
         run: |
-          yarn install
           echo "No tests yet."
