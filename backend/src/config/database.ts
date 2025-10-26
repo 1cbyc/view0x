@@ -70,13 +70,13 @@ export const redis = new Redis(redisConfig.url, {
 });
 
 // Separate Redis client for Bull queue
-export const queueRedis = new Redis(redisConfig.url, {
+const queueRedis = new Redis(redisConfig.url, {
   ...redisConfig.options,
   keyPrefix: "secure-audit:queue:",
 });
 
 // Redis client for caching
-export const cacheRedis = new Redis(redisConfig.url, {
+const cacheRedis = new Redis(redisConfig.url, {
   ...redisConfig.options,
   keyPrefix: "secure-audit:cache:",
 });
