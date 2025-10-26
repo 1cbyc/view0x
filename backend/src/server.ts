@@ -1,82 +1,71 @@
-import express from 'express';
-import cors from 'cors';
-// import { sequelize } from './config/database';
-import analysisRoutes from './routes/analysis';
-import authRoutes from './routes/auth';
-import { auth } from './middleware/auth';
+import "dotenv/config"; // Ensure environment variables are loaded first
+import { server, initializeApp } from "./app";
+import { env } from "./config/environment";
+import { logger } from "./utils/logger";
 
-// Set environment variables
-// process.env.DATABASE_URL = 'postgres://postgres:postgres@postgres:5432/secure_audit';
-process.env.PORT = process.env.PORT || '3001';
-process.env.NODE_ENV = process.env.NODE_ENV || 'development';
+const startServer = async () => {
+  try {
+    logger.info("----------------------------------------------------");
+    logger.info("[SERVER STARTUP] Beginning server startup process...");
+    logger.info(`[SERVER STARTUP] Environment: ${env.NODE_ENV}`);
+    logger.info(`[SERVER STARTUP] Log Level: ${env.LOG_LEVEL}`);
+    logger.info("----------------------------------------------------");
 
-const app = express();
-const port = process.env.PORT || 3001;
+    logger.info("[SERVER STARTUP] Step 1: Initializing application...");
+    await initializeApp();
+    logger.info(
+      "[SERVER STARTUP] ✅ Step 1 Complete: Application initialized.",
+    );
 
-// CORS configuration
-const corsOptions = {
-  origin: [
-    'http://localhost:3000',
-    'https://secure-audit.nsisonglabs.xyz',
-    'https://secure-audit.pages.dev'
-  ],
-  credentials: true,
-  optionsSuccessStatus: 200
+    logger.info(
+      `[SERVER STARTUP] Step 2: Starting HTTP server on port ${env.PORT}...`,
+    );
+    server.listen(env.PORT, () => {
+      logger.info("----------------------------------------------------");
+      logger.info(
+        `[SERVER] ✅ Server is now listening on http://localhost:${env.PORT}`,
+      );
+      logger.info(`[SERVER] API Version: ${env.API_VERSION}`);
+      logger.info(`[SERVER] Health check: http://localhost:${env.PORT}/health`);
+      logger.info("----------------------------------------------------");
+    });
+
+    server.on("error", (error: NodeJS.ErrnoException) => {
+      if (error.syscall !== "listen") {
+        logger.error("[SERVER] Unexpected server error:", error);
+        throw error;
+      }
+
+      switch (error.code) {
+        case "EACCES":
+          logger.error(
+            `[SERVER] ❌ Port ${env.PORT} requires elevated privileges. Shutting down.`,
+          );
+          process.exit(1);
+          break;
+        case "EADDRINUSE":
+          logger.error(
+            `[SERVER] ❌ Port ${env.PORT} is already in use. Shutting down.`,
+          );
+          logger.warn(
+            `[SERVER] Hint: Find and stop the conflicting process with 'lsof -i :${env.PORT}' and 'kill -9 <PID>'`,
+          );
+          process.exit(1);
+          break;
+        default:
+          logger.error("[SERVER] An unknown server error occurred:", error);
+          throw error;
+      }
+    });
+  } catch (error) {
+    logger.error(
+      "[SERVER] ❌ A critical error occurred during startup:",
+      error,
+    );
+    logger.error("[SERVER] Application failed to start. Shutting down.");
+    process.exit(1);
+  }
 };
 
-// Connect to PostgreSQL (disabled for now)
-// sequelize.authenticate()
-//   .then(() => {
-//     console.log('Connected to PostgreSQL');
-//     return sequelize.sync();
-//   })
-//   .then(() => console.log('Database synchronized'))
-//   .catch(err => {
-//     console.error('Database connection error:', err);
-//     // Add more detailed error logging
-//     if (err.original) {
-//       console.error('Original error:', err.original);
-//     }
-//   });
-
-// Middleware
-app.use(cors(corsOptions));
-app.use(express.json());
-
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/analysis', analysisRoutes); // Public routes
-app.use('/api/analysis/protected', auth, analysisRoutes); // Protected routes
-
-// Root endpoint
-app.get('/', (req, res) => {
-    res.json({ 
-        message: 'Secure Audit Backend API',
-        version: '1.0.0',
-        status: 'running',
-        endpoints: {
-            health: '/api/health',
-            analysis: '/api/analysis',
-            auth: '/api/auth'
-        }
-    });
-});
-
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok' });
-});
-
-// Error handling middleware
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.error(err.stack);
-    res.status(500).json({
-        error: 'Internal Server Error',
-        details: process.env.NODE_ENV === 'development' ? err.message : 'An unexpected error occurred'
-    });
-});
-
-// Start server
-app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-}); 
+// Execute the startup process
+startServer();
