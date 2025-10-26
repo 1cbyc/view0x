@@ -114,25 +114,28 @@ const pollForResult = async (
   timeout = 60000,
   interval = 2000,
 ): Promise<object> => {
-  const pollForResult = async (analysisId: string, timeout = 60000, interval = 2000): Promise<object> => {
-      const startTime = Date.now();
-      const resultKey = `analysis_result:${analysisId}`;
+  const startTime = Date.now();
+  const resultKey = `analysis_result:${analysisId}`;
 
-      // Use the main client for polling, not the subscriber
-      const redisClient = bullQueueClient;
+  // Use the main client for polling, not the subscriber
+  const redisClient = bullQueueClient;
 
-      while (Date.now() - startTime < timeout) {
-          const result = await redisClient.get(resultKey);
-          if (result) {
-              logger.info(`[WORKER] Result found in Redis for job ${analysisId}`);
-              await redisClient.del(resultKey); // Clean up the key
-              return JSON.parse(result);
-          }
-          await new Promise(resolve => setTimeout(resolve, interval));
-      }
+  while (Date.now() - startTime < timeout) {
+    const result = await redisClient.get(resultKey);
+    if (result) {
+      logger.info(`[WORKER] Result found in Redis for job ${analysisId}`);
+      await redisClient.del(resultKey); // Clean up the key
+      return JSON.parse(result);
+    }
+    await new Promise((resolve) => setTimeout(resolve, interval));
+  }
 
-      throw new Error(`Polling for result of job ${analysisId} timed out after ${timeout / 1000} seconds.`);
-  };
+  throw new Error(
+    `Polling for result of job ${analysisId} timed out after ${
+      timeout / 1000
+    } seconds.`,
+  );
+};
 
 // 4. Start the Worker
 analysisQueue.process("analyze-contract", processAnalysisJob);
