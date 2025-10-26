@@ -131,16 +131,8 @@ export const initializeConnections = async (): Promise<void> => {
     throw new Error("Failed to establish required database connections");
   }
 
-  // Sync database in development
-  if (process.env.NODE_ENV === "development") {
-    try {
-      await sequelize.sync({ force: false });
-      logger.info("✅ Database synchronized");
-    } catch (error) {
-      logger.error("❌ Database sync failed:", error);
-      throw error;
-    }
-  }
+  // Sync models (handled by the model index)
+  // We will call syncModels from `app.ts` after all models are loaded.
 };
 
 // Graceful shutdown
