@@ -224,4 +224,4 @@ redis.on("close", () => {
 });
 
 // Export individual clients for specific use cases
-export { redis as defaultRedis, queueRedis, cacheRedis };
+export { redis as defaultRedis, cacheRedis };
