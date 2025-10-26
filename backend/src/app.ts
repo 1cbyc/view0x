@@ -10,6 +10,7 @@ import { Server as SocketIOServer } from "socket.io";
 import { env } from "./config/environment";
 import { logger, loggerStream } from "./utils/logger";
 import { initializeConnections, getConnectionHealth } from "./config/database";
+import { syncModels } from "./models";
 
 // Middleware
 import { errorHandler } from "./middleware/errorHandler";
@@ -221,6 +222,11 @@ export async function initializeApp(): Promise<void> {
     );
     await initializeConnections();
     logger.info("✅ Database connections established");
+
+    // Sync all database models
+    logger.info("[INITIALIZER] Synchronizing database models...");
+    await syncModels();
+    logger.info("✅ Database models synchronized");
 
     // Additional initialization can go here
     logger.info("✅ Application initialized successfully");
