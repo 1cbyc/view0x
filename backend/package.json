@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "start": "node dist/server.js",
-    "dev": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' nodemon src/server.ts",
+    "dev": "nodemon src/server.ts",
     "build": "tsc",
     "test": "jest"
   },

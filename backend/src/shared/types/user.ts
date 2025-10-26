@@ -4,7 +4,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  plan: 'free' | 'pro' | 'enterprise';
+  plan: "free" | "pro" | "enterprise";
   apiKey?: string;
   usageLimit: number;
   usageCount: number;
@@ -20,7 +20,7 @@ export interface UserProfile {
   id: string;
   email: string;
   name: string;
-  plan: User['plan'];
+  plan: User["plan"];
   avatar?: string;
   company?: string;
   emailVerified: boolean;
@@ -50,7 +50,7 @@ export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
-  tokenType: 'Bearer';
+  tokenType: "Bearer";
 }
 
 export interface LoginCredentials {
@@ -65,7 +65,7 @@ export interface RegisterData {
   password: string;
   company?: string;
   agreeToTerms: boolean;
-  subscribeTo Newsletter?: boolean;
+  subscribeToNewsletter?: boolean;
 }
 
 export interface LoginResponse {
@@ -112,7 +112,7 @@ export interface Team {
   id: string;
   name: string;
   ownerId: string;
-  plan: 'team' | 'enterprise';
+  plan: "team" | "enterprise";
   memberCount: number;
   analysisLimit: number;
   createdAt: string;
@@ -122,7 +122,7 @@ export interface TeamMember {
   id: string;
   userId: string;
   teamId: string;
-  role: 'owner' | 'admin' | 'member';
+  role: "owner" | "admin" | "member";
   user: UserProfile;
   joinedAt: string;
   lastActive?: string;
@@ -132,7 +132,7 @@ export interface TeamInvite {
   id: string;
   teamId: string;
   email: string;
-  role: TeamMember['role'];
+  role: TeamMember["role"];
   invitedBy: string;
   createdAt: string;
   expiresAt: string;
@@ -144,8 +144,8 @@ export interface PricingPlan {
   id: string;
   name: string;
   price: number;
-  currency: 'USD';
-  interval: 'month' | 'year';
+  currency: "USD";
+  interval: "month" | "year";
   features: {
     analysesPerMonth: number;
     concurrentAnalyses: number;
@@ -163,7 +163,7 @@ export interface Subscription {
   id: string;
   userId: string;
   planId: string;
-  status: 'active' | 'canceled' | 'past_due' | 'unpaid';
+  status: "active" | "canceled" | "past_due" | "unpaid";
   currentPeriodStart: string;
   currentPeriodEnd: string;
   cancelAtPeriodEnd: boolean;
@@ -175,7 +175,7 @@ export interface Subscription {
 export interface JWTPayload {
   userId: string;
   email: string;
-  plan: User['plan'];
+  plan: User["plan"];
   iat: number;
   exp: number;
 }
@@ -184,7 +184,7 @@ export interface AuthRequest extends Request {
   user: {
     id: string;
     email: string;
-    plan: User['plan'];
+    plan: User["plan"];
   };
 }
 
