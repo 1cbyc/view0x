@@ -8,8 +8,8 @@ import {
 } from "sequelize";
 import { sequelize } from "../config/database";
 import { User } from "./User";
-import { v4 as uuidv4 } from "uuid";
 import { Op } from "sequelize";
+import { ContractInfo } from "../shared/types/analysis";
 
 export class Analysis extends Model<
   InferAttributes<Analysis>,
@@ -20,14 +20,6 @@ export class Analysis extends Model<
   declare contractCode: string;
   declare contractName: CreationOptional<string>;
   declare fileCount: CreationOptional<number>;
-
-  // Add this property to match the AnalysisJob interface
-  get contractInfo(): { code: string; name?: string } {
-    return {
-      code: this.contractCode,
-      name: this.contractName,
-    };
-  }
   declare status: "queued" | "processing" | "completed" | "failed";
   declare progress: CreationOptional<number>;
   declare currentStep: CreationOptional<string>;
@@ -45,6 +37,17 @@ export class Analysis extends Model<
 
   // Associations
   declare user?: User;
+
+  // This is a getter method, not a database field. It won't be in `toJSON()`.
+  public getContractInfo(): ContractInfo {
+    return {
+      code: this.contractCode,
+      name: this.contractName,
+      language: "solidity",
+      size: this.contractCode.length,
+      lineCount: this.contractCode.split("\n").length,
+    };
+  }
 
   // Instance methods
   updateProgress(progress: number, currentStep?: string): Promise<Analysis> {
