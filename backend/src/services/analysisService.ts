@@ -41,7 +41,7 @@ export class AnalysisService {
         completedAt: new Date(),
         processingTimeMs: 0, // Instant
       });
-      return analysis.toJSON() as AnalysisJob;
+      return this.toAnalysisJob(analysis);
     }
 
     logger.info(`[AnalysisService] Cache miss for analysis: ${cacheKey}`);
@@ -67,7 +67,7 @@ export class AnalysisService {
     );
 
     // 4. Return the initial job state to the user
-    return analysis.toJSON() as AnalysisJob;
+    return this.toAnalysisJob(analysis);
   }
 
   /**
@@ -85,7 +85,7 @@ export class AnalysisService {
       throw new NotFoundError("Analysis job not found.");
     }
 
-    return analysis.toJSON() as AnalysisJob;
+    return this.toAnalysisJob(analysis);
   }
 
   /**
@@ -117,6 +117,19 @@ export class AnalysisService {
         error,
       );
     }
+  }
+
+  /**
+   * Converts a Sequelize Analysis model instance to a plain AnalysisJob object.
+   * @param analysis - The Sequelize model instance.
+   * @returns A plain object matching the AnalysisJob interface.
+   */
+  private toAnalysisJob(analysis: Analysis): AnalysisJob {
+    const plainAnalysis = analysis.toJSON();
+    return {
+      ...plainAnalysis,
+      contractInfo: analysis.getContractInfo(),
+    } as AnalysisJob;
   }
 
   /**
