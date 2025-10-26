@@ -5,11 +5,11 @@ import { logger } from "../utils/logger";
 import { NotFoundError } from "../middleware/errorHandler";
 import { cacheRedis } from "../config/database";
 import { env } from "../config/environment";
-import { CreateAnalysisRequest } from "../shared/types/api";
 import {
   AnalysisJob,
   AnalysisOptions,
   AnalysisResult,
+  CreateAnalysisRequest,
 } from "../shared/types/analysis";
 
 const ANALYSIS_CACHE_TTL = env.REDIS_TTL; // Time to live for cached results in seconds
