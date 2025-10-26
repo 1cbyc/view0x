@@ -6,7 +6,11 @@ import { NotFoundError } from "../middleware/errorHandler";
 import { cacheRedis } from "../config/database";
 import { env } from "../config/environment";
 import { CreateAnalysisRequest } from "../shared/types/api";
-import { AnalysisJob } from "../shared/types/analysis";
+import {
+  AnalysisJob,
+  AnalysisOptions,
+  AnalysisResult,
+} from "../shared/types/analysis";
 
 const ANALYSIS_CACHE_TTL = env.REDIS_TTL; // Time to live for cached results in seconds
 
@@ -23,11 +27,13 @@ export class AnalysisService {
   ): Promise<AnalysisJob> {
     const { contractCode, contractName, options } = analysisData;
 
+    // 1. Check for a cached result first to avoid re-analyzing
     const cacheKey = this.generateCacheKey(contractCode, options);
     const cachedResult = await this.getCachedResult(cacheKey);
 
     if (cachedResult) {
       logger.info(`[AnalysisService] Cache hit for analysis: ${cacheKey}`);
+      // If a cached result is found, we can create a 'completed' record instantly
       const analysis = await Analysis.create({
         userId,
         contractCode,
@@ -37,13 +43,14 @@ export class AnalysisService {
         result: cachedResult,
         cacheHit: true,
         completedAt: new Date(),
-        processingTimeMs: 0,
+        processingTimeMs: 0, // Instant
       });
       return this.toAnalysisJob(analysis);
     }
 
     logger.info(`[AnalysisService] Cache miss for analysis: ${cacheKey}`);
 
+    // 2. Create the analysis job in the database
     const analysis = await Analysis.create({
       userId,
       contractCode,
@@ -52,6 +59,7 @@ export class AnalysisService {
       status: "queued",
     });
 
+    // 3. Add the job to the Bull queue for processing
     await analysisQueue.add("analyze-contract", {
       analysisId: analysis.id,
       contractCode,
@@ -60,6 +68,7 @@ export class AnalysisService {
 
     logger.info(`[AnalysisService] Analysis job ${analysis.id} queued.`);
 
+    // 4. Return the initial job state to the user
     return this.toAnalysisJob(analysis);
   }
 
@@ -91,7 +100,7 @@ export class AnalysisService {
 
     const cacheKey = this.generateCacheKey(
       analysis.contractCode,
-      analysis.options,
+      analysis.options as object,
     );
     try {
       await cacheRedis.set(
@@ -125,10 +134,12 @@ export class AnalysisService {
       progress: analysis.progress,
       currentStep: analysis.currentStep,
       contractInfo: analysis.getContractInfo(),
-      options: analysis.options,
-      result: analysis.result,
+      // Explicitly cast the JSONB types
+      options: analysis.options as AnalysisOptions,
+      result: analysis.result as AnalysisResult | undefined,
       error: analysis.errorMessage,
       estimatedTime: analysis.estimatedTime,
+      // Convert Date objects to ISO strings
       createdAt: analysis.createdAt.toISOString(),
       startedAt: analysis.startedAt
         ? analysis.startedAt.toISOString()
@@ -150,7 +161,8 @@ export class AnalysisService {
     const hash = crypto.createHash("sha256");
     hash.update(contractCode);
     if (options) {
-      hash.update(JSON.stringify(options));
+      // Use a sorted stringify to ensure consistent hash for same options in different order
+      hash.update(JSON.stringify(options, Object.keys(options).sort()));
     }
     return `analysis:${hash.digest("hex")}`;
   }
