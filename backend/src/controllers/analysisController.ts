@@ -121,4 +121,29 @@ export const analyzeContract = async (req: Request, res: Response) => {
             details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
         });
     }
+};
+
+// Placeholder functions for routes
+export const createAnalysis = async (req: Request, res: Response) => {
+    res.status(501).json({ status: 'error', message: 'Not implemented yet' });
+};
+
+export const getAnalysis = async (req: Request, res: Response) => {
+    res.status(501).json({ status: 'error', message: 'Not implemented yet' });
+};
+
+export const getAnalysisStatus = async (req: Request, res: Response) => {
+    res.status(501).json({ status: 'error', message: 'Not implemented yet' });
+};
+
+export const getUserAnalyses = async (req: Request, res: Response) => {
+    res.status(501).json({ status: 'error', message: 'Not implemented yet' });
+};
+
+export const deleteAnalysis = async (req: Request, res: Response) => {
+    res.status(501).json({ status: 'error', message: 'Not implemented yet' });
+};
+
+export const generateReport = async (req: Request, res: Response) => {
+    res.status(501).json({ status: 'error', message: 'Not implemented yet' });
 }; 
