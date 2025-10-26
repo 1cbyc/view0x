@@ -138,7 +138,7 @@ export class Analysis extends Model<
 
     if (!options?.includeExpired) {
       where.expiresAt = {
-        [sequelize.Sequelize.Op.gt]: new Date(),
+        [Op.gt]: new Date(),
       };
     }
 
