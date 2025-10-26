@@ -48,3 +48,5 @@ lerna-debug.log*
 docs/
 *.md
 !README.md
+backend/.env
+backend/.env
