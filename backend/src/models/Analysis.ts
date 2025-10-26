@@ -20,6 +20,14 @@ export class Analysis extends Model<
   declare contractCode: string;
   declare contractName: CreationOptional<string>;
   declare fileCount: CreationOptional<number>;
+
+  // Add this property to match the AnalysisJob interface
+  get contractInfo(): { code: string; name?: string } {
+    return {
+      code: this.contractCode,
+      name: this.contractName,
+    };
+  }
   declare status: "queued" | "processing" | "completed" | "failed";
   declare progress: CreationOptional<number>;
   declare currentStep: CreationOptional<string>;
