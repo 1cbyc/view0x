@@ -1,149 +1,246 @@
-import { Request, Response } from 'express';
-import { ethers } from 'ethers';
-import { AnalysisResult } from '../models/AnalysisResult';
+import { Request, Response } from "express";
+import { User } from "../models/User";
+import { Analysis } from "../models/Analysis";
+import {
+  AuthenticationError,
+  AuthorizationError,
+  NotFoundError,
+  ValidationError,
+} from "../middleware/errorHandler";
+import { logger } from "../utils/logger";
 
-// Common vulnerability patterns
-const VULNERABILITY_PATTERNS = {
-    reentrancy: [
-        'call.value',
-        'transfer',
-        'send',
-        'fallback',
-        'receive'
-    ],
-    overflow: [
-        'uint256',
-        'int256',
-        'SafeMath',
-        '+',
-        '-',
-        '*',
-        '/'
-    ],
-    accessControl: [
-        'onlyOwner',
-        'require',
-        'assert',
-        'modifier'
-    ]
+// MOCK: In the future, this will come from a queue/worker service
+const analysisService = {
+  queueAnalysis: async (analysis: Analysis) => {
+    logger.info(`Mock queuing analysis job: ${analysis.id}`);
+    // Simulate processing
+    setTimeout(async () => {
+      const job = await Analysis.findByPk(analysis.id);
+      if (job) {
+        await job.setStarted();
+        logger.info(`Mock processing analysis job: ${job.id}`);
+      }
+    }, 5000); // 5 seconds delay
+
+    setTimeout(async () => {
+      const job = await Analysis.findByPk(analysis.id);
+      if (job) {
+        // Mock result
+        const mockResult = {
+          summary: {
+            totalVulnerabilities: 2,
+            highSeverity: 1,
+            mediumSeverity: 1,
+            lowSeverity: 0,
+            overallScore: 75,
+            riskLevel: "MEDIUM",
+          },
+          vulnerabilities: [
+            {
+              type: "reentrancy-eth",
+              severity: "HIGH",
+              title: "Reentrancy Vulnerability",
+              description: "A mock reentrancy vulnerability was found.",
+              recommendation: "Use the checks-effects-interactions pattern.",
+            },
+            {
+              type: "tx-origin",
+              severity: "MEDIUM",
+              title: "Dangerous use of tx.origin",
+              description: "tx.origin is used for authentication.",
+              recommendation: "Use msg.sender instead.",
+            },
+          ],
+        };
+        await job.setCompleted(mockResult);
+        logger.info(`Mock completed analysis job: ${job.id}`);
+      }
+    }, 15000); // 15 seconds delay
+  },
 };
 
-export const analyzeContract = async (req: Request, res: Response) => {
-    try {
-        const { contractAddress } = req.body;
-        
-        if (!ethers.isAddress(contractAddress)) {
-            return res.status(400).json({ 
-                status: 'error',
-                message: 'Invalid contract address' 
-            });
-        }
-
-        // Get contract source code
-        const provider = new ethers.JsonRpcProvider(process.env.ETHEREUM_RPC_URL || 'http://localhost:8545');
-        const code = await provider.getCode(contractAddress);
-        
-        if (code === '0x') {
-            return res.status(400).json({ 
-                status: 'error',
-                message: 'No contract found at this address' 
-            });
-        }
-
-        // Analyze for vulnerabilities
-        const vulnerabilities = [];
-        
-        // Check for reentrancy vulnerabilities
-        if (VULNERABILITY_PATTERNS.reentrancy.some(pattern => code.includes(pattern))) {
-            vulnerabilities.push({
-                type: 'reentrancy',
-                severity: 'high',
-                description: 'Potential reentrancy vulnerability detected. Check for proper checks-effects-interactions pattern.',
-                recommendations: [
-                    'Use ReentrancyGuard',
-                    'Implement checks-effects-interactions pattern',
-                    'Consider using pull payment pattern'
-                ]
-            });
-        }
-
-        // Check for integer overflow
-        if (VULNERABILITY_PATTERNS.overflow.some(pattern => code.includes(pattern))) {
-            vulnerabilities.push({
-                type: 'integer_overflow',
-                severity: 'medium',
-                description: 'Potential integer overflow vulnerability detected. Check for proper SafeMath usage.',
-                recommendations: [
-                    'Use SafeMath library',
-                    'Implement overflow checks',
-                    'Consider using Solidity 0.8+ which has built-in overflow checks'
-                ]
-            });
-        }
-
-        // Check for access control issues
-        if (VULNERABILITY_PATTERNS.accessControl.some(pattern => code.includes(pattern))) {
-            vulnerabilities.push({
-                type: 'access_control',
-                severity: 'medium',
-                description: 'Potential access control issues detected. Review permission checks.',
-                recommendations: [
-                    'Implement proper access control modifiers',
-                    'Use OpenZeppelin AccessControl',
-                    'Review all permission checks'
-                ]
-            });
-        }
-
-        // Save analysis result
-        const analysisResult = await AnalysisResult.create({
-            contractAddress,
-            vulnerabilities,
-            timestamp: new Date(),
-            userId: (req as any).user.userId
-        });
-
-        res.json({
-            status: 'success',
-            message: 'Analysis completed',
-            results: {
-                contractAddress,
-                vulnerabilities,
-                timestamp: analysisResult.timestamp,
-                analysisId: analysisResult.id
-            }
-        });
-    } catch (error) {
-        console.error('Analysis error:', error);
-        res.status(500).json({ 
-            status: 'error',
-            message: 'Internal server error',
-            details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
-        });
-    }
-};
-
-// Placeholder functions for routes
+/**
+ * @description Create a new analysis job
+ * @route POST /api/analysis
+ */
 export const createAnalysis = async (req: Request, res: Response) => {
-    res.status(501).json({ status: 'error', message: 'Not implemented yet' });
+  const { contractCode, contractName, options } = req.body;
+  const userId = req.user?.userId;
+
+  if (!userId) {
+    throw new AuthenticationError(
+      "Authentication required to create analysis.",
+    );
+  }
+
+  // Find the user to check their limits
+  const user = await User.findByPk(userId);
+  if (!user) {
+    throw new AuthenticationError("User not found.");
+  }
+
+  // Check if user has analysis credits
+  if (!user.canAnalyze()) {
+    throw new AuthorizationError(
+      "Analysis limit reached. Please upgrade your plan.",
+    );
+  }
+
+  // Create analysis job in the database
+  const analysis = await Analysis.create({
+    userId,
+    contractCode,
+    contractName: contractName || "Untitled Contract",
+    options: options || {},
+    status: "queued",
+  });
+
+  // Increment user's usage count
+  await user.incrementUsage();
+
+  // MOCK: Add job to the queue
+  await analysisService.queueAnalysis(analysis);
+
+  logger.info(`Analysis job created: ${analysis.id} for user ${userId}`);
+
+  res.status(202).json({
+    success: true,
+    message: "Analysis job accepted.",
+    data: {
+      jobId: analysis.id,
+      status: analysis.status,
+      estimatedTime: 30, // seconds
+    },
+  });
 };
 
+/**
+ * @description Get the result or status of a specific analysis
+ * @route GET /api/analysis/:id
+ */
 export const getAnalysis = async (req: Request, res: Response) => {
-    res.status(501).json({ status: 'error', message: 'Not implemented yet' });
+  const { id } = req.params;
+  const userId = req.user?.userId;
+
+  const analysis = await Analysis.findByPk(id);
+
+  if (!analysis) {
+    throw new NotFoundError("Analysis job not found.");
+  }
+
+  // Ensure the user owns this analysis
+  if (analysis.userId !== userId) {
+    throw new AuthorizationError(
+      "You are not authorized to view this analysis.",
+    );
+  }
+
+  res.status(200).json({
+    success: true,
+    data: analysis.toJSON(),
+  });
 };
 
+/**
+ * @description Get the status of an analysis job (lightweight)
+ * @route GET /api/analysis/:id/status
+ */
 export const getAnalysisStatus = async (req: Request, res: Response) => {
-    res.status(501).json({ status: 'error', message: 'Not implemented yet' });
+  const { id } = req.params;
+  const userId = req.user?.userId;
+
+  const analysis = await Analysis.findByPk(id, {
+    attributes: [
+      "id",
+      "status",
+      "progress",
+      "currentStep",
+      "createdAt",
+      "completedAt",
+    ],
+  });
+
+  if (!analysis) {
+    throw new NotFoundError("Analysis job not found.");
+  }
+
+  if (analysis.userId !== userId) {
+    throw new AuthorizationError("You are not authorized to view this status.");
+  }
+
+  res.status(200).json({
+    success: true,
+    data: analysis,
+  });
 };
 
+/**
+ * @description Get a paginated list of the user's analysis history
+ * @route GET /api/analysis
+ */
 export const getUserAnalyses = async (req: Request, res: Response) => {
-    res.status(501).json({ status: 'error', message: 'Not implemented yet' });
+  const userId = req.user?.userId;
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const offset = (page - 1) * limit;
+
+  const { analyses, total } = await Analysis.findByUser(userId!, {
+    limit,
+    offset,
+  });
+
+  res.status(200).json({
+    success: true,
+    data: analyses.map((a) => a.toSummary()),
+    meta: {
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    },
+  });
 };
 
+/**
+ * @description Delete an analysis job
+ * @route DELETE /api/analysis/:id
+ */
 export const deleteAnalysis = async (req: Request, res: Response) => {
-    res.status(501).json({ status: 'error', message: 'Not implemented yet' });
+  const { id } = req.params;
+  const userId = req.user?.userId;
+
+  const analysis = await Analysis.findByPk(id);
+
+  if (!analysis) {
+    throw new NotFoundError("Analysis job not found.");
+  }
+
+  if (analysis.userId !== userId) {
+    throw new AuthorizationError(
+      "You are not authorized to delete this analysis.",
+    );
+  }
+
+  await analysis.destroy();
+
+  logger.info(`Analysis job deleted: ${id} by user ${userId}`);
+
+  res.status(204).send();
 };
 
+/**
+ * @description Generate a report for an analysis
+ * @route POST /api/analysis/:id/report
+ */
 export const generateReport = async (req: Request, res: Response) => {
-    res.status(501).json({ status: 'error', message: 'Not implemented yet' });
-}; 
+  // This is a placeholder for a future feature
+  res.status(501).json({
+    success: false,
+    error: {
+      code: "NOT_IMPLEMENTED",
+      message: "Report generation is not yet implemented.",
+    },
+  });
+};
