@@ -46,3 +46,4 @@ lerna-debug.log*
 
 # personal
 docs/
+*.md
