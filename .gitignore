@@ -110,4 +110,3 @@ backend/uploads/
 docs/
 *.md
 !README.md
-backend/.env
