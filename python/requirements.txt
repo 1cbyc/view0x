@@ -8,31 +8,13 @@ fastapi==0.111.0
 uvicorn[standard]==0.30.1
 
 # Database and caching
-# psycopg2-binary is for PostgreSQL connection
-# redis is for communication with the Node.js backend
 redis==5.0.7
-psycopg-binary==3.2.12
 
 # Utilities
-python-multipart==0.0.9
-# Pydantic is used for data validation. Upgraded to a recent version to resolve build issues with pydantic-core.
 pydantic==2.8.2
 python-dotenv==1.0.1
-requests==2.32.3
 
-# Solidity compilation
-py-solc-x==2.0.2
-
-# Logging and monitoring
-structlog==24.1.0
-
-# JSON handling for performance
-orjson==3.10.6
-
-# Production server
-gunicorn==22.0.0
-
-# Development dependencies (can be installed separately if needed)
+# Development dependencies (optional - uncomment if needed)
 # pytest==7.4.3
 # pytest-asyncio==0.21.1
 # black==23.11.0
