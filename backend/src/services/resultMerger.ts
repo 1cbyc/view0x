@@ -31,7 +31,6 @@ interface MergedResult {
       LOW: number;
       INFO: number;
     };
-    byEngine: { [key: string]: number };
   };
 }
 
