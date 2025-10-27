@@ -1,54 +1,109 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { Shield, Zap, Code, Github } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { ShieldCheck } from "lucide-react";
 
 const Navbar: React.FC = () => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState<{ name: string } | null>(null);
+
+  const checkAuthState = () => {
+    try {
+      const storedUser = localStorage.getItem("user");
+      const accessToken = localStorage.getItem("accessToken");
+      if (storedUser && accessToken) {
+        setUser(JSON.parse(storedUser));
+      } else {
+        setUser(null);
+      }
+    } catch (error) {
+      console.error("Failed to parse user from localStorage", error);
+      setUser(null);
+    }
+  };
+
+  useEffect(() => {
+    checkAuthState();
+
+    // Listen for storage changes to sync login/logout across tabs
+    window.addEventListener("storage", checkAuthState);
+
+    return () => {
+      window.removeEventListener("storage", checkAuthState);
+    };
+  }, []);
+
+  const handleLogout = () => {
+    // Clear authentication data from localStorage
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("user");
+
+    // Update state and redirect
+    setUser(null);
+    navigate("/login");
+  };
+
   return (
-    <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <header className="bg-white shadow-sm sticky top-0 z-50">
+      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-4">
-            <Link to="/" className="flex items-center space-x-2">
-              <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg">
-                <Shield className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Secure Audit
-              </span>
-            </Link>
-            <div className="hidden md:flex items-center space-x-1">
-              <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                Beta
-              </span>
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-6">
-            <div className="hidden md:flex items-center space-x-4 text-sm text-gray-600">
-              <div className="flex items-center space-x-1">
-                <Zap className="w-4 h-4" />
-                <span>Fast Analysis</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <Code className="w-4 h-4" />
-                <span>Smart Detection</span>
-              </div>
-            </div>
-            
-            <a
-              href="https://github.com/1cbyc/secure-audit"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+          {/* Logo and App Name */}
+          <div className="flex-shrink-0">
+            <Link
+              to="/"
+              className="flex items-center space-x-2 text-xl font-bold text-gray-800"
             >
-              <Github className="w-4 h-4" />
-              <span className="hidden sm:inline">GitHub</span>
-            </a>
+              <ShieldCheck className="h-7 w-7 text-blue-600" />
+              <span>SecureAudit</span>
+            </Link>
+          </div>
+
+          {/* Navigation Links */}
+          <div className="hidden md:flex md:items-center md:space-x-8">
+            <Link
+              to="/analyze"
+              className="text-gray-600 hover:text-blue-600 transition-colors duration-200"
+            >
+              Scanner
+            </Link>
+            {/* Future links can be added here */}
+          </div>
+
+          {/* Auth Links */}
+          <div className="flex items-center space-x-4">
+            {user ? (
+              <>
+                <span className="text-sm text-gray-700">
+                  Welcome, {user.name}
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-transparent rounded-md transition-colors"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  to="/register"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 border border-transparent rounded-md shadow-sm transition-colors"
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
           </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+    </header>
   );
 };
 
-export default Navbar; 
+export default Navbar;
