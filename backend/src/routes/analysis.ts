@@ -1,50 +1,55 @@
-import { Router } from 'express';
-import { analyzeContract } from '../controllers/analysisController';
-import { SimpleScanner } from '../services/simpleScanner';
+import { Router } from "express";
+import { asyncHandler } from "../middleware/errorHandler";
+import { analysisRateLimiter } from "../middleware/rateLimit";
+import { auth } from "../middleware/auth";
+import {
+  createAnalysis,
+  getAnalysis,
+  getAnalysisStatus,
+  getUserAnalyses,
+  deleteAnalysis,
+  generateReport,
+  publicAnalysis,
+} from "../controllers/analysisController";
+import { validateCreateAnalysis } from "../middleware/validation";
 
 const router = Router();
 
-// Public analysis endpoint (no authentication required)
-router.post('/public', async (req, res) => {
-    try {
-        const { contractCode } = req.body;
-        
-        if (!contractCode || typeof contractCode !== 'string') {
-            return res.status(400).json({ 
-                status: 'error',
-                message: 'Contract code is required' 
-            });
-        }
+// Public analysis endpoint (no auth required)
+router.post("/public", asyncHandler(publicAnalysis));
 
-        // Use the simple scanner
-        const scanner = new SimpleScanner();
-        let analysisResult;
-        try {
-            analysisResult = await scanner.analyzeContract(contractCode);
-        } catch (err: any) {
-            return res.status(400).json({
-                status: 'error',
-                message: 'Failed to analyze contract. Please check your Solidity code.',
-                details: process.env.NODE_ENV === 'development' ? err.message : undefined
-            });
-        }
+// Create new analysis (authenticated) - follows system design: creates job and queues it
+router.post(
+  "/",
+  auth,
+  analysisRateLimiter,
+  validateCreateAnalysis,
+  asyncHandler(createAnalysis),
+);
 
-        res.json({
-            status: 'success',
-            message: 'Analysis completed',
-            results: analysisResult
-        });
-    } catch (error: any) {
-        console.error('Analysis error:', error);
-        res.status(500).json({ 
-            status: 'error',
-            message: 'Internal server error',
-            details: process.env.NODE_ENV === 'development' ? error.message : undefined
-        });
-    }
+// Get specific analysis result
+router.get("/:id", auth, asyncHandler(getAnalysis));
+
+// Get analysis status (for polling)
+router.get("/:id/status", auth, asyncHandler(getAnalysisStatus));
+
+// Get user's analysis history
+router.get("/", auth, asyncHandler(getUserAnalyses));
+
+// Delete analysis
+router.delete("/:id", auth, asyncHandler(deleteAnalysis));
+
+// Generate report
+router.post("/:id/report", auth, asyncHandler(generateReport));
+
+// Health check for analysis service
+router.get("/health/check", (req, res) => {
+  res.json({
+    success: true,
+    service: "analysis",
+    status: "operational",
+    timestamp: new Date().toISOString(),
+  });
 });
 
-// Protected analysis endpoint (requires authentication)
-router.post('/', analyzeContract);
-
-export default router; 
+export default router;
