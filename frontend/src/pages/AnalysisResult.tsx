@@ -1,23 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { analysisApi } from '../services/api';
-import { Loader2, AlertTriangle, ArrowLeft, ShieldCheck } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { useParams, Link } from "react-router-dom";
+import { analysisApi } from "@/services/api";
+import { Loader2, AlertTriangle, ArrowLeft, ShieldCheck } from "lucide-react";
 
-// Simple date formatting function
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const month = months[date.getMonth()];
-  const day = date.getDate();
-  const year = date.getFullYear();
-  const hours = date.getHours().toString().padStart(2, '0');
-  const minutes = date.getMinutes().toString().padStart(2, '0');
-  return `${month} ${day}, ${year} ${hours}:${minutes}`;
-};
+// UI Components
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 // --- Type Definitions ---
-// These should match the types from the backend and other components
-
 interface VulnerabilityElement {
   type: string;
   name: string;
@@ -29,18 +27,16 @@ interface VulnerabilityElement {
 interface Vulnerability {
   check: string;
   description: string;
-  impact: 'High' | 'Medium' | 'Low' | 'Informational' | 'Optimization';
-  confidence: 'High' | 'Medium' | 'Low';
+  impact: "High" | "Medium" | "Low" | "Informational" | "Optimization";
+  confidence: "High" | "Medium" | "Low";
   elements: VulnerabilityElement[];
 }
 
 interface AnalysisDetail {
   id: string;
-  status: 'queued' | 'processing' | 'completed' | 'failed';
+  status: "queued" | "processing" | "completed" | "failed";
   contractInfo: {
     name: string | null;
-    lineCount: number;
-    size: number;
   };
   result: {
     summary: {
@@ -48,65 +44,79 @@ interface AnalysisDetail {
       mediumSeverity: number;
       lowSeverity: number;
       overallScore: number;
-      riskLevel: 'HIGH' | 'MEDIUM' | 'LOW';
+      riskLevel: "HIGH" | "MEDIUM" | "LOW";
     };
     vulnerabilities: Vulnerability[];
   } | null;
   error: string | null;
   createdAt: string;
-  completedAt: string | null;
 }
 
-// --- Helper & Sub-components ---
+// --- Helper Functions ---
+const formatDate = (dateString: string): string => {
+  if (!dateString) return "N/A";
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 
-const getSeverityClass = (severity: 'High' | 'Medium' | 'Low' | 'HIGH' | 'MEDIUM' | 'LOW' | 'Informational' | 'Optimization') => {
+const getSeverityVariant = (
+  severity:
+    | Vulnerability["impact"]
+    | AnalysisDetail["result"]["summary"]["riskLevel"],
+): "destructive" | "secondary" | "outline" | "default" => {
   switch (severity) {
-    case 'High': case 'HIGH':
-      return { bg: "bg-red-100", text: "text-red-800", border: "border-red-300" };
-    case 'Medium': case 'MEDIUM':
-      return { bg: "bg-yellow-100", text: "text-yellow-800", border: "border-yellow-300" };
-    case 'Low': case 'LOW':
-      return { bg: "bg-blue-100", text: "text-blue-800", border: "border-blue-300" };
-    case 'Informational': case 'Optimization':
-      return { bg: "bg-gray-100", text: "text-gray-800", border: "border-gray-300" };
+    case "High":
+    case "HIGH":
+      return "destructive";
+    case "Medium":
+    case "MEDIUM":
+      return "secondary";
+    case "Low":
+    case "LOW":
+      return "outline";
     default:
-      return { bg: "bg-gray-100", text: "text-gray-800", border: "border-gray-300" };
+      return "default";
   }
 };
 
-const VulnerabilityCard: React.FC<{ vuln: Vulnerability }> = ({ vuln }) => {
-  const impactClasses = getSeverityClass(vuln.impact);
-  const confidenceClasses = getSeverityClass(vuln.confidence);
-  const formatLines = (lines: number[]) => lines.length === 1 ? `L${lines[0]}` : `L${lines[0]}-${lines[lines.length - 1]}`;
+// --- Sub-components ---
+const VulnerabilityAccordionItem: React.FC<{ vuln: Vulnerability }> = ({
+  vuln,
+}) => {
+  const formatLines = (lines: number[]) =>
+    lines.length === 1
+      ? `L${lines[0]}`
+      : `L${lines[0]}-${lines[lines.length - 1]}`;
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden">
-      <div className={`px-4 py-3 ${impactClasses.bg} border-b ${impactClasses.border} flex justify-between items-center`}>
-        <h4 className={`font-semibold ${impactClasses.text}`}>{vuln.check}</h4>
-        <div className="flex items-center space-x-2">
-          <span className={`px-2 py-0.5 text-xs font-medium rounded-full border ${impactClasses.border} ${impactClasses.bg} ${impactClasses.text}`}>
-            {vuln.impact} Impact
-          </span>
-          <span className={`px-2 py-0.5 text-xs font-medium rounded-full border ${confidenceClasses.border} ${confidenceClasses.bg} ${confidenceClasses.text}`}>
-            {vuln.confidence} Confidence
-          </span>
+    <AccordionItem value={vuln.check}>
+      <AccordionTrigger>
+        <div className="flex items-center gap-4">
+          <Badge variant={getSeverityVariant(vuln.impact)}>{vuln.impact}</Badge>
+          <span className="text-left">{vuln.check}</span>
         </div>
-      </div>
-      <div className="p-4 space-y-3">
-        <p className="text-sm text-gray-700">{vuln.description}</p>
-        <div className="text-xs text-gray-500 font-mono">
+      </AccordionTrigger>
+      <AccordionContent className="space-y-2">
+        <p className="text-sm text-muted-foreground">{vuln.description}</p>
+        <div className="text-xs font-mono text-muted-foreground">
           {vuln.elements.map((el, i) => (
-            <div key={i}>{`${el.type} "${el.name}" (${formatLines(el.source_mapping.lines)})`}</div>
+            <div key={i}>
+              {`${el.type} "${el.name}" (${formatLines(el.source_mapping.lines)})`}
+            </div>
           ))}
         </div>
-      </div>
-    </div>
+      </AccordionContent>
+    </AccordionItem>
   );
 };
 
-
 // --- Main Component ---
-
 const AnalysisResultPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [analysis, setAnalysis] = useState<AnalysisDetail | null>(null);
@@ -115,7 +125,7 @@ const AnalysisResultPage: React.FC = () => {
 
   useEffect(() => {
     if (!id) {
-      setError("No analysis ID provided.");
+      setError("No analysis ID provided in the URL.");
       setIsLoading(false);
       return;
     }
@@ -123,11 +133,13 @@ const AnalysisResultPage: React.FC = () => {
     const fetchAnalysis = async () => {
       try {
         setIsLoading(true);
-        setError(null);
         const response = await analysisApi.getAnalysis(id);
         setAnalysis(response.data.data);
       } catch (err: any) {
-        setError(err.response?.data?.error?.message || `Failed to fetch analysis details for ID ${id}.`);
+        setError(
+          err.error?.message ||
+            `Failed to fetch analysis details for ID ${id}.`,
+        );
       } finally {
         setIsLoading(false);
       }
@@ -139,101 +151,145 @@ const AnalysisResultPage: React.FC = () => {
   if (isLoading) {
     return (
       <div className="text-center py-20">
-        <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto" />
-        <p className="mt-4 text-gray-600">Loading analysis results...</p>
+        <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto" />
+        <p className="mt-4 text-muted-foreground">
+          Loading analysis results...
+        </p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-        <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-        <h3 className="text-lg font-semibold text-red-800">An Error Occurred</h3>
-        <p className="text-red-700">{error}</p>
-        <Link to="/dashboard" className="mt-6 inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Dashboard
-        </Link>
-      </div>
+      <Alert variant="destructive">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertTitle>An Error Occurred</AlertTitle>
+        <AlertDescription>{error}</AlertDescription>
+        <Button asChild variant="link" className="p-0 h-auto mt-4">
+          <Link to="/dashboard">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Link>
+        </Button>
+      </Alert>
     );
   }
 
   if (!analysis) {
-    return null; // Should be handled by loading/error states
+    return null;
   }
 
   const { contractInfo, result, status, createdAt } = analysis;
-  const riskClasses = result ? getSeverityClass(result.summary.riskLevel) : getSeverityClass('Low');
 
   return (
-    <div className="space-y-8">
+    <div className="container mx-auto py-8 space-y-6">
       <div>
-        <Link to="/dashboard" className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 mb-4">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Dashboard
-        </Link>
-        <h1 className="text-3xl font-bold text-gray-900">{contractInfo.name || 'Analysis Details'}</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <Button asChild variant="ghost" className="mb-4 -ml-4">
+          <Link to="/dashboard">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Link>
+        </Button>
+        <h1 className="text-3xl font-bold">
+          {contractInfo.name || "Analysis Details"}
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1">
           Analyzed on {formatDate(createdAt)}
         </p>
       </div>
 
-      {/* Summary Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Summary</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Summary</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {result ? (
-             <>
-              <div className={`p-4 rounded-lg text-center ${riskClasses.bg} border ${riskClasses.border}`}>
-                <div className="text-sm font-medium text-gray-600">Overall Risk</div>
-                <div className={`text-3xl font-bold ${riskClasses.text}`}>{result.summary.riskLevel}</div>
+            <>
+              <div className="text-center">
+                <p className="text-sm font-medium text-muted-foreground">
+                  Overall Risk
+                </p>
+                <Badge
+                  variant={getSeverityVariant(result.summary.riskLevel)}
+                  className="text-2xl font-bold mt-1 px-4 py-1"
+                >
+                  {result.summary.riskLevel}
+                </Badge>
               </div>
-              <div className="p-4 rounded-lg bg-gray-50 border border-gray-200 text-center">
-                <div className="text-sm font-medium text-gray-600">Security Score</div>
-                <div className="text-3xl font-bold text-gray-800">{result.summary.overallScore}/100</div>
+              <div className="text-center">
+                <p className="text-sm font-medium text-muted-foreground">
+                  Security Score
+                </p>
+                <p className="text-3xl font-bold">
+                  {result.summary.overallScore}/100
+                </p>
               </div>
-               <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 grid grid-cols-3 gap-2 text-center">
+              <div className="grid grid-cols-3 gap-2 text-center">
                 <div>
-                  <div className="text-sm font-medium text-gray-600">High</div>
-                  <div className="text-xl font-bold text-red-600">{result.summary.highSeverity}</div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    High
+                  </p>
+                  <p className="text-xl font-bold text-destructive">
+                    {result.summary.highSeverity}
+                  </p>
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-gray-600">Medium</div>
-                  <div className="text-xl font-bold text-yellow-600">{result.summary.mediumSeverity}</div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Medium
+                  </p>
+                  <p className="text-xl font-bold text-yellow-500">
+                    {result.summary.mediumSeverity}
+                  </p>
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-gray-600">Low</div>
-                  <div className="text-xl font-bold text-blue-600">{result.summary.lowSeverity}</div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Low
+                  </p>
+                  <p className="text-xl font-bold text-blue-500">
+                    {result.summary.lowSeverity}
+                  </p>
                 </div>
               </div>
             </>
           ) : (
-             <div className="md:col-span-3 text-center p-6 bg-gray-50 rounded-lg">
-                <h3 className="font-semibold">{status === 'failed' ? 'Analysis Failed' : 'Analysis Incomplete'}</h3>
-                <p className="text-sm text-gray-600">{analysis.error || 'The analysis did not produce a result.'}</p>
+            <div className="md:col-span-3 text-center p-4">
+              <h3 className="font-semibold text-lg">
+                {status === "failed"
+                  ? "Analysis Failed"
+                  : "Analysis Incomplete"}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {analysis.error || "The analysis did not produce a result."}
+              </p>
             </div>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* Vulnerabilities Section */}
       {result && result.vulnerabilities.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Vulnerabilities Found ({result.vulnerabilities.length})</h2>
-          <div className="space-y-4">
-            {result.vulnerabilities.map((vuln, index) => (
-              <VulnerabilityCard key={index} vuln={vuln} />
-            ))}
-          </div>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              Vulnerabilities Found ({result.vulnerabilities.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Accordion type="single" collapsible className="w-full">
+              {result.vulnerabilities.map((vuln, index) => (
+                <VulnerabilityAccordionItem key={index} vuln={vuln} />
+              ))}
+            </Accordion>
+          </CardContent>
+        </Card>
       )}
 
       {result && result.vulnerabilities.length === 0 && (
-        <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
-           <ShieldCheck className="w-16 h-16 text-green-500 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900">No Vulnerabilities Found</h3>
-          <p className="mt-2 text-gray-600">Our scanner did not find any vulnerabilities in this contract.</p>
+        <div className="text-center py-12 border-2 border-dashed border-border rounded-lg">
+          <ShieldCheck className="w-16 h-16 text-green-500 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold">No Vulnerabilities Found</h3>
+          <p className="mt-2 text-muted-foreground">
+            Our scanner did not find any issues in this contract.
+          </p>
         </div>
       )}
     </div>

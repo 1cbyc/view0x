@@ -1,30 +1,30 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ShieldCheck } from "lucide-react";
+import { Button } from "./ui/button";
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<{ name: string } | null>(null);
 
-  const checkAuthState = () => {
-    try {
-      const storedUser = localStorage.getItem("user");
-      const accessToken = localStorage.getItem("accessToken");
-      if (storedUser && accessToken) {
-        setUser(JSON.parse(storedUser));
-      } else {
+  // Effect to check auth state on mount and on storage change
+  useEffect(() => {
+    const checkAuthState = () => {
+      try {
+        const storedUser = localStorage.getItem("user");
+        const accessToken = localStorage.getItem("accessToken");
+        if (storedUser && accessToken) {
+          setUser(JSON.parse(storedUser));
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        console.error("Failed to parse user from localStorage", error);
         setUser(null);
       }
-    } catch (error) {
-      console.error("Failed to parse user from localStorage", error);
-      setUser(null);
-    }
-  };
+    };
 
-  useEffect(() => {
     checkAuthState();
-
-    // Listen for storage changes to sync login/logout across tabs
     window.addEventListener("storage", checkAuthState);
 
     return () => {
@@ -33,79 +33,49 @@ const Navbar: React.FC = () => {
   }, []);
 
   const handleLogout = () => {
-    // Clear authentication data from localStorage
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("user");
-
-    // Update state and redirect
     setUser(null);
     navigate("/login");
   };
 
   return (
-    <header className="bg-white shadow-sm sticky top-0 z-50">
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo and App Name */}
-          <div className="flex-shrink-0">
-            <Link
-              to="/"
-              className="flex items-center space-x-2 text-xl font-bold text-gray-800"
-            >
-              <ShieldCheck className="h-7 w-7 text-blue-600" />
-              <span>SecureAudit</span>
-            </Link>
-          </div>
-
-          {/* Navigation Links */}
-          <div className="hidden md:flex md:items-center md:space-x-8">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <nav className="container flex h-14 max-w-screen-2xl items-center">
+        <div className="mr-4 flex">
+          <Link to="/" className="mr-6 flex items-center space-x-2">
+            <ShieldCheck className="h-6 w-6 text-primary" />
+            <span className="font-bold">SecureAudit</span>
+          </Link>
+          <div className="hidden md:flex items-center space-x-6 text-sm font-medium">
             <Link
               to="/analyze"
-              className="text-gray-600 hover:text-blue-600 transition-colors duration-200"
+              className="transition-colors hover:text-foreground/80 text-foreground/60"
             >
               Scanner
             </Link>
-            {/* Future links can be added here */}
           </div>
+        </div>
 
-          {/* Auth Links */}
-          <div className="flex items-center space-x-4">
-            {user ? (
-              <>
-                <Link
-                  to="/dashboard"
-                  className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
-                >
-                  Dashboard
-                </Link>
-                <span className="text-sm text-gray-700">
-                  Welcome, {user.name}
-                </span>
-                <button
-                  onClick={handleLogout}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-transparent rounded-md transition-colors"
-                >
-                  Logout
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  to="/register"
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 border border-transparent rounded-md shadow-sm transition-colors"
-                >
-                  Sign Up
-                </Link>
-              </>
-            )}
-          </div>
+        <div className="flex flex-1 items-center justify-end space-x-2">
+          {user ? (
+            <div className="flex items-center space-x-4">
+              <Link to="/dashboard">
+                <Button variant="ghost">Dashboard</Button>
+              </Link>
+              <Button onClick={handleLogout}>Logout</Button>
+            </div>
+          ) : (
+            <>
+              <Link to="/login">
+                <Button variant="ghost">Sign In</Button>
+              </Link>
+              <Link to="/register">
+                <Button>Sign Up</Button>
+              </Link>
+            </>
+          )}
         </div>
       </nav>
     </header>
