@@ -25,6 +25,8 @@ import redis.asyncio as redis
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from analyzers.slither_analyzer import SlitherAnalyzer
+from analyzers.mythril_analyzer import mythril_analyzer
+from analyzers.semgrep_analyzer import semgrep_analyzer
 
 # Configure logging
 logging.basicConfig(
@@ -57,11 +59,13 @@ class HealthResponse(BaseModel):
 app = None
 redis_client = None
 slither_analyzer = None
+mythril_analyzer_instance = None
+semgrep_analyzer_instance = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager"""
-    global redis_client, slither_analyzer
+    global redis_client, slither_analyzer, mythril_analyzer_instance, semgrep_analyzer_instance
 
     logger.info("🚀 Starting Secure Audit Analysis Server...")
 
@@ -74,11 +78,24 @@ async def lifespan(app: FastAPI):
 
         # Initialize analyzers
         slither_analyzer = SlitherAnalyzer()
+        mythril_analyzer_instance = mythril_analyzer
+        semgrep_analyzer_instance = semgrep_analyzer
 
+        # Log analyzer availability
         if slither_analyzer.is_available():
             logger.info("✅ Slither analyzer available")
         else:
             logger.warning("⚠️ Slither analyzer not available")
+
+        if mythril_analyzer_instance.is_available():
+            logger.info("✅ Mythril analyzer available")
+        else:
+            logger.warning("⚠️ Mythril analyzer not available")
+
+        if semgrep_analyzer_instance.is_available():
+            logger.info("✅ Semgrep analyzer available")
+        else:
+            logger.warning("⚠️ Semgrep analyzer not available")
 
         logger.info("🎉 Analysis server started successfully")
 
@@ -127,6 +144,8 @@ async def health_check():
         # Check analyzers
         analyzers_status = {
             "slither": slither_analyzer.is_available() if slither_analyzer else False,
+            "mythril": mythril_analyzer_instance.is_available() if mythril_analyzer_instance else False,
+            "semgrep": semgrep_analyzer_instance.is_available() if semgrep_analyzer_instance else False,
         }
 
         status = "healthy" if redis_ok and any(analyzers_status.values()) else "unhealthy"

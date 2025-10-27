@@ -1,5 +1,7 @@
 # Core analysis tools
 slither-analyzer==0.10.0
+mythril>=0.24.0
+semgrep>=1.40.0
 
 # Web framework for Python workers
 fastapi==0.111.0
