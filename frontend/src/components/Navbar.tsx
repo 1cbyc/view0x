@@ -73,6 +73,12 @@ const Navbar: React.FC = () => {
           <div className="flex items-center space-x-4">
             {user ? (
               <>
+                <Link
+                  to="/dashboard"
+                  className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
+                >
+                  Dashboard
+                </Link>
                 <span className="text-sm text-gray-700">
                   Welcome, {user.name}
                 </span>
