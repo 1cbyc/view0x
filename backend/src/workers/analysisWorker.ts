@@ -6,6 +6,9 @@ import { bullQueueClient, bullQueueSubscriber } from "../config/database";
 import { analysisService } from "../services/analysisService";
 import axios from "axios";
 
+// Python API URL - configurable via environment variable
+const PYTHON_API_URL = process.env.PYTHON_API_URL || "http://localhost:8000";
+
 // 1. Define the Job Payload Interface
 interface AnalysisJobPayload {
   analysisId: string;
@@ -62,7 +65,7 @@ const processAnalysisJob = async (job: Queue.Job<AnalysisJobPayload>) => {
     logger.info(`[WORKER] Job ${analysisId} status set to processing.`);
 
     // B. Call the Python analysis service
-    const pythonApiUrl = "http://localhost:8000/analyze"; // This should be in .env
+    const pythonApiUrl = `${PYTHON_API_URL}/analyze`;
     logger.info(
       `[WORKER] Sending analysis request to Python service at ${pythonApiUrl}`,
     );
