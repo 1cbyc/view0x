@@ -31,7 +31,7 @@ export interface EnvironmentConfig {
   SLITHER_TIMEOUT: number;
   MAX_CONTRACT_SIZE: number;
   MAX_CONCURRENT_ANALYSES: number;
-  ANALYSIS_ENGINE: 'python' | 'scanner-engine' | 'both'; // New option
+  ANALYSIS_ENGINE: 'python' | 'scanner-engine' | 'both' | 'all';
 
   // Rate limiting
   RATE_LIMIT_WINDOW_MS: number;
