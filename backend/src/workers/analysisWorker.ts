@@ -3,24 +3,18 @@ import axios from "axios";
 import { Analysis } from "../models/Analysis";
 import { logger } from "../utils/logger";
 import { env } from "../config/environment";
-import {
-  bullQueueClient,
-  bullQueueSubscriber,
-  defaultRedis,
-} from "../config/database";
+import { bullQueueClient, bullQueueSubscriber } from "../config/database";
 import { analysisService } from "../services/analysisService";
-import { AnalysisResult } from "../shared/types/analysis";
+import { emitAnalysisUpdate } from "../events/appEvents";
 
-const PYTHON_API_URL = process.env.PYTHON_API_URL || "http://localhost:8000";
-const POLLING_TIMEOUT_MS = 120000; // 2 minutes
-const POLLING_INTERVAL_MS = 2000; // 2 seconds
-
+// Define the Job Payload Interface
 interface AnalysisJobPayload {
   analysisId: string;
   contractCode: string;
   options?: object;
 }
 
+// Create the Bull Queue
 export const analysisQueue = new Queue<AnalysisJobPayload>("analysis-jobs", {
   createClient: (type) => {
     switch (type) {
@@ -34,7 +28,10 @@ export const analysisQueue = new Queue<AnalysisJobPayload>("analysis-jobs", {
   },
   defaultJobOptions: {
     attempts: 3,
-    backoff: { type: "exponential", delay: 5000 },
+    backoff: {
+      type: "exponential",
+      delay: 5000,
+    },
     removeOnComplete: true,
     removeOnFail: false,
   },
@@ -44,132 +41,109 @@ export const analysisQueue = new Queue<AnalysisJobPayload>("analysis-jobs", {
   },
 });
 
-/**
- * Initiates the analysis by calling the Python worker.
- * @param analysisId - The ID of the analysis job.
- * @param contractCode - The contract code to analyze.
- * @param options - Analysis options.
- */
-async function initiatePythonAnalysis(
-  analysisId: string,
-  contractCode: string,
-  options?: object,
-): Promise<void> {
-  const url = `${PYTHON_API_URL}/analyze`;
-  logger.info(
-    `[WORKER] Sending analysis request to Python service for job ${analysisId}`,
-    { url },
-  );
-
-  await axios.post(url, {
-    job_id: analysisId,
-    contract_code: contractCode,
-    options: options,
-  });
-}
-
-/**
- * Polls Redis for the result of the analysis from the Python worker.
- * @param analysisId - The ID of the analysis job.
- * @returns The analysis result.
- */
-async function awaitAnalysisResult(
-  analysisId: string,
-): Promise<AnalysisResult> {
-  const startTime = Date.now();
-  const resultKey = `analysis_result:${analysisId}`;
-  logger.info(`[WORKER] Polling Redis for result of job ${analysisId}`, {
-    key: resultKey,
-  });
-
-  while (Date.now() - startTime < POLLING_TIMEOUT_MS) {
-    const resultJson = await defaultRedis.get(resultKey);
-    if (resultJson) {
-      logger.info(`[WORKER] Result found in Redis for job ${analysisId}`);
-      await defaultRedis.del(resultKey); // Clean up the key after reading
-      try {
-        return JSON.parse(resultJson) as AnalysisResult;
-      } catch (error) {
-        throw new Error(
-          `Failed to parse analysis result for job ${analysisId}`,
-        );
-      }
-    }
-    await new Promise((resolve) => setTimeout(resolve, POLLING_INTERVAL_MS));
-  }
-
-  throw new Error(
-    `Polling for result of job ${analysisId} timed out after ${POLLING_TIMEOUT_MS / 1000} seconds.`,
-  );
-}
-
-/**
- * Processes a single analysis job from the queue.
- * @param job - The Bull job object.
- */
+// Define the Worker Process
 const processAnalysisJob = async (job: Queue.Job<AnalysisJobPayload>) => {
   const { analysisId, contractCode, options } = job.data;
   logger.info(`[WORKER] Starting analysis job: ${analysisId}`);
 
   const analysis = await Analysis.findByPk(analysisId);
   if (!analysis) {
-    throw new Error(
-      `[WORKER] Analysis record ${analysisId} not found in database. Aborting.`,
+    logger.error(
+      `[WORKER] Analysis record not found for job ${analysisId}. Aborting.`,
     );
+    throw new Error(`Analysis record ${analysisId} not found.`);
   }
 
   try {
-    // 1. Update status to 'processing' in the database
+    // 1. Update status to 'processing' and emit event
     await analysis.setStarted();
-    await job.progress(10);
+    emitAnalysisUpdate({
+      analysisId,
+      status: "processing",
+      progress: 10,
+      currentStep: "Initializing analysis...",
+    });
 
-    // 2. Trigger the asynchronous Python analysis service
-    await initiatePythonAnalysis(analysisId, contractCode, options);
-    await job.progress(30);
+    // 2. Call the Python analysis service
+    const pythonApiUrl = "http://localhost:8000/analyze"; // Should be in .env
+    logger.info(
+      `[WORKER] Sending analysis request to Python service for job ${analysisId}`,
+    );
 
-    // 3. Poll Redis for the result from the Python worker
-    const result = await awaitAnalysisResult(analysisId);
-    await job.progress(90);
+    // Emit event to notify that the heavy lifting has started
+    emitAnalysisUpdate({
+      analysisId,
+      status: "processing",
+      progress: 30,
+      currentStep: "Scanning contract with Slither...",
+    });
 
-    // 4. Save the final result to the PostgreSQL database
+    const response = await axios.post(
+      pythonApiUrl,
+      {
+        job_id: analysisId,
+        contract_code: contractCode,
+        options: options,
+      },
+      { timeout: env.SLITHER_TIMEOUT * 1000 }, // Add timeout
+    );
+
+    const result = response.data;
+
+    // 3. Update the analysis record with the result
     await analysis.setCompleted(result);
     logger.info(`[WORKER] Result for job ${analysisId} saved to database.`);
 
-    // 5. Cache the result in Redis for future identical requests
+    // 4. Cache the result for future identical requests
     await analysisService.cacheResult(analysis);
 
-    await job.progress(100);
+    // 5. Emit completion event
+    emitAnalysisUpdate({
+      analysisId,
+      status: "completed",
+      progress: 100,
+      currentStep: "Analysis complete",
+      result,
+    });
+
     logger.info(
       `[WORKER] ✅ Analysis job ${analysisId} completed successfully.`,
     );
-
-    return { success: true, analysisId };
+    return { success: true, result };
   } catch (error: any) {
-    logger.error(`[WORKER] ❌ Analysis job ${analysisId} failed:`, {
-      message: error.message,
-    });
+    logger.error(`[WORKER] ❌ Analysis job ${analysisId} failed:`, error);
 
-    // Update the database record to reflect the failure
+    const errorMessage =
+      error.response?.data?.detail ||
+      error.message ||
+      "An unknown error occurred during analysis.";
+
     if (analysis) {
-      await analysis.setFailed(
-        error.message || "An unknown error occurred during analysis.",
-      );
+      await analysis.setFailed(errorMessage);
     }
 
-    // Re-throw the error to allow Bull to handle retries
-    throw error;
+    // Emit failure event
+    emitAnalysisUpdate({
+      analysisId,
+      status: "failed",
+      progress: 0,
+      error: errorMessage,
+    });
+
+    // Re-throw the error to let Bull handle the retry logic
+    throw new Error(errorMessage);
   }
 };
 
-// Start processing jobs from the queue
+// Start the Worker
 analysisQueue.process("analyze-contract", processAnalysisJob);
 
-// Event listeners for queue monitoring
+// Event Listeners for Logging and Monitoring
 analysisQueue.on("active", (job) => {
   logger.info(`[QUEUE] Job ${job.id} (${job.data.analysisId}) has started.`);
 });
 
-analysisQueue.on("completed", (job) => {
+analysisQueue.on("completed", (job, result) => {
   logger.info(
     `[QUEUE] Job ${job.id} (${job.data.analysisId}) completed successfully.`,
   );
@@ -177,8 +151,7 @@ analysisQueue.on("completed", (job) => {
 
 analysisQueue.on("failed", (job, error) => {
   logger.error(
-    `[QUEUE] Job ${job.id} (${job.data.analysisId}) failed after ${job.attemptsMade} attempts:`,
-    { message: error.message },
+    `[QUEUE] Job ${job.id} (${job.data.analysisId}) failed after ${job.attemptsMade} attempts: ${error.message}`,
   );
 });
 
