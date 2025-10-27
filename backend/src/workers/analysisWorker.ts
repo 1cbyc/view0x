@@ -6,6 +6,7 @@ import { env } from "../config/environment";
 import { bullQueueClient, bullQueueSubscriber } from "../config/database";
 import { analysisService } from "../services/analysisService";
 import { emitAnalysisUpdate } from "../events/appEvents";
+import { scannerEngineService } from "../services/scannerEngineService";
 
 // Define the Job Payload Interface
 interface AnalysisJobPayload {
