@@ -137,7 +137,7 @@ function parseEnvironmentConfig(): EnvironmentConfig {
     SLITHER_TIMEOUT: parseInt(process.env.SLITHER_TIMEOUT || '') || defaults.SLITHER_TIMEOUT!,
     MAX_CONTRACT_SIZE: parseInt(process.env.MAX_CONTRACT_SIZE || '') || defaults.MAX_CONTRACT_SIZE!,
     MAX_CONCURRENT_ANALYSES: parseInt(process.env.MAX_CONCURRENT_ANALYSES || '') || defaults.MAX_CONCURRENT_ANALYSES!,
-    ANALYSIS_ENGINE: (process.env.ANALYSIS_ENGINE as 'python' | 'scanner-engine' | 'both') || defaults.ANALYSIS_ENGINE!,
+    ANALYSIS_ENGINE: (process.env.ANALYSIS_ENGINE as 'python' | 'scanner-engine' | 'both' | 'all') || defaults.ANALYSIS_ENGINE!,
 
     // Rate limiting
     RATE_LIMIT_WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '') || defaults.RATE_LIMIT_WINDOW_MS!,
