@@ -6,7 +6,7 @@ import ContractAnalyzer from "./pages/ContractAnalyzer";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
-import AnalysisDetailPage from "./pages/AnalysisDetailPage"; // This will be created next
+import AnalysisDetailPage from "./pages/AnalysisResult";
 
 // Layout Components
 import Navbar from "./components/Navbar";

@@ -11,7 +11,7 @@ const api = axios.create({
 // Add request interceptor to include auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -96,6 +96,15 @@ export const contractApi = {
 
   getAnalysisHistory: () =>
     api.get('/analysis'),
+};
+
+// Analysis API endpoints (authenticated)
+export const analysisApi = {
+  getHistory: () =>
+    api.get('/analysis'),
+
+  getAnalysis: (analysisId: string) =>
+    api.get(`/analysis/${analysisId}`),
 };
 
 export default api; 
