@@ -87,7 +87,7 @@ const processAnalysisJob = async (job: Queue.Job<AnalysisJobPayload>) => {
       result = scannerEngineService.formatResults(report);
       
     } else if (engine === 'all' || engine === 'both') {
-      // Use both engines and combine results
+      // Run all available engines in parallel
       emitAnalysisUpdate({
         analysisId,
         status: "processing",
@@ -95,58 +95,130 @@ const processAnalysisJob = async (job: Queue.Job<AnalysisJobPayload>) => {
         currentStep: "Running multi-engine analysis...",
       });
       
-      // Run Python (Slither)
-      emitAnalysisUpdate({
-        analysisId,
-        status: "processing",
-        progress: 30,
-        currentStep: "Scanning with Slither...",
-      });
-      
       const pythonApiUrl = "http://localhost:8000/analyze";
-      const pythonResponse = await axios.post(
-        pythonApiUrl,
-        {
-          job_id: analysisId,
-          contract_code: contractCode,
-          options: options,
-        },
-        { timeout: env.SLITHER_TIMEOUT * 1000 }
-      );
+      const engineResults: any[] = [];
       
-      // Run scanner-engine
+      // Run all engines in parallel with progress tracking
+      const runEngines = async () => {
+        // Slither (Python)
+        emitAnalysisUpdate({
+          analysisId,
+          status: "processing",
+          progress: 25,
+          currentStep: "Running Slither...",
+        });
+        
+        try {
+          const slitherResult = await axios.post(
+            pythonApiUrl,
+            {
+              job_id: analysisId,
+              contract_code: contractCode,
+              options: { ...options, engine: 'slither' },
+            },
+            { timeout: env.SLITHER_TIMEOUT * 1000 }
+          );
+          engineResults.push({ 
+            vulnerabilities: slitherResult.data.vulnerabilities || [],
+            warnings: slitherResult.data.warnings || [],
+            engine: 'slither'
+          });
+        } catch (error: any) {
+          logger.warn(`[WORKER] Slither analysis failed: ${error.message}`);
+        }
+        
+        // Mythril
+        if (options && (options as any).use_mythril !== false) {
+          emitAnalysisUpdate({
+            analysisId,
+            status: "processing",
+            progress: 50,
+            currentStep: "Running Mythril...",
+          });
+          
+          try {
+            const mythrilResult = await axios.post(
+              pythonApiUrl,
+              {
+                job_id: analysisId,
+                contract_code: contractCode,
+                options: { ...options, engine: 'mythril' },
+              },
+              { timeout: env.SLITHER_TIMEOUT * 1000 }
+            );
+            engineResults.push({
+              vulnerabilities: mythrilResult.data.vulnerabilities || [],
+              warnings: mythrilResult.data.warnings || [],
+              engine: 'mythril'
+            });
+          } catch (error: any) {
+            logger.warn(`[WORKER] Mythril analysis failed: ${error.message}`);
+          }
+        }
+        
+        // Semgrep
+        if (options && (options as any).use_semgrep !== false) {
+          emitAnalysisUpdate({
+            analysisId,
+            status: "processing",
+            progress: 65,
+            currentStep: "Running Semgrep...",
+          });
+          
+          try {
+            const semgrepResult = await axios.post(
+              pythonApiUrl,
+              {
+                job_id: analysisId,
+                contract_code: contractCode,
+                options: { ...options, engine: 'semgrep' },
+              },
+              { timeout: 30000 }
+            );
+            engineResults.push({
+              vulnerabilities: semgrepResult.data.vulnerabilities || [],
+              warnings: semgrepResult.data.warnings || [],
+              engine: 'semgrep'
+            });
+          } catch (error: any) {
+            logger.warn(`[WORKER] Semgrep analysis failed: ${error.message}`);
+          }
+        }
+        
+        // Scanner Engine
+        if (scannerEngineService.isAvailable()) {
+          emitAnalysisUpdate({
+            analysisId,
+            status: "processing",
+            progress: 80,
+            currentStep: "Running Scanner Engine...",
+          });
+          
+          try {
+            const report = await scannerEngineService.analyzeContract(contractCode, options);
+            const scannerResults = scannerEngineService.formatResults(report);
+            engineResults.push({
+              vulnerabilities: scannerResults.vulnerabilities || [],
+              warnings: scannerResults.warnings || [],
+              engine: 'scanner-engine'
+            });
+          } catch (error: any) {
+            logger.warn(`[WORKER] Scanner Engine analysis failed: ${error.message}`);
+          }
+        }
+      };
+      
+      await runEngines();
+      
+      // Merge results
       emitAnalysisUpdate({
         analysisId,
         status: "processing",
-        progress: 60,
-        currentStep: "Scanning with Scanner Engine...",
+        progress: 90,
+        currentStep: "Merging results...",
       });
       
-      if (scannerEngineService.isAvailable()) {
-        const report = await scannerEngineService.analyzeContract(contractCode, options);
-        const scannerResults = scannerEngineService.formatResults(report);
-        
-        // Combine results
-        result = {
-          python: pythonResponse.data,
-          scannerEngine: scannerResults,
-          combined: {
-            vulnerabilities: [
-              ...(pythonResponse.data.vulnerabilities || []).map((v: any) => ({ ...v, source: 'slither' })),
-              ...(scannerResults.vulnerabilities || []).map((v: any) => ({ ...v, source: 'scanner-engine' }))
-            ],
-            warnings: [
-              ...(pythonResponse.data.warnings || []).map((v: any) => ({ ...v, source: 'slither' })),
-              ...(scannerResults.warnings || []).map((v: any) => ({ ...v, source: 'scanner-engine' }))
-            ]
-          },
-          engine: 'both',
-          timestamp: new Date().toISOString(),
-        };
-      } else {
-        // Fallback to just Python
-        result = { ...pythonResponse.data, engine: 'python' };
-      }
+      result = ResultMerger.merge(engineResults);
       
     } else {
       // Default: Use Python (Slither)
