@@ -1,40 +1,103 @@
-version: '3.9'
+version: "3.9"
+
+# This Docker Compose file sets up the complete development environment
+# for the Secure Audit application, including the frontend, backend,
+# database, cache, and the Python analysis worker.
+
 services:
+  # 1. Frontend Service (React UI)
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+    container_name: frontend
     ports:
       - "3000:3000"
-    volumes:
-      - ./frontend:/app
+    # The frontend's vite.config.js is configured to proxy /api requests
+    # to the backend service. This setup relies on Docker's networking.
+    # To make this work, the frontend container will talk to the host,
+    # and the backend container must expose its port to the host.
+    environment:
+      - VITE_API_URL=http://localhost:3001/api
+      - VITE_SOCKET_URL=http://localhost:3001
     depends_on:
       - backend
 
+  # 2. Backend Service (Node.js API)
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+    container_name: backend
     ports:
-      - "4000:4000"
-    volumes:
-      - ./backend:/app
+      # Expose port 3001 to the host machine for the frontend proxy
+      - "3001:3001"
+    env_file:
+      - ./backend/.env
     environment:
-      - PORT=4000
-      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/secure_audit
+      # Override .env variables to use Docker service names
+      - DATABASE_URL=postgresql://postgres:password@db:5432/secure_audit_dev
       - REDIS_URL=redis://redis:6379
+      - PYTHON_API_URL=http://python-worker:8000
     depends_on:
-      - postgres
+      - db
       - redis
+      - python-worker
 
-  postgres:
-    image: postgres:15
+  # 3. Python Analysis Worker Service
+  python-worker:
+    build:
+      context: ./python
+    container_name: python-worker
+    restart: unless-stopped
+    env_file:
+      - ./python/.env
+    # The port is exposed to other services on the Docker network,
+    # but not to the host machine.
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # 4. PostgreSQL Database Service
+  db:
+    image: postgres:15-alpine
+    container_name: db
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: secure_audit
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=secure_audit_dev
     ports:
+      # Expose port 5432 to the host for direct database access/debugging
       - "5432:5432"
+    volumes:
+      # Persist database data across container restarts
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  # 5. Redis Cache Service
   redis:
-    image: redis:alpine
+    image: redis:7-alpine
+    container_name: redis
     restart: always
-    ports:
-      - "6379:6379"
+    # The port is exposed to other services, but not the host
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# Named volume for persisting PostgreSQL data
+volumes:
+  postgres_data:
