@@ -1,4 +1,4 @@
-import { ScannerEngine, VulnerabilityReport } from "../../types/scanner-engine.d";
+import { ScannerEngine, VulnerabilityReport } from "../types/scanner-engine.d";
 import { logger } from "../utils/logger";
 
 /**
