@@ -1,12 +1,26 @@
-import { ScannerEngine, VulnerabilityReport } from "../types/scanner-engine.d";
 import { logger } from "../utils/logger";
+
+// Type definitions
+interface Vulnerability {
+  severity: 'HIGH' | 'MEDIUM' | 'LOW';
+  title: string;
+  description: string;
+  location: { start: number; end: number };
+  recommendation: string;
+}
+
+interface VulnerabilityReport {
+  vulnerabilities: Vulnerability[];
+  warnings: any[];
+  suggestions: any[];
+}
 
 /**
  * Scanner Engine Service
  * Provides an alternative analysis engine using the scanner-engine package
  */
 class ScannerEngineService {
-  private engine: ScannerEngine | null = null;
+  private engine: any = null;
 
   constructor() {
     try {
