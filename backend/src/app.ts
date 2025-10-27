@@ -22,6 +22,9 @@ import authRoutes from "./routes/auth";
 import analysisRoutes from "./routes/analysis";
 // import userRoutes from './routes/users';
 
+// Workers - Import to start the queue worker
+import "./workers/analysisWorker";
+
 // Initialize Express app
 const app = express();
 const server = createServer(app);
