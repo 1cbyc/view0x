@@ -1,54 +1,85 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { Shield, Zap, Code, Github } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { ShieldCheck } from "lucide-react";
+import { Button } from "./ui/button";
 
 const Navbar: React.FC = () => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState<{ name: string } | null>(null);
+
+  // Effect to check auth state on mount and on storage change
+  useEffect(() => {
+    const checkAuthState = () => {
+      try {
+        const storedUser = localStorage.getItem("user");
+        const accessToken = localStorage.getItem("accessToken");
+        if (storedUser && accessToken) {
+          setUser(JSON.parse(storedUser));
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        console.error("Failed to parse user from localStorage", error);
+        setUser(null);
+      }
+    };
+
+    checkAuthState();
+    window.addEventListener("storage", checkAuthState);
+
+    return () => {
+      window.removeEventListener("storage", checkAuthState);
+    };
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("user");
+    setUser(null);
+    navigate("/login");
+  };
+
   return (
-    <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-4">
-            <Link to="/" className="flex items-center space-x-2">
-              <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg">
-                <Shield className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Secure Audit
-              </span>
-            </Link>
-            <div className="hidden md:flex items-center space-x-1">
-              <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                Beta
-              </span>
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-6">
-            <div className="hidden md:flex items-center space-x-4 text-sm text-gray-600">
-              <div className="flex items-center space-x-1">
-                <Zap className="w-4 h-4" />
-                <span>Fast Analysis</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <Code className="w-4 h-4" />
-                <span>Smart Detection</span>
-              </div>
-            </div>
-            
-            <a
-              href="https://github.com/1cbyc/secure-audit"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <nav className="container flex h-14 max-w-screen-2xl items-center">
+        <div className="mr-4 flex">
+          <Link to="/" className="mr-6 flex items-center space-x-2">
+            <ShieldCheck className="h-6 w-6 text-primary" />
+            <span className="font-bold">SecureAudit</span>
+          </Link>
+          <div className="hidden md:flex items-center space-x-6 text-sm font-medium">
+            <Link
+              to="/analyze"
+              className="transition-colors hover:text-foreground/80 text-foreground/60"
             >
-              <Github className="w-4 h-4" />
-              <span className="hidden sm:inline">GitHub</span>
-            </a>
+              Scanner
+            </Link>
           </div>
         </div>
-      </div>
-    </nav>
+
+        <div className="flex flex-1 items-center justify-end space-x-2">
+          {user ? (
+            <div className="flex items-center space-x-4">
+              <Link to="/dashboard">
+                <Button variant="ghost">Dashboard</Button>
+              </Link>
+              <Button onClick={handleLogout}>Logout</Button>
+            </div>
+          ) : (
+            <>
+              <Link to="/login">
+                <Button variant="ghost">Sign In</Button>
+              </Link>
+              <Link to="/register">
+                <Button>Sign Up</Button>
+              </Link>
+            </>
+          )}
+        </div>
+      </nav>
+    </header>
   );
 };
 
-export default Navbar; 
+export default Navbar;
