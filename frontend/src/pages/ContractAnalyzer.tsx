@@ -1,4 +1,4 @@
-import React, 'react';
+import React, { useState, useEffect } from "react";
 import {
   FileText,
   AlertTriangle,
@@ -7,10 +7,13 @@ import {
   Copy,
   Shield,
   Info,
-  BarChart2
-} from 'lucide-react';
-import { contractApi } from '../services/api';
-import { socketService, AnalysisUpdatePayload } from '../services/socketService';
+  BarChart2,
+} from "lucide-react";
+import { contractApi } from "../services/api";
+import {
+  socketService,
+  AnalysisUpdatePayload,
+} from "../services/socketService";
 
 // --- Type Definitions ---
 
@@ -145,13 +148,17 @@ const AnalysisSummary: React.FC<{ summary: AnalysisResult["summary"] }> = ({
 const ContractAnalyzer: React.FC = () => {
   const [contractCode, setContractCode] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
 
   // New state for real-time updates
   const [progress, setProgress] = useState(0);
-  const [progressMessage, setProgressMessage] = useState('');
-  const [currentAnalysisId, setCurrentAnalysisId] = useState<string | null>(null);
+  const [progressMessage, setProgressMessage] = useState("");
+  const [currentAnalysisId, setCurrentAnalysisId] = useState<string | null>(
+    null,
+  );
 
   const sampleContract = `// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
@@ -186,23 +193,53 @@ contract VulnerableContract {
     }
 }`;
 
-  React.useEffect(() => {
+  useEffect(() => {
     socketService.connect();
 
+    // The main listener function
+    const handleUpdate = (payload: AnalysisUpdatePayload) => {
+      // Only process updates for the current analysis
+      if (payload.analysisId !== currentAnalysisId) return;
+
+      setProgress(payload.progress);
+      setProgressMessage(payload.message || "");
+
+      if (payload.status === "completed") {
+        setAnalysisResult(payload.result);
+        setIsAnalyzing(false);
+        setCurrentAnalysisId(null); // Stop listening
+      } else if (payload.status === "failed") {
+        setError(payload.error || "An unknown error occurred during analysis.");
+        setIsAnalyzing(false);
+        setCurrentAnalysisId(null); // Stop listening
+      }
+    };
+
+    if (currentAnalysisId) {
+      socketService.subscribeToAnalysis(currentAnalysisId, handleUpdate);
+    }
+
     return () => {
+      // Cleanup: Unsubscribe when the component unmounts or the analysisId changes
       if (currentAnalysisId) {
         socketService.unsubscribeFromAnalysis(currentAnalysisId);
       }
-      socketService.disconnect();
     };
   }, [currentAnalysisId]);
+
+  // Effect for disconnecting socket on unmount
+  useEffect(() => {
+    return () => {
+      socketService.disconnect();
+    };
+  }, []);
 
   const resetState = () => {
     setIsAnalyzing(false);
     setAnalysisResult(null);
     setError(null);
     setProgress(0);
-    setProgressMessage('');
+    setProgressMessage("");
     if (currentAnalysisId) {
       socketService.unsubscribeFromAnalysis(currentAnalysisId);
       setCurrentAnalysisId(null);
@@ -224,33 +261,16 @@ contract VulnerableContract {
 
     resetState();
     setIsAnalyzing(true);
-    setProgressMessage('Submitting for analysis...');
+    setProgressMessage("Submitting for analysis...");
 
     try {
+      // The initial API call starts the job and returns the analysis ID
       const response = await contractApi.analyzeContract({ contractCode });
       const initialAnalysis = response.data;
 
       if (initialAnalysis && initialAnalysis.id) {
+        // Set the analysis ID to trigger the useEffect hook to subscribe
         setCurrentAnalysisId(initialAnalysis.id);
-
-        const handleUpdate = (payload: AnalysisUpdatePayload) => {
-          if (payload.analysisId !== initialAnalysis.id) return;
-
-          setProgress(payload.progress);
-          setProgressMessage(payload.message || '');
-
-          if (payload.status === 'completed') {
-            setAnalysisResult(payload.result);
-            setIsAnalyzing(false);
-            setCurrentAnalysisId(null); // Unsubscribe is handled in cleanup
-          } else if (payload.status === 'failed') {
-            setError(payload.error || 'An unknown error occurred during analysis.');
-            setIsAnalyzing(false);
-            setCurrentAnalysisId(null);
-          }
-        };
-
-        socketService.subscribeToAnalysis(initialAnalysis.id, handleUpdate);
       } else {
         throw new Error("Failed to start analysis: No analysis ID received.");
       }
@@ -326,6 +346,7 @@ contract VulnerableContract {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Input Panel */}
         <div className="space-y-4">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
@@ -378,15 +399,21 @@ contract VulnerableContract {
           </div>
         </div>
 
+        {/* Results Panel */}
         <div className="space-y-4">
           {isAnalyzing && (
-             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
-                <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{progressMessage || 'Analyzing Contract...'}</h3>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                    <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${progress}%` }}></div>
-                </div>
-                <p className="text-sm text-gray-600 mt-2">{progress}% complete</p>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+              <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                {progressMessage || "Analyzing Contract..."}
+              </h3>
+              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div
+                  className="bg-blue-600 h-2.5 rounded-full"
+                  style={{ width: `${progress}%` }}
+                ></div>
+              </div>
+              <p className="text-sm text-gray-600 mt-2">{progress}% complete</p>
             </div>
           )}
 
