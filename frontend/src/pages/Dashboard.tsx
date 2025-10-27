@@ -2,7 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { analysisApi } from '../services/api';
 import { Loader2, AlertTriangle, CheckCircle, Clock, ShieldAlert, FileText, ChevronRight } from 'lucide-react';
-import { format } from 'date-fns';
+// Simple date formatting function
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const month = months[date.getMonth()];
+  const day = date.getDate();
+  const year = date.getFullYear();
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  return `${month} ${day}, ${year} ${hours}:${minutes}`;
+};
 
 // This type should match the summary object from the backend Analysis model
 interface AnalysisSummary {
@@ -124,7 +134,7 @@ const Dashboard: React.FC = () => {
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {format(new Date(analysis.createdAt), 'MMM dd, yyyy HH:mm')}
+                  {formatDate(analysis.createdAt)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <Link to={`/analysis/${analysis.id}`} className="text-blue-600 hover:text-blue-900 inline-flex items-center">

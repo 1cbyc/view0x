@@ -1,8 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { analysisApi } from '../services/api';
-import { format } from 'date-fns';
-import { Loader2, AlertTriangle, FileText, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { Loader2, AlertTriangle, ArrowLeft, ShieldCheck } from 'lucide-react';
+
+// Simple date formatting function
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const month = months[date.getMonth()];
+  const day = date.getDate();
+  const year = date.getFullYear();
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  return `${month} ${day}, ${year} ${hours}:${minutes}`;
+};
 
 // --- Type Definitions ---
 // These should match the types from the backend and other components
@@ -48,7 +59,7 @@ interface AnalysisDetail {
 
 // --- Helper & Sub-components ---
 
-const getSeverityClass = (severity: 'High' | 'Medium' | 'Low' | 'HIGH' | 'MEDIUM' | 'LOW') => {
+const getSeverityClass = (severity: 'High' | 'Medium' | 'Low' | 'HIGH' | 'MEDIUM' | 'LOW' | 'Informational' | 'Optimization') => {
   switch (severity) {
     case 'High': case 'HIGH':
       return { bg: "bg-red-100", text: "text-red-800", border: "border-red-300" };
@@ -56,6 +67,8 @@ const getSeverityClass = (severity: 'High' | 'Medium' | 'Low' | 'HIGH' | 'MEDIUM
       return { bg: "bg-yellow-100", text: "text-yellow-800", border: "border-yellow-300" };
     case 'Low': case 'LOW':
       return { bg: "bg-blue-100", text: "text-blue-800", border: "border-blue-300" };
+    case 'Informational': case 'Optimization':
+      return { bg: "bg-gray-100", text: "text-gray-800", border: "border-gray-300" };
     default:
       return { bg: "bg-gray-100", text: "text-gray-800", border: "border-gray-300" };
   }
@@ -150,7 +163,7 @@ const AnalysisResultPage: React.FC = () => {
     return null; // Should be handled by loading/error states
   }
 
-  const { contractInfo, result, status, createdAt, completedAt } = analysis;
+  const { contractInfo, result, status, createdAt } = analysis;
   const riskClasses = result ? getSeverityClass(result.summary.riskLevel) : getSeverityClass('Low');
 
   return (
@@ -162,7 +175,7 @@ const AnalysisResultPage: React.FC = () => {
         </Link>
         <h1 className="text-3xl font-bold text-gray-900">{contractInfo.name || 'Analysis Details'}</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Analyzed on {format(new Date(createdAt), 'MMM dd, yyyy HH:mm')}
+          Analyzed on {formatDate(createdAt)}
         </p>
       </div>
 
