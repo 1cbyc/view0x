@@ -1,13 +1,21 @@
-import { Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
-import { User } from '../models/User';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+import { Request, Response } from "express";
+import jwt from "jsonwebtoken";
+import { User } from "../models/User";
+import { env } from "../config/environment";
+import { logger } from "../utils/logger";
 
 // Helper function to generate JWT token
-const generateToken = (userId: number) => {
-  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '24h' });
+const generateToken = (userId: string): string => {
+  return jwt.sign({ userId }, env.JWT_SECRET, {
+    expiresIn: "24h",
+  });
+};
+
+// Helper function to generate refresh token
+const generateRefreshToken = (userId: string): string => {
+  return jwt.sign({ userId, type: "refresh" }, env.REFRESH_TOKEN_SECRET, {
+    expiresIn: "7d",
+  });
 };
 
 // Login controller
@@ -15,73 +23,250 @@ export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: "MISSING_REQUIRED_FIELD",
+          message: "Email and password are required",
+        },
+      });
+    }
+
     // Find user by email
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findByEmail(email);
     if (!user) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: "UNAUTHORIZED",
+          message: "Invalid email or password",
+        },
+      });
     }
 
     // Check password
-    const isValidPassword = await bcrypt.compare(password, user.password);
+    const isValidPassword = await user.checkPassword(password);
     if (!isValidPassword) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: "UNAUTHORIZED",
+          message: "Invalid email or password",
+        },
+      });
     }
 
-    // Generate token
-    const token = generateToken(user.id);
+    // Update last login
+    user.lastLogin = new Date();
 
-    // Return user data and token
+    // Generate tokens
+    const token = generateToken(user.id);
+    const refreshToken = generateRefreshToken(user.id);
+
+    // Set refresh token
+    user.setRefreshToken(refreshToken, env.REFRESH_TOKEN_EXPIRES_IN);
+    await user.save();
+
+    logger.info(`User logged in: ${user.email}`);
+
+    // Return user data and tokens
     res.json({
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
+      success: true,
+      data: {
+        user: user.toProfileObject(),
+        tokens: {
+          accessToken: token,
+          refreshToken: refreshToken,
+          expiresIn: 24 * 60 * 60, // 24 hours in seconds
+          tokenType: "Bearer",
+        },
       },
     });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    logger.error("Login error:", error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Internal server error",
+      },
+    });
   }
 };
 
 // Register controller
 export const register = async (req: Request, res: Response) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, company } = req.body;
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
+    // Validate input
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: "MISSING_REQUIRED_FIELD",
+          message: "Name, email, and password are required",
+        },
+      });
     }
 
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    // Validate password strength
+    if (password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Password must be at least 8 characters long",
+        },
+      });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findByEmail(email);
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: "ALREADY_EXISTS",
+          message: "User already exists with this email",
+        },
+      });
+    }
 
     // Create new user
-    const user = await User.create({
+    const user = await User.createUser({
       name,
       email,
-      password: hashedPassword,
+      password,
+      company,
+      plan: "free",
     });
 
-    // Generate token
+    // Generate tokens
     const token = generateToken(user.id);
+    const refreshToken = generateRefreshToken(user.id);
 
-    // Return user data and token
+    // Set refresh token
+    user.setRefreshToken(refreshToken, env.REFRESH_TOKEN_EXPIRES_IN);
+    await user.save();
+
+    logger.info(`New user registered: ${user.email}`);
+
+    // Return user data and tokens
     res.status(201).json({
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
+      success: true,
+      data: {
+        user: user.toProfileObject(),
+        tokens: {
+          accessToken: token,
+          refreshToken: refreshToken,
+          expiresIn: 24 * 60 * 60, // 24 hours in seconds
+          tokenType: "Bearer",
+        },
+        message: "User registered successfully",
+        requiresEmailVerification: true,
       },
     });
   } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    logger.error("Registration error:", error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Internal server error",
+      },
+    });
+  }
+};
+
+// Refresh token controller
+export const refreshToken = async (req: Request, res: Response) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: "MISSING_REQUIRED_FIELD",
+          message: "Refresh token is required",
+        },
+      });
+    }
+
+    // Verify refresh token
+    let decoded;
+    try {
+      decoded = jwt.verify(refreshToken, env.REFRESH_TOKEN_SECRET) as {
+        userId: string;
+        type: string;
+      };
+    } catch (error) {
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: "INVALID_TOKEN",
+          message: "Invalid or expired refresh token",
+        },
+      });
+    }
+
+    if (decoded.type !== "refresh") {
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: "INVALID_TOKEN",
+          message: "Invalid token type",
+        },
+      });
+    }
+
+    // Find user and validate refresh token
+    const user = await User.findByPk(decoded.userId);
+    if (
+      !user ||
+      !user.isRefreshTokenValid() ||
+      user.refreshToken !== refreshToken
+    ) {
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: "INVALID_TOKEN",
+          message: "Invalid or expired refresh token",
+        },
+      });
+    }
+
+    // Generate new tokens
+    const newToken = generateToken(user.id);
+    const newRefreshToken = generateRefreshToken(user.id);
+
+    // Update refresh token
+    user.setRefreshToken(newRefreshToken, env.REFRESH_TOKEN_EXPIRES_IN);
+    await user.save();
+
+    res.json({
+      success: true,
+      data: {
+        tokens: {
+          accessToken: newToken,
+          refreshToken: newRefreshToken,
+          expiresIn: 24 * 60 * 60, // 24 hours in seconds
+          tokenType: "Bearer",
+        },
+      },
+    });
+  } catch (error) {
+    logger.error("Refresh token error:", error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Internal server error",
+      },
+    });
   }
 };
 
@@ -90,23 +275,47 @@ export const requestPasswordReset = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
 
-    const user = await User.findOne({ where: { email } });
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: "MISSING_REQUIRED_FIELD",
+          message: "Email is required",
+        },
+      });
+    }
+
+    const user = await User.findByEmail(email);
     if (!user) {
-      // Don't reveal that the user doesn't exist
-      return res.json({ message: 'If your email is registered, you will receive a password reset link' });
+      // Don't reveal that the user doesn't exist for security
+      return res.json({
+        success: true,
+        message:
+          "If your email is registered, you will receive a password reset link",
+      });
     }
 
     // Generate reset token
-    const resetToken = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '1h' });
+    const resetToken = user.generateResetToken();
+    await user.save();
 
-    // In a real application, you would:
-    // 1. Save the reset token to the user document
-    // 2. Send an email with the reset link
-    // For now, we'll just return the token
-    res.json({ message: 'Password reset link sent to your email' });
+    // TODO: Send email with reset link
+    logger.info(`Password reset requested for: ${email}`);
+
+    res.json({
+      success: true,
+      message:
+        "If your email is registered, you will receive a password reset link",
+    });
   } catch (error) {
-    console.error('Password reset request error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    logger.error("Password reset request error:", error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Internal server error",
+      },
+    });
   }
 };
 
@@ -115,25 +324,60 @@ export const resetPassword = async (req: Request, res: Response) => {
   try {
     const { token, password } = req.body;
 
-    // Verify token
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
-    const user = await User.findByPk(decoded.userId);
-
-    if (!user) {
-      return res.status(400).json({ message: 'Invalid or expired reset token' });
+    if (!token || !password) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: "MISSING_REQUIRED_FIELD",
+          message: "Token and password are required",
+        },
+      });
     }
 
-    // Hash new password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    // Validate password strength
+    if (password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Password must be at least 8 characters long",
+        },
+      });
+    }
 
-    // Update password
-    await user.update({ password: hashedPassword });
+    // Find user by reset token
+    const user = await User.findByResetToken(token);
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: "INVALID_TOKEN",
+          message: "Invalid or expired reset token",
+        },
+      });
+    }
 
-    res.json({ message: 'Password has been reset successfully' });
+    // Update password and clear reset token
+    await user.setPassword(password);
+    user.resetPasswordToken = null as any;
+    user.resetPasswordExpires = null as any;
+    await user.save();
+
+    logger.info(`Password reset completed for: ${user.email}`);
+
+    res.json({
+      success: true,
+      message: "Password has been reset successfully",
+    });
   } catch (error) {
-    console.error('Password reset error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    logger.error("Password reset error:", error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Internal server error",
+      },
+    });
   }
 };
 
@@ -143,24 +387,71 @@ export const getCurrentUser = async (req: Request, res: Response) => {
     // The user ID should be available from the auth middleware
     const userId = (req as any).user?.userId;
     if (!userId) {
-      return res.status(401).json({ message: 'Not authenticated' });
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: "UNAUTHORIZED",
+          message: "Not authenticated",
+        },
+      });
     }
 
-    const user = await User.findByPk(userId, {
-      attributes: { exclude: ['password'] }
-    });
-    
+    const user = await User.scope("withoutSecrets").findByPk(userId);
+
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: "NOT_FOUND",
+          message: "User not found",
+        },
+      });
     }
 
     res.json({
-      id: user.id,
-      name: user.name,
-      email: user.email,
+      success: true,
+      data: {
+        user: user.toProfileObject(),
+      },
     });
   } catch (error) {
-    console.error('Get current user error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    logger.error("Get current user error:", error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Internal server error",
+      },
+    });
   }
-}; 
+};
+
+// Logout controller
+export const logout = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.userId;
+    if (userId) {
+      // Clear refresh token
+      const user = await User.findByPk(userId);
+      if (user) {
+        user.refreshToken = null as any;
+        user.refreshTokenExpires = null as any;
+        await user.save();
+      }
+    }
+
+    res.json({
+      success: true,
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    logger.error("Logout error:", error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Internal server error",
+      },
+    });
+  }
+};
