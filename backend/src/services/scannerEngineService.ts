@@ -54,21 +54,21 @@ class ScannerEngineService {
    */
   formatResults(report: VulnerabilityReport) {
     return {
-      vulnerabilities: report.vulnerabilities.map(v => ({
+      vulnerabilities: report.vulnerabilities.map((v: any) => ({
         type: v.title,
         severity: v.severity,
         description: v.description,
         lineNumber: v.location.start,
         recommendation: v.recommendation,
       })),
-      warnings: report.warnings.map(w => ({
+      warnings: report.warnings.map((w: any) => ({
         type: w.title,
         severity: 'LOW' as const,
         description: w.description,
         lineNumber: w.location.start,
         recommendation: w.recommendation,
       })),
-      suggestions: report.suggestions.map(s => ({
+      suggestions: report.suggestions.map((s: any) => ({
         type: s.title,
         severity: 'INFO' as const,
         description: s.description,
