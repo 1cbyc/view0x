@@ -208,22 +208,51 @@ async def process_analysis(
         # Update job status to processing
         await update_job_status(job_id, "processing", 10, "Initializing analysis")
 
-        # Run Slither analysis
-        if not slither_analyzer or not slither_analyzer.is_available():
-            raise Exception("Slither analyzer not available")
+        # Determine which engine to use
+        engine = options.get('engine', 'slither') if options else 'slither'
+        logger.info(f"Running analysis with engine: {engine}")
 
-        await update_job_status(job_id, "processing", 30, "Running Slither analysis")
-
-        # Run analysis in thread pool to avoid blocking
+        # Run the selected analyzer
         loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(
-            None,
-            slither_analyzer.analyze,
-            contract_code
-        )
+        result = None
 
-        if not result["success"]:
-            raise Exception(result.get("error", "Analysis failed"))
+        if engine == 'slither':
+            if not slither_analyzer or not slither_analyzer.is_available():
+                raise Exception("Slither analyzer not available")
+            
+            await update_job_status(job_id, "processing", 30, "Running Slither analysis")
+            result = await loop.run_in_executor(
+                None,
+                slither_analyzer.analyze,
+                contract_code
+            )
+            
+        elif engine == 'mythril':
+            if not mythril_analyzer_instance or not mythril_analyzer_instance.is_available():
+                raise Exception("Mythril analyzer not available")
+            
+            await update_job_status(job_id, "processing", 30, "Running Mythril analysis")
+            result = await loop.run_in_executor(
+                None,
+                mythril_analyzer_instance.analyze,
+                contract_code
+            )
+            
+        elif engine == 'semgrep':
+            if not semgrep_analyzer_instance or not semgrep_analyzer_instance.is_available():
+                raise Exception("Semgrep analyzer not available")
+            
+            await update_job_status(job_id, "processing", 30, "Running Semgrep analysis")
+            result = await loop.run_in_executor(
+                None,
+                semgrep_analyzer_instance.analyze,
+                contract_code
+            )
+        else:
+            raise Exception(f"Unknown engine: {engine}")
+
+        if not result:
+            raise Exception("Analysis returned no result")
 
         await update_job_status(job_id, "processing", 80, "Processing results")
 
