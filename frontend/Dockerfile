@@ -6,8 +6,7 @@ WORKDIR /app
 
 # Copy the root package.json and yarn.lock to leverage Docker layer caching.
 # These define the workspace and all its dependencies.
-COPY package.json .
-COPY yarn.lock .
+COPY package.json yarn.lock ./
 
 # Copy the package.json for each workspace. This is necessary for yarn workspaces
 # to correctly identify all projects before installing dependencies.
