@@ -65,31 +65,113 @@ const processAnalysisJob = async (job: Queue.Job<AnalysisJobPayload>) => {
       currentStep: "Initializing analysis...",
     });
 
-    // 2. Call the Python analysis service
-    const pythonApiUrl = "http://localhost:8000/analyze"; // Should be in .env
-    logger.info(
-      `[WORKER] Sending analysis request to Python service for job ${analysisId}`,
-    );
+    // 2. Run analysis based on configured engine
+    let result: any;
+    
+    if (env.ANALYSIS_ENGINE === 'scanner-engine') {
+      // Use scanner-engine
+      if (!scannerEngineService.isAvailable()) {
+        throw new Error('Scanner engine is not available');
+      }
+      
+      emitAnalysisUpdate({
+        analysisId,
+        status: "processing",
+        progress: 30,
+        currentStep: "Scanning contract with Scanner Engine...",
+      });
+      
+      const report = await scannerEngineService.analyzeContract(contractCode, options);
+      result = scannerEngineService.formatResults(report);
+      
+    } else if (env.ANALYSIS_ENGINE === 'both') {
+      // Use both engines and combine results
+      emitAnalysisUpdate({
+        analysisId,
+        status: "processing",
+        progress: 20,
+        currentStep: "Running multi-engine analysis...",
+      });
+      
+      // Run Python (Slither)
+      emitAnalysisUpdate({
+        analysisId,
+        status: "processing",
+        progress: 30,
+        currentStep: "Scanning with Slither...",
+      });
+      
+      const pythonApiUrl = "http://localhost:8000/analyze";
+      const pythonResponse = await axios.post(
+        pythonApiUrl,
+        {
+          job_id: analysisId,
+          contract_code: contractCode,
+          options: options,
+        },
+        { timeout: env.SLITHER_TIMEOUT * 1000 }
+      );
+      
+      // Run scanner-engine
+      emitAnalysisUpdate({
+        analysisId,
+        status: "processing",
+        progress: 60,
+        currentStep: "Scanning with Scanner Engine...",
+      });
+      
+      if (scannerEngineService.isAvailable()) {
+        const report = await scannerEngineService.analyzeContract(contractCode, options);
+        const scannerResults = scannerEngineService.formatResults(report);
+        
+        // Combine results
+        result = {
+          python: pythonResponse.data,
+          scannerEngine: scannerResults,
+          combined: {
+            vulnerabilities: [
+              ...(pythonResponse.data.vulnerabilities || []).map((v: any) => ({ ...v, source: 'slither' })),
+              ...(scannerResults.vulnerabilities || []).map((v: any) => ({ ...v, source: 'scanner-engine' }))
+            ],
+            warnings: [
+              ...(pythonResponse.data.warnings || []).map((v: any) => ({ ...v, source: 'slither' })),
+              ...(scannerResults.warnings || []).map((v: any) => ({ ...v, source: 'scanner-engine' }))
+            ]
+          },
+          engine: 'both',
+          timestamp: new Date().toISOString(),
+        };
+      } else {
+        // Fallback to just Python
+        result = { ...pythonResponse.data, engine: 'python' };
+      }
+      
+    } else {
+      // Default: Use Python (Slither)
+      const pythonApiUrl = "http://localhost:8000/analyze";
+      logger.info(
+        `[WORKER] Sending analysis request to Python service for job ${analysisId}`,
+      );
 
-    // Emit event to notify that the heavy lifting has started
-    emitAnalysisUpdate({
-      analysisId,
-      status: "processing",
-      progress: 30,
-      currentStep: "Scanning contract with Slither...",
-    });
+      emitAnalysisUpdate({
+        analysisId,
+        status: "processing",
+        progress: 30,
+        currentStep: "Scanning contract with Slither...",
+      });
 
-    const response = await axios.post(
-      pythonApiUrl,
-      {
-        job_id: analysisId,
-        contract_code: contractCode,
-        options: options,
-      },
-      { timeout: env.SLITHER_TIMEOUT * 1000 }, // Add timeout
-    );
+      const response = await axios.post(
+        pythonApiUrl,
+        {
+          job_id: analysisId,
+          contract_code: contractCode,
+          options: options,
+        },
+        { timeout: env.SLITHER_TIMEOUT * 1000 }
+      );
 
-    const result = response.data;
+      result = response.data;
+    }
 
     // 3. Update the analysis record with the result
     await analysis.setCompleted(result);
