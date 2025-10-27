@@ -4,9 +4,7 @@ import {
   AlertTriangle,
   CheckCircle,
   Loader2,
-  Copy,
   Shield,
-  Info,
   BarChart2,
 } from "lucide-react";
 import { contractApi } from "../services/api";
