@@ -1,24 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { analysisApi } from '../services/api';
-import { Loader2, AlertTriangle, CheckCircle, Clock, ShieldAlert, FileText, ChevronRight } from 'lucide-react';
-// Simple date formatting function
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const month = months[date.getMonth()];
-  const day = date.getDate();
-  const year = date.getFullYear();
-  const hours = date.getHours().toString().padStart(2, '0');
-  const minutes = date.getMinutes().toString().padStart(2, '0');
-  return `${month} ${day}, ${year} ${hours}:${minutes}`;
-};
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { analysisApi } from "@/services/api";
+import {
+  Loader2,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  ShieldAlert,
+  FileText,
+  ChevronRight,
+} from "lucide-react";
+
+// UI Components
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // This type should match the summary object from the backend Analysis model
 interface AnalysisSummary {
   id: string;
   contractName: string | null;
-  status: 'queued' | 'processing' | 'completed' | 'failed';
+  status: "queued" | "processing" | "completed" | "failed";
   createdAt: string;
   completedAt: string | null;
   duration: number | null;
@@ -28,6 +39,18 @@ interface AnalysisSummary {
     lowSeverity: number;
   } | null;
 }
+
+const formatDate = (dateString: string): string => {
+  if (!dateString) return "N/A";
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
 
 const Dashboard: React.FC = () => {
   const [analyses, setAnalyses] = useState<AnalysisSummary[]>([]);
@@ -42,7 +65,10 @@ const Dashboard: React.FC = () => {
         const response = await analysisApi.getHistory();
         setAnalyses(response.data.data);
       } catch (err: any) {
-        setError(err.response?.data?.error?.message || 'Failed to fetch analysis history. Please try again.');
+        setError(
+          err.error?.message ||
+            "Failed to fetch analysis history. Please try again.",
+        );
       } finally {
         setIsLoading(false);
       }
@@ -51,16 +77,32 @@ const Dashboard: React.FC = () => {
     fetchHistory();
   }, []);
 
-  const getStatusIndicator = (status: AnalysisSummary['status']) => {
+  const getStatusIndicator = (status: AnalysisSummary["status"]) => {
     switch (status) {
-      case 'completed':
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" /> Completed</span>;
-      case 'failed':
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"><AlertTriangle className="w-3 h-3 mr-1" /> Failed</span>;
-      case 'processing':
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Processing</span>;
-      case 'queued':
-        return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"><Clock className="w-3 h-3 mr-1" /> Queued</span>;
+      case "completed":
+        return (
+          <Badge variant="outline" className="text-green-600 border-green-600">
+            <CheckCircle className="w-3 h-3 mr-1" /> Completed
+          </Badge>
+        );
+      case "failed":
+        return (
+          <Badge variant="destructive">
+            <AlertTriangle className="w-3 h-3 mr-1" /> Failed
+          </Badge>
+        );
+      case "processing":
+        return (
+          <Badge variant="secondary">
+            <Loader2 className="w-3 h-3 mr-1 animate-spin" /> Processing
+          </Badge>
+        );
+      case "queued":
+        return (
+          <Badge variant="outline">
+            <Clock className="w-3 h-3 mr-1" /> Queued
+          </Badge>
+        );
       default:
         return null;
     }
@@ -70,96 +112,106 @@ const Dashboard: React.FC = () => {
     if (isLoading) {
       return (
         <div className="text-center py-10">
-          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto" />
-          <p className="mt-4 text-gray-600">Loading your analysis history...</p>
+          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto" />
+          <p className="mt-4 text-muted-foreground">
+            Loading your analysis history...
+          </p>
         </div>
       );
     }
 
     if (error) {
       return (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-red-800">An Error Occurred</h3>
-          <p className="text-red-700">{error}</p>
-        </div>
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>An Error Occurred</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       );
     }
 
     if (analyses.length === 0) {
       return (
-        <div className="text-center py-20 border-2 border-dashed border-gray-300 rounded-lg">
-          <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900">No Analyses Found</h3>
-          <p className="mt-2 text-gray-600">You haven't analyzed any contracts yet.</p>
-          <Link
-            to="/analyze"
-            className="mt-6 inline-block px-6 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-          >
-            Start Your First Analysis
-          </Link>
+        <div className="text-center py-20 border-2 border-dashed border-border rounded-lg">
+          <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-xl font-semibold">No Analyses Found</h3>
+          <p className="mt-2 text-muted-foreground">
+            You haven't analyzed any contracts yet.
+          </p>
+          <Button asChild className="mt-6">
+            <Link to="/analyze">Start Your First Analysis</Link>
+          </Button>
         </div>
       );
     }
 
     return (
-      <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contract</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vulnerabilities</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-              <th scope="col" className="relative px-6 py-3"><span className="sr-only">View</span></th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {analyses.map((analysis) => (
-              <tr key={analysis.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{analysis.contractName || 'Untitled Contract'}</div>
-                  <div className="text-xs text-gray-500">ID: {analysis.id}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">{getStatusIndicator(analysis.status)}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {analysis.status === 'completed' && analysis.summary ? (
-                    <div className="flex items-center space-x-3 text-sm">
-                      <span className="text-red-600 font-bold">{analysis.summary.highSeverity} High</span>
-                      <span className="text-yellow-600 font-bold">{analysis.summary.mediumSeverity} Med</span>
-                      <span className="text-blue-600 font-bold">{analysis.summary.lowSeverity} Low</span>
-                    </div>
-                  ) : (
-                    <span className="text-sm text-gray-500">-</span>
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {formatDate(analysis.createdAt)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <Link to={`/analysis/${analysis.id}`} className="text-blue-600 hover:text-blue-900 inline-flex items-center">
-                    View Details <ChevronRight className="w-4 h-4 ml-1" />
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Contract</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Vulnerabilities</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>
+                  <span className="sr-only">View</span>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {analyses.map((analysis) => (
+                <TableRow key={analysis.id}>
+                  <TableCell className="font-medium">
+                    {analysis.contractName || "Untitled Contract"}
+                  </TableCell>
+                  <TableCell>{getStatusIndicator(analysis.status)}</TableCell>
+                  <TableCell>
+                    {analysis.status === "completed" && analysis.summary ? (
+                      <div className="flex items-center space-x-3 text-sm">
+                        <span className="text-destructive font-bold">
+                          {analysis.summary.highSeverity} High
+                        </span>
+                        <span className="text-yellow-500 font-bold">
+                          {analysis.summary.mediumSeverity} Med
+                        </span>
+                        <span className="text-blue-500 font-bold">
+                          {analysis.summary.lowSeverity} Low
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>{formatDate(analysis.createdAt)}</TableCell>
+                  <TableCell className="text-right">
+                    <Button asChild variant="ghost" size="sm">
+                      <Link to={`/analysis/${analysis.id}`}>
+                        View Details
+                        <ChevronRight className="w-4 h-4 ml-1" />
+                      </Link>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     );
   };
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto py-8 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Analysis History</h1>
-        <Link
-          to="/analyze"
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 flex items-center space-x-2"
-        >
-          <ShieldAlert className="w-4 h-4" />
-          <span>New Analysis</span>
-        </Link>
+        <h1 className="text-3xl font-bold">Analysis History</h1>
+        <Button asChild>
+          <Link to="/analyze">
+            <ShieldAlert className="w-4 h-4 mr-2" />
+            New Analysis
+          </Link>
+        </Button>
       </div>
       {renderContent()}
     </div>
