@@ -11,6 +11,7 @@ import { env } from "./config/environment";
 import { logger, loggerStream } from "./utils/logger";
 import { initializeConnections, getConnectionHealth } from "./config/database";
 import { syncModels } from "./models";
+import { onAnalysisUpdate, AnalysisUpdatePayload } from "./events/appEvents";
 
 // Middleware
 import { errorHandler } from "./middleware/errorHandler";
@@ -21,9 +22,6 @@ import { requestLogger } from "./middleware/logging";
 import authRoutes from "./routes/auth";
 import analysisRoutes from "./routes/analysis";
 // import userRoutes from './routes/users';
-
-// Workers - Import to start the queue worker
-import "./workers/analysisWorker";
 
 // Initialize Express app
 const app = express();
@@ -48,7 +46,7 @@ app.use(
         styleSrc: ["'self'", "'unsafe-inline'"],
         scriptSrc: ["'self'"],
         imgSrc: ["'self'", "data:", "https:"],
-        connectSrc: ["'self'", "wss:", "ws:"],
+        connectSrc: ["'self'", ...env.CORS_ORIGINS, "wss:", "ws:"],
       },
     },
     crossOriginEmbedderPolicy: false,
@@ -118,26 +116,6 @@ app.get("/", (req, res) => {
     version: "1.0.0",
     status: "running",
     timestamp: new Date().toISOString(),
-    environment: env.NODE_ENV,
-    endpoints: {
-      health: "/health",
-      authentication: "/api/auth",
-      analysis: "/api/analysis",
-      users: "/api/users",
-      websocket: "/socket.io",
-    },
-    documentation: {
-      swagger: "/api/docs",
-      postman: "/api/postman",
-    },
-    features: [
-      "JWT Authentication",
-      "Real-time WebSocket updates",
-      "Smart contract analysis",
-      "Rate limiting",
-      "Request logging",
-      "Error handling",
-    ],
   });
 });
 
@@ -178,6 +156,16 @@ io.on("connection", (socket) => {
   });
 });
 
+// Listen for internal application events and broadcast them via Socket.IO
+onAnalysisUpdate((payload: AnalysisUpdatePayload) => {
+  const room = `analysis-${payload.analysisId}`;
+  logger.info(`[SOCKET] Broadcasting analysis update to room ${room}`, {
+    status: payload.status,
+    progress: payload.progress,
+  });
+  io.to(room).emit("analysis:update", payload);
+});
+
 // 404 handler for API routes
 app.use("/api/*", (req, res) => {
   res.status(404).json({
@@ -185,24 +173,6 @@ app.use("/api/*", (req, res) => {
     error: {
       code: "NOT_FOUND",
       message: "API endpoint not found",
-      path: req.path,
-      method: req.method,
-    },
-    meta: {
-      timestamp: new Date().toISOString(),
-      requestId: req.id,
-    },
-  });
-});
-
-// General 404 handler
-app.use("*", (req, res) => {
-  res.status(404).json({
-    success: false,
-    error: {
-      code: "NOT_FOUND",
-      message: "Resource not found",
-      path: req.path,
     },
   });
 });
@@ -215,28 +185,15 @@ export { app, server, io };
 
 // Initialize database connections and start server
 export async function initializeApp(): Promise<void> {
-  logger.info("[INITIALIZER] Starting initializeApp function...");
   try {
     logger.info("🚀 Initializing Secure Audit Backend...");
-
-    // Initialize database connections
-    logger.info(
-      "[INITIALIZER] Attempting to establish database connections...",
-    );
     await initializeConnections();
     logger.info("✅ Database connections established");
-
-    // Sync all database models
-    logger.info("[INITIALIZER] Synchronizing database models...");
     await syncModels();
     logger.info("✅ Database models synchronized");
-
-    // Additional initialization can go here
     logger.info("✅ Application initialized successfully");
-    logger.info("[INITIALIZER] initializeApp function completed successfully.");
   } catch (error) {
     logger.error("❌ Failed to initialize application:", error);
-    logger.error("[INITIALIZER] initializeApp function failed.");
     throw error;
   }
 }
@@ -245,18 +202,13 @@ export async function initializeApp(): Promise<void> {
 export async function gracefulShutdown(signal: string): Promise<void> {
   logger.info(`📴 Received ${signal}. Starting graceful shutdown...`);
 
-  // Close server
   server.close(() => {
     logger.info("🔌 HTTP server closed");
   });
 
-  // Close Socket.IO server
   io.close(() => {
     logger.info("🔌 WebSocket server closed");
   });
-
-  // Close database connections (imported from database config)
-  // This would be implemented in the database config file
 
   logger.info("👋 Graceful shutdown completed");
   process.exit(0);
@@ -265,15 +217,3 @@ export async function gracefulShutdown(signal: string): Promise<void> {
 // Handle process signals
 process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
 process.on("SIGINT", () => gracefulShutdown("SIGINT"));
-
-// Handle uncaught exceptions
-process.on("uncaughtException", (error) => {
-  logger.error("💥 Uncaught Exception:", error);
-  process.exit(1);
-});
-
-// Handle unhandled promise rejections
-process.on("unhandledRejection", (reason, promise) => {
-  logger.error("💥 Unhandled Rejection at:", promise, "reason:", reason);
-  process.exit(1);
-});
