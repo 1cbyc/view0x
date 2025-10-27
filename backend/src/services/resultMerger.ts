@@ -52,19 +52,11 @@ export class ResultMerger {
     // Collect all vulnerabilities and warnings
     engineResults.forEach(result => {
       if (result.vulnerabilities) {
-        const marked = result.vulnerabilities.map(v => ({
-          ...v,
-          source: v.source || result.engine
-        }));
-        allVulnerabilities.push(...marked);
+        allVulnerabilities.push(...result.vulnerabilities);
       }
       
       if (result.warnings) {
-        const marked = result.warnings.map(v => ({
-          ...v,
-          source: v.source || result.engine
-        }));
-        allWarnings.push(...marked);
+        allWarnings.push(...result.warnings);
       }
     });
 
@@ -104,14 +96,9 @@ export class ResultMerger {
         seen.add(key);
         merged.push(vuln);
       } else {
-        // Merge sources for duplicate
+        // Update confidence based on multiple detections (multiple engines agreed)
         const existing = merged.find(v => this.getDeduplicationKey(v) === key);
         if (existing) {
-          existing.sources = existing.sources || [existing.source];
-          if (!existing.sources.includes(vuln.source)) {
-            existing.sources.push(vuln.source);
-          }
-          // Update confidence based on multiple detections
           existing.confidence = Math.min(0.95, (existing.confidence || 0.7) + 0.1);
         }
       }
@@ -159,20 +146,15 @@ export class ResultMerger {
       INFO: 0
     };
 
-    const byEngine: { [key: string]: number } = {};
+    // Note: We no longer track byEngine as we don't expose engine names to clients
 
     vulnerabilities.forEach(vuln => {
       bySeverity[vuln.severity]++;
-      
-      if (vuln.source) {
-        byEngine[vuln.source] = (byEngine[vuln.source] || 0) + 1;
-      }
     });
 
     return {
       totalVulnerabilities: vulnerabilities.length,
-      bySeverity,
-      byEngine
+      bySeverity
     };
   }
 
