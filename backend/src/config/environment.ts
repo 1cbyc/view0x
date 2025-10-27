@@ -31,6 +31,7 @@ export interface EnvironmentConfig {
   SLITHER_TIMEOUT: number;
   MAX_CONTRACT_SIZE: number;
   MAX_CONCURRENT_ANALYSES: number;
+  ANALYSIS_ENGINE: 'python' | 'scanner-engine' | 'both' | 'all';
 
   // Rate limiting
   RATE_LIMIT_WINDOW_MS: number;
@@ -76,6 +77,7 @@ const defaults: Partial<EnvironmentConfig> = {
   SLITHER_TIMEOUT: 300,
   MAX_CONTRACT_SIZE: 1048576, // 1MB
   MAX_CONCURRENT_ANALYSES: 3,
+  ANALYSIS_ENGINE: 'python', // Default to Python (Slither)
   RATE_LIMIT_WINDOW_MS: 3600000, // 1 hour
   RATE_LIMIT_MAX_REQUESTS: 1000,
   MAX_FILE_SIZE: 1048576, // 1MB
@@ -135,6 +137,7 @@ function parseEnvironmentConfig(): EnvironmentConfig {
     SLITHER_TIMEOUT: parseInt(process.env.SLITHER_TIMEOUT || '') || defaults.SLITHER_TIMEOUT!,
     MAX_CONTRACT_SIZE: parseInt(process.env.MAX_CONTRACT_SIZE || '') || defaults.MAX_CONTRACT_SIZE!,
     MAX_CONCURRENT_ANALYSES: parseInt(process.env.MAX_CONCURRENT_ANALYSES || '') || defaults.MAX_CONCURRENT_ANALYSES!,
+    ANALYSIS_ENGINE: (process.env.ANALYSIS_ENGINE as 'python' | 'scanner-engine' | 'both' | 'all') || defaults.ANALYSIS_ENGINE!,
 
     // Rate limiting
     RATE_LIMIT_WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '') || defaults.RATE_LIMIT_WINDOW_MS!,
