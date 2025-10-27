@@ -34,16 +34,92 @@ lerna-debug.log*
 *.sln
 *.sw?
 
-# Environment variables
+# Environment variables - MUST BE IGNORED!
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+.env.*.local
+backend/.env
+backend/.env.*
+frontend/.env.local
+frontend/.env.*.local
+
+# Secrets and API keys
+*.key
+*.pem
+*.cert
+secrets/
+api-keys.txt
 
 # TypeScript
 *.tsbuildinfo
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs (from system design - logs directory)
+logs/
+*.log
+
+# Cache directories
+.cache/
+.parcel-cache/
+.sass-cache/
+.npm/
+.eslintcache
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.swp
+*.swo
+*~
+
+# Test scripts with sensitive data
+backend/test-*.js
+backend/test-*.ts
+test-supabase-*.js
+test-db*.js
+test-session-*.js
+*test-session*
+test-phase1.sh
+*phase*.sh
+
+# Uploads (user uploaded contracts)
+uploads/
+backend/uploads/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-*
+.DS_Store
+.vs/
+*.db
+CopilotIndices/
+
 # personal
 docs/
 *.md
+!README.md
