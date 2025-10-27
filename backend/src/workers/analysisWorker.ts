@@ -7,6 +7,7 @@ import { bullQueueClient, bullQueueSubscriber } from "../config/database";
 import { analysisService } from "../services/analysisService";
 import { emitAnalysisUpdate } from "../events/appEvents";
 import { scannerEngineService } from "../services/scannerEngineService";
+import { ResultMerger } from "../services/resultMerger";
 
 // Define the Job Payload Interface
 interface AnalysisJobPayload {
@@ -67,9 +68,10 @@ const processAnalysisJob = async (job: Queue.Job<AnalysisJobPayload>) => {
 
     // 2. Run analysis based on configured engine
     let result: any;
+    const engine = env.ANALYSIS_ENGINE || 'python';
     
-    if (env.ANALYSIS_ENGINE === 'scanner-engine') {
-      // Use scanner-engine
+    if (engine === 'scanner-engine') {
+      // Use scanner-engine only
       if (!scannerEngineService.isAvailable()) {
         throw new Error('Scanner engine is not available');
       }
@@ -84,7 +86,7 @@ const processAnalysisJob = async (job: Queue.Job<AnalysisJobPayload>) => {
       const report = await scannerEngineService.analyzeContract(contractCode, options);
       result = scannerEngineService.formatResults(report);
       
-    } else if (env.ANALYSIS_ENGINE === 'both') {
+    } else if (engine === 'all' || engine === 'both') {
       // Use both engines and combine results
       emitAnalysisUpdate({
         analysisId,
