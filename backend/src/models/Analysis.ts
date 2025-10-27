@@ -501,13 +501,4 @@ Analysis.init(
   },
 );
 
-// Define associations
-Analysis.belongsTo(User, {
-  foreignKey: "userId",
-  as: "user",
-});
-
-User.hasMany(Analysis, {
-  foreignKey: "userId",
-  as: "analyses",
-});
+// Define associations - moved to models/index.ts to avoid duplicates
