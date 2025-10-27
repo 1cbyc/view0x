@@ -1,0 +1,14 @@
+# Ignore node_modules directory, it will be installed in the container
+node_modules
+
+# Ignore the compiled output directory
+dist
+
+# Ignore local environment variables file
+.env
+
+# Ignore log files
+logs
+
+# Ignore npm debug logs
+npm-debug.log
