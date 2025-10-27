@@ -32,7 +32,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 // Services and Types
-import { contractApi } from "@/services/api";
+import { analysisApi } from "@/services/api";
 import { socketService, AnalysisUpdatePayload } from "@/services/socketService";
 
 // --- Type Definitions ---
@@ -179,8 +179,8 @@ const ContractAnalyzer: React.FC = () => {
     setProgressMessage("Submitting for analysis...");
 
     try {
-      const response = await contractApi.analyzeContract({ contractCode });
-      const initialAnalysis = response.data;
+      const response = await analysisApi.createAnalysis({ contractCode });
+      const initialAnalysis = response.data.data;
 
       if (initialAnalysis && initialAnalysis.id) {
         setCurrentAnalysisId(initialAnalysis.id);
