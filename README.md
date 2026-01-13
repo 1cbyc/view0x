@@ -47,4 +47,6 @@ npx wrangler pages domain list --project-name secure-audit-frontend
 npx wrangler pages deploy dist --project-name secure-audit
 ```
 
-okay, this is the end of it. i would use AI to write commit messages. i cant be explaining myself again. this stuff giving me brain rot, i cant even think clearly about full definition to give per fix i make.
+okay, this is the end of it. i would use AI to write commit messages. i cant be explaining myself again. this stuff giving me brain rot, i cant even think clearly about full definition to give per fix i make. 
+
+it's 2026, and i have decided to rename, thank you!
