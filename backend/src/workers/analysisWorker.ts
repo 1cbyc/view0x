@@ -127,34 +127,6 @@ const processAnalysisJob = async (job: Queue.Job<AnalysisJobPayload>) => {
           logger.warn(`[WORKER] Slither analysis failed: ${error.message}`);
         }
         
-        // Mythril
-        if (options && (options as any).use_mythril !== false) {
-          emitAnalysisUpdate({
-            analysisId,
-            status: "processing",
-            progress: 50,
-            currentStep: "Running Mythril...",
-          });
-          
-          try {
-            const mythrilResult = await axios.post(
-              pythonApiUrl,
-              {
-                job_id: analysisId,
-                contract_code: contractCode,
-                options: { ...options, engine: 'mythril' },
-              },
-              { timeout: env.SLITHER_TIMEOUT * 1000 }
-            );
-            engineResults.push({
-              vulnerabilities: mythrilResult.data.vulnerabilities || [],
-              warnings: mythrilResult.data.warnings || [],
-              engine: 'mythril'
-            });
-          } catch (error: any) {
-            logger.warn(`[WORKER] Mythril analysis failed: ${error.message}`);
-          }
-        }
         
         // Semgrep
         if (options && (options as any).use_semgrep !== false) {
