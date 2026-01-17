@@ -1,7 +1,7 @@
 version: "3.9"
 
 # This Docker Compose file sets up the complete development environment
-# for the Secure Audit application, including the frontend, backend,
+# for the view0x application, including the frontend, backend,
 # database, cache, and the Python analysis worker.
 
 services:
@@ -35,7 +35,7 @@ services:
       - ./backend/.env
     environment:
       # Override .env variables to use Docker service names
-      - DATABASE_URL=postgresql://postgres:password@db:5432/secure_audit_dev
+      - DATABASE_URL=postgresql://postgres:password@db:5432/view0x_dev
       - REDIS_URL=redis://redis:6379
       - PYTHON_API_URL=http://python-worker:8000
     depends_on:
@@ -72,7 +72,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=secure_audit_dev
+      - POSTGRES_DB=view0x_dev
     ports:
       # Expose port 5432 to the host for direct database access/debugging
       - "5432:5432"

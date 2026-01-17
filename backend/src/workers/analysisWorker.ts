@@ -95,7 +95,7 @@ const processAnalysisJob = async (job: Queue.Job<AnalysisJobPayload>) => {
         currentStep: "Running multi-engine analysis...",
       });
       
-      const pythonApiUrl = "http://localhost:8000/analyze";
+      const pythonApiUrl = `${env.PYTHON_API_URL}/analyze`;
       const engineResults: any[] = [];
       
       // Run all engines in parallel with progress tracking
@@ -194,7 +194,7 @@ const processAnalysisJob = async (job: Queue.Job<AnalysisJobPayload>) => {
       
     } else {
       // Default: Use Python (Slither)
-      const pythonApiUrl = "http://localhost:8000/analyze";
+      const pythonApiUrl = `${env.PYTHON_API_URL}/analyze`;
       logger.info(
         `[WORKER] Sending analysis request to Python service for job ${analysisId}`,
       );
@@ -236,11 +236,11 @@ const processAnalysisJob = async (job: Queue.Job<AnalysisJobPayload>) => {
     });
 
     logger.info(
-      `[WORKER] ✅ Analysis job ${analysisId} completed successfully.`,
+      `[WORKER] Analysis job ${analysisId} completed successfully.`,
     );
     return { success: true, result };
   } catch (error: any) {
-    logger.error(`[WORKER] ❌ Analysis job ${analysisId} failed:`, error);
+    logger.error(`[WORKER] Analysis job ${analysisId} failed:`, error);
 
     const errorMessage =
       error.response?.data?.detail ||

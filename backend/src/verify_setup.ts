@@ -19,16 +19,16 @@ const RESET = "\x1b[0m";
 const logHeader = (message: string) =>
   console.log(`\n${BOLD}${YELLOW}=== ${message} ===${RESET}`);
 const logSuccess = (message: string) =>
-  console.log(`${GREEN}✅ ${message}${RESET}`);
+  console.log(`${GREEN}[OK] ${message}${RESET}`);
 const logFailure = (message: string, error?: any) =>
-  console.error(`${RED}❌ ${message}${RESET}`, error || "");
+  console.error(`${RED}[ERROR] ${message}${RESET}`, error || "");
 const logInfo = (message: string) => console.log(`  - ${message}`);
 
 async function verifyPhase1And2() {
   let hasFailed = false;
 
   console.log(
-    `${BOLD}🚀 KICKING OFF COMPREHENSIVE VERIFICATION FOR PHASE 1 & 2...${RESET}`,
+    `${BOLD}KICKING OFF COMPREHENSIVE VERIFICATION FOR PHASE 1 & 2...${RESET}`,
   );
 
   // --- Verification Step 1: Database Connection ---
