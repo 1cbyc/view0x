@@ -20,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -112,8 +112,8 @@ const Dashboard: React.FC = () => {
     if (isLoading) {
       return (
         <div className="text-center py-10">
-          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto" />
-          <p className="mt-4 text-muted-foreground">
+          <Loader2 className="w-12 h-12 animate-spin text-accent mx-auto" />
+          <p className="mt-4 text-white/60">
             Loading your analysis history...
           </p>
         </div>
@@ -122,23 +122,23 @@ const Dashboard: React.FC = () => {
 
     if (error) {
       return (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>An Error Occurred</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
+        <Alert variant="destructive" className="bg-red-500/10 border-red-500/20">
+          <AlertTriangle className="h-4 w-4 text-red-400" />
+          <AlertTitle className="text-red-400">An Error Occurred</AlertTitle>
+          <AlertDescription className="text-red-400">{error}</AlertDescription>
         </Alert>
       );
     }
 
     if (analyses.length === 0) {
       return (
-        <div className="text-center py-20 border-2 border-dashed border-border rounded-lg">
-          <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-xl font-semibold">No Analyses Found</h3>
-          <p className="mt-2 text-muted-foreground">
+        <div className="text-center py-20 border-2 border-dashed border-white/10 rounded-lg bg-black/50">
+          <FileText className="w-16 h-16 text-white/40 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-white">No Analyses Found</h3>
+          <p className="mt-2 text-white/60">
             You haven't analyzed any contracts yet.
           </p>
-          <Button asChild className="mt-6">
+          <Button asChild className="mt-6 bg-white text-black hover:bg-gray-200">
             <Link to="/analyze">Start Your First Analysis</Link>
           </Button>
         </div>
@@ -205,8 +205,8 @@ const Dashboard: React.FC = () => {
   return (
     <div className="container mx-auto py-8 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Analysis History</h1>
-        <Button asChild>
+        <h1 className="text-3xl font-bold text-white">Analysis History</h1>
+        <Button asChild className="bg-white text-black hover:bg-gray-200">
           <Link to="/analyze">
             <ShieldAlert className="w-4 h-4 mr-2" />
             New Analysis
