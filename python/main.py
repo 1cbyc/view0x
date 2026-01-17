@@ -83,33 +83,33 @@ async def lifespan(app: FastAPI):
 
         # Log analyzer availability
         if slither_analyzer.is_available():
-            logger.info("✅ Slither analyzer available")
+            logger.info("Slither analyzer available")
         else:
-            logger.warning("⚠️ Slither analyzer not available")
+            logger.warning("Slither analyzer not available")
 
         if mythril_analyzer_instance.is_available():
-            logger.info("✅ Mythril analyzer available")
+            logger.info("Mythril analyzer available")
         else:
-            logger.warning("⚠️ Mythril analyzer not available")
+            logger.warning("Mythril analyzer not available")
 
         if semgrep_analyzer_instance.is_available():
-            logger.info("✅ Semgrep analyzer available")
+            logger.info("Semgrep analyzer available")
         else:
-            logger.warning("⚠️ Semgrep analyzer not available")
+            logger.warning("Semgrep analyzer not available")
 
-        logger.info("🎉 Analysis server started successfully")
+        logger.info("Analysis server started successfully")
 
     except Exception as e:
-        logger.error(f"❌ Failed to initialize server: {e}")
+        logger.error(f"Failed to initialize server: {e}")
         raise
 
     yield
 
     # Cleanup
-    logger.info("🛑 Shutting down Analysis Server...")
+    logger.info("Shutting down Analysis Server...")
     if redis_client:
         await redis_client.close()
-    logger.info("👋 Analysis Server shutdown complete")
+    logger.info("Analysis Server shutdown complete")
 
 # Create FastAPI app
 app = FastAPI(
