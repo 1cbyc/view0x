@@ -1,7 +1,7 @@
 {
-  "name": "secure-audit-backend",
+  "name": "view0x-backend",
   "version": "1.0.0",
-  "description": "Backend for Secure Audit - Smart Contract Analysis",
+  "description": "Backend for view0x - Smart Contract Analysis",
   "main": "dist/server.js",
   "scripts": {
     "start": "node dist/server.js",

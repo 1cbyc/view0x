@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Slither Analyzer Wrapper for Secure Audit
+Slither Analyzer Wrapper for view0x
 Provides integration with Slither static analysis tool for smart contract vulnerability detection.
 """
 
@@ -71,7 +71,7 @@ class SlitherAnalyzer:
         """Create a temporary Solidity file"""
         try:
             # Create temporary directory
-            self.temp_dir = tempfile.mkdtemp(prefix="secure_audit_")
+            self.temp_dir = tempfile.mkdtemp(prefix="view0x_")
             contract_path = os.path.join(self.temp_dir, "contract.sol")
 
             # Write contract code to file

@@ -38,7 +38,7 @@ function defineAssociations() {
     as: "analysis",
   });
 
-  logger.info("[MODELS] ✅ Model associations defined successfully.");
+  logger.info("[MODELS] Model associations defined successfully.");
 }
 
 defineAssociations();
@@ -55,7 +55,7 @@ export const syncModels = async () => {
       alter: process.env.NODE_ENV === "production" ? true : false,
     };
     await sequelize.sync(options);
-    logger.info("[MODELS] ✅ All models were synchronized successfully.");
+    logger.info("[MODELS] All models were synchronized successfully.");
   } catch (error) {
     logger.error("[MODELS] ❌ Unable to synchronize the database:", error);
     throw error;

@@ -1,4 +1,7 @@
 {
+  "name": "view0x",
+  "version": "1.0.0",
+  "description": "view0x - Smart Contract Security Analysis Platform",
   "dependencies": {
     "socket.io-client": "^4.8.1"
   }

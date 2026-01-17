@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Secure Audit Python Analysis Server
+view0x Python Analysis Server
 HTTP server that handles contract analysis requests from the Node.js backend.
 """
 
@@ -67,14 +67,14 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager"""
     global redis_client, slither_analyzer, mythril_analyzer_instance, semgrep_analyzer_instance
 
-    logger.info("🚀 Starting Secure Audit Analysis Server...")
+    logger.info("Starting view0x Analysis Server...")
 
     try:
         # Initialize Redis connection
         redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
         redis_client = redis.from_url(redis_url, decode_responses=True)
         await redis_client.ping()
-        logger.info("✅ Redis connection established")
+        logger.info("Redis connection established")
 
         # Initialize analyzers
         slither_analyzer = SlitherAnalyzer()
@@ -83,37 +83,37 @@ async def lifespan(app: FastAPI):
 
         # Log analyzer availability
         if slither_analyzer.is_available():
-            logger.info("✅ Slither analyzer available")
+            logger.info("Slither analyzer available")
         else:
-            logger.warning("⚠️ Slither analyzer not available")
+            logger.warning("Slither analyzer not available")
 
         if mythril_analyzer_instance.is_available():
-            logger.info("✅ Mythril analyzer available")
+            logger.info("Mythril analyzer available")
         else:
-            logger.warning("⚠️ Mythril analyzer not available")
+            logger.warning("Mythril analyzer not available")
 
         if semgrep_analyzer_instance.is_available():
-            logger.info("✅ Semgrep analyzer available")
+            logger.info("Semgrep analyzer available")
         else:
-            logger.warning("⚠️ Semgrep analyzer not available")
+            logger.warning("Semgrep analyzer not available")
 
-        logger.info("🎉 Analysis server started successfully")
+        logger.info("Analysis server started successfully")
 
     except Exception as e:
-        logger.error(f"❌ Failed to initialize server: {e}")
+        logger.error(f"Failed to initialize server: {e}")
         raise
 
     yield
 
     # Cleanup
-    logger.info("🛑 Shutting down Analysis Server...")
+    logger.info("Shutting down Analysis Server...")
     if redis_client:
         await redis_client.close()
-    logger.info("👋 Analysis Server shutdown complete")
+    logger.info("Analysis Server shutdown complete")
 
 # Create FastAPI app
 app = FastAPI(
-    title="Secure Audit Analysis Server",
+    title="view0x Analysis Server",
     description="Python-based analysis server for smart contract security auditing",
     version="1.0.0",
     lifespan=lifespan
@@ -165,7 +165,7 @@ async def health_check():
 async def analyze_contract(request: AnalysisRequest, background_tasks: BackgroundTasks):
     """Analyze a smart contract"""
     try:
-        logger.info(f"📊 Starting analysis for job {request.job_id}")
+        logger.info(f"Starting analysis for job {request.job_id}")
 
         # Validate request
         if len(request.contract_code) > 5_000_000:  # 5MB limit
@@ -192,7 +192,7 @@ async def analyze_contract(request: AnalysisRequest, background_tasks: Backgroun
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ Failed to start analysis: {e}")
+        logger.error(f"Failed to start analysis: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 async def process_analysis(
@@ -203,7 +203,7 @@ async def process_analysis(
 ):
     """Process contract analysis in background"""
     try:
-        logger.info(f"🔄 Processing analysis for job {job_id}")
+        logger.info(f"Processing analysis for job {job_id}")
 
         # Update job status to processing
         await update_job_status(job_id, "processing", 10, "Initializing analysis")
@@ -287,14 +287,14 @@ async def process_analysis(
         # Update job status to completed
         await update_job_status(job_id, "completed", 100, "Analysis completed")
 
-        logger.info(f"✅ Analysis completed for job {job_id}")
+        logger.info(f"Analysis completed for job {job_id}")
 
         # TODO: Send callback if provided
         if callback_url:
             await send_callback(callback_url, job_id, analysis_result)
 
     except Exception as e:
-        logger.error(f"❌ Analysis failed for job {job_id}: {e}")
+        logger.error(f"Analysis failed for job {job_id}: {e}")
         logger.error(traceback.format_exc())
 
         # Update job status to failed
@@ -393,7 +393,7 @@ def determine_risk_level(summary: Dict[str, int]) -> str:
 async def root():
     """Root endpoint"""
     return {
-        "message": "Secure Audit Analysis Server",
+        "message": "view0x Analysis Server",
         "version": "1.0.0",
         "status": "running",
         "endpoints": {
@@ -417,7 +417,7 @@ if __name__ == "__main__":
     workers = int(os.getenv("WORKERS", "1"))
     log_level = os.getenv("LOG_LEVEL", "info")
 
-    logger.info(f"🚀 Starting server on {host}:{port}")
+    logger.info(f"Starting server on {host}:{port}")
 
     # Run server
     uvicorn.run(

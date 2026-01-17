@@ -28,6 +28,7 @@ export interface EnvironmentConfig {
 
   // Analysis configuration
   PYTHON_WORKER_PATH: string;
+  PYTHON_API_URL: string;
   SLITHER_TIMEOUT: number;
   MAX_CONTRACT_SIZE: number;
   MAX_CONCURRENT_ANALYSES: number;
@@ -74,6 +75,7 @@ const defaults: Partial<EnvironmentConfig> = {
   JWT_EXPIRES_IN: '24h',
   REFRESH_TOKEN_EXPIRES_IN: '7d',
   PYTHON_WORKER_PATH: '../python',
+  PYTHON_API_URL: 'http://localhost:8000',
   SLITHER_TIMEOUT: 300,
   MAX_CONTRACT_SIZE: 1048576, // 1MB
   MAX_CONCURRENT_ANALYSES: 3,
@@ -107,7 +109,9 @@ function parseEnvironmentConfig(): EnvironmentConfig {
   // Parse CORS origins
   const corsOrigins = process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
-    : ['http://localhost:3000', 'https://localhost:3000'];
+    : process.env.NODE_ENV === 'production' 
+      ? [] // Production should always set CORS_ORIGINS explicitly
+      : ['http://localhost:3000', 'https://localhost:3000']; // Dev defaults only
 
   // Build configuration object
   const config: EnvironmentConfig = {
@@ -241,7 +245,7 @@ export const isTest = (): boolean => env.NODE_ENV === 'test';
 export const env = parseEnvironmentConfig();
 
 // Log configuration on startup (excluding secrets)
-console.log('🔧 Environment Configuration:');
+console.log('Environment Configuration:');
 console.log(`  NODE_ENV: ${env.NODE_ENV}`);
 console.log(`  PORT: ${env.PORT}`);
 console.log(`  API_VERSION: ${env.API_VERSION}`);

@@ -46,7 +46,7 @@ const Navbar: React.FC = () => {
         <div className="mr-4 flex">
           <Link to="/" className="mr-6 flex items-center space-x-2">
             <ShieldCheck className="h-6 w-6 text-primary" />
-            <span className="font-bold">SecureAudit</span>
+            <span className="font-bold">view0x</span>
           </Link>
           <div className="hidden md:flex items-center space-x-6 text-sm font-medium">
             <Link
