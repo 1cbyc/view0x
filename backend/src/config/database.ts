@@ -53,8 +53,12 @@ const dbConfig = {
 };
 
 // Redis configuration
+const redisUrl = process.env.REDIS_URL || "";
+if (!redisUrl) {
+  throw new Error("REDIS_URL environment variable is required");
+}
 const redisConfig = {
-  url: process.env.REDIS_URL || "redis://localhost:6379",
+  url: redisUrl,
   options: {
     maxRetriesPerRequest: 3,
     retryDelayOnFailover: 100,
