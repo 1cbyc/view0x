@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import {
   Loader2,
   AlertTriangle,
@@ -186,10 +187,10 @@ const ContractAnalyzer: React.FC = () => {
     setIsAnalyzing(true);
     setProgressMessage("Submitting for analysis...");
 
+    // Check if user is authenticated
+    const token = localStorage.getItem("accessToken");
+
     try {
-      // Check if user is authenticated
-      const token = localStorage.getItem("accessToken");
-      
       if (token) {
         // Use authenticated endpoint with WebSocket updates
         const response = await analysisApi.createAnalysis({ contractCode });
@@ -242,16 +243,66 @@ const ContractAnalyzer: React.FC = () => {
         }
       }
     } catch (err: any) {
-      // Handle 401 specifically
-      if (err.response?.status === 401) {
-        setError("Please log in to use the full analysis features with real-time updates.");
-      } else {
-        const errorMessage =
-          err.response?.data?.error?.message ||
-          err.message ||
-          "Failed to submit analysis.";
-        setError(errorMessage);
+      // Handle 401 specifically - fallback to public endpoint
+      if (err.response?.status === 401 && token) {
+        // Token expired or invalid, try public endpoint instead
+        try {
+          setProgressMessage("Analyzing contract (public mode)...");
+          const response = await analysisApi.createPublicAnalysis({ contractCode });
+          const result = response.data.data;
+
+          if (result) {
+            const transformedVulnerabilities: Vulnerability[] = (result.vulnerabilities || []).map((vuln: any) => ({
+              check: vuln.type || "Unknown",
+              description: vuln.description || "",
+              impact: (vuln.severity === "HIGH" ? "High" : 
+                      vuln.severity === "MEDIUM" ? "Medium" : 
+                      vuln.severity === "LOW" ? "Low" : "Informational") as Vulnerability["impact"],
+              confidence: "High" as Vulnerability["confidence"],
+              elements: [{
+                type: "function",
+                name: vuln.type || "Unknown",
+                source_mapping: {
+                  lines: vuln.lineNumber ? [vuln.lineNumber] : []
+                }
+              }]
+            }));
+
+            setAnalysisResult({
+              id: `public-${Date.now()}`,
+              summary: {
+                highSeverity: result.summary.highSeverity || 0,
+                mediumSeverity: result.summary.mediumSeverity || 0,
+                lowSeverity: result.summary.lowSeverity || 0,
+                overallScore: result.summary.totalVulnerabilities > 0 ? 50 : 100,
+                riskLevel: result.summary.highSeverity > 0 ? "HIGH" : 
+                          result.summary.mediumSeverity > 0 ? "MEDIUM" : "LOW",
+              },
+              vulnerabilities: transformedVulnerabilities,
+            });
+            setIsAnalyzing(false);
+            // Clear invalid token
+            localStorage.removeItem("accessToken");
+            return;
+          }
+        } catch (publicErr: any) {
+          // If public endpoint also fails, show error
+          const errorMessage =
+            publicErr.response?.data?.error?.message ||
+            publicErr.message ||
+            "Failed to analyze contract. Please try again.";
+          setError(errorMessage);
+          setIsAnalyzing(false);
+          return;
+        }
       }
+      
+      // Other errors
+      const errorMessage =
+        err.response?.data?.error?.message ||
+        err.message ||
+        "Failed to submit analysis.";
+      setError(errorMessage);
       setIsAnalyzing(false);
     }
   };
@@ -382,7 +433,13 @@ const ContractAnalyzer: React.FC = () => {
         </h1>
         <p className="text-lg text-white/60 mt-4 max-w-2xl mx-auto">
           Paste your Solidity code to get an instant security analysis, powered
-          by Slither.
+          by Slither. No login required to scan contracts.
+        </p>
+        <p className="text-sm text-white/40 mt-2">
+          <Link to="/login" className="text-primary hover:text-primary/80 underline">
+            Sign in
+          </Link>
+          {' '}to save your analysis history and track your scans.
         </p>
       </div>
 
