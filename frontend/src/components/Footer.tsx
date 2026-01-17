@@ -45,7 +45,7 @@ const Footer: React.FC = () => {
         </div>
         
         <div className="mt-4 text-center text-sm text-gray-500">
-          <p>Secure Audit by Nsisong Labs - Smart Contract Vuln Scanner</p>
+          <p>view0x by Nsisong Labs - Smart Contract Vuln Scanner</p>
         </div>
       </div>
     </footer>

@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: secure-audit-backend
+    name: view0x-backend
     env: node
     plan: free
     buildCommand: npm install && npm run build

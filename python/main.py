@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Secure Audit Python Analysis Server
+view0x Python Analysis Server
 HTTP server that handles contract analysis requests from the Node.js backend.
 """
 
@@ -67,7 +67,7 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager"""
     global redis_client, slither_analyzer, mythril_analyzer_instance, semgrep_analyzer_instance
 
-    logger.info("🚀 Starting Secure Audit Analysis Server...")
+    logger.info("🚀 Starting view0x Analysis Server...")
 
     try:
         # Initialize Redis connection
@@ -113,7 +113,7 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app
 app = FastAPI(
-    title="Secure Audit Analysis Server",
+    title="view0x Analysis Server",
     description="Python-based analysis server for smart contract security auditing",
     version="1.0.0",
     lifespan=lifespan
@@ -393,7 +393,7 @@ def determine_risk_level(summary: Dict[str, int]) -> str:
 async def root():
     """Root endpoint"""
     return {
-        "message": "Secure Audit Analysis Server",
+        "message": "view0x Analysis Server",
         "version": "1.0.0",
         "status": "running",
         "endpoints": {

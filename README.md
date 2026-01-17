@@ -19,7 +19,7 @@ freaking pissed, because why on earth would tailwind be causing so much errors.
 okay, i use this method:
 
 ```bash
-secure-audit/
+view0x/
 ├── scanner-engine/     # Core analysis engine
 ├── backend/           # Express.js API server
 ├── frontend/          # React application
@@ -40,11 +40,11 @@ okay, in the end, i simply setup a wrangler for cloudflare workers to get it run
 # wanted to know the list of what's here in the frontend
 cd frontend; Get-ChildItem dist
 # trying to get list of deployed pages:
-npx wrangler pages deploy dist --project-name secure-audit-frontend
+npx wrangler pages deploy dist --project-name view0x-frontend
 # tried to get the list of urls o
-npx wrangler pages domain list --project-name secure-audit-frontend
+npx wrangler pages domain list --project-name view0x-frontend
 # then i did this
-npx wrangler pages deploy dist --project-name secure-audit
+npx wrangler pages deploy dist --project-name view0x
 ```
 
 okay, this is the end of it. i would use AI to write commit messages. i cant be explaining myself again. this stuff giving me brain rot, i cant even think clearly about full definition to give per fix i make. 

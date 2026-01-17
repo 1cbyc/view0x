@@ -5,7 +5,7 @@ import { logger } from "../utils/logger";
 // Database configuration
 const dbUrl =
   process.env.DATABASE_URL ||
-  "postgresql://postgres:password@localhost:5432/secure_audit_dev";
+  "postgresql://postgres:password@localhost:5432/view0x_dev";
 const isPostgres = dbUrl.startsWith("postgres");
 const isSQLite = false;
 
@@ -70,7 +70,7 @@ export const sequelize = new Sequelize(dbConfig.url, dbConfig.options);
 // Initialize Redis clients
 export const redis = new Redis(redisConfig.url, {
   ...redisConfig.options,
-  keyPrefix: "secure-audit:",
+  keyPrefix: "view0x:",
 });
 
 // Separate Redis clients for Bull queue as per library requirements
@@ -79,20 +79,20 @@ export const bullQueueClient = new Redis(redisConfig.url, {
   ...redisConfig.options,
   maxRetriesPerRequest: null, // Bull manages its own retries
   enableReadyCheck: false,
-  keyPrefix: "secure-audit:queue:",
+  keyPrefix: "view0x:queue:",
 });
 
 export const bullQueueSubscriber = new Redis(redisConfig.url, {
   ...redisConfig.options,
   maxRetriesPerRequest: null, // Bull manages its own retries
   enableReadyCheck: false,
-  keyPrefix: "secure-audit:queue:",
+  keyPrefix: "view0x:queue:",
 });
 
 // Redis client for caching
 const cacheRedis = new Redis(redisConfig.url, {
   ...redisConfig.options,
-  keyPrefix: "secure-audit:cache:",
+  keyPrefix: "view0x:cache:",
 });
 
 // Database connection test
