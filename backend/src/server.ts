@@ -14,7 +14,7 @@ const startServer = async () => {
     logger.info("[SERVER STARTUP] Step 1: Initializing application...");
     await initializeApp();
     logger.info(
-      "[SERVER STARTUP] ✅ Step 1 Complete: Application initialized.",
+      "[SERVER STARTUP] Step 1 Complete: Application initialized.",
     );
 
     logger.info(
