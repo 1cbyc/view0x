@@ -110,7 +110,7 @@ function parseEnvironmentConfig(): EnvironmentConfig {
   const corsOrigins = process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
     : process.env.NODE_ENV === 'production' 
-      ? [] // Production should always set CORS_ORIGINS explicitly
+      ? ['https://view0x.com', 'https://www.view0x.com'] // Production defaults for view0x.com
       : ['http://localhost:3000', 'https://localhost:3000']; // Dev defaults only
 
   // Build configuration object
