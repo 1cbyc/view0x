@@ -3,9 +3,10 @@ import Redis from "ioredis";
 import { logger } from "../utils/logger";
 
 // Database configuration
-const dbUrl =
-  process.env.DATABASE_URL ||
-  "postgresql://postgres:password@localhost:5432/view0x_dev";
+const dbUrl = process.env.DATABASE_URL || "";
+if (!dbUrl) {
+  throw new Error("DATABASE_URL environment variable is required");
+}
 const isPostgres = dbUrl.startsWith("postgres");
 const isSQLite = false;
 
