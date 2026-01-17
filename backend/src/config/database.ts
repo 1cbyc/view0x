@@ -99,10 +99,10 @@ const cacheRedis = new Redis(redisConfig.url, {
 export const testDatabaseConnection = async (): Promise<boolean> => {
   try {
     await sequelize.authenticate();
-    logger.info("✅ Database connection established successfully");
+    logger.info("Database connection established successfully");
     return true;
   } catch (error) {
-    logger.error("❌ Unable to connect to database:", error);
+    logger.error("Unable to connect to database:", error);
     return false;
   }
 };
@@ -112,12 +112,12 @@ export const testRedisConnection = async (): Promise<boolean> => {
   try {
     const result = await redis.ping();
     if (result === "PONG") {
-      logger.info("✅ Redis connection established successfully");
+      logger.info("Redis connection established successfully");
       return true;
     }
     throw new Error("Redis ping failed");
   } catch (error) {
-    logger.error("❌ Unable to connect to Redis:", error);
+    logger.error("Unable to connect to Redis:", error);
     return false;
   }
 };
@@ -139,13 +139,13 @@ export const initializeConnections = async (): Promise<void> => {
 export const closeConnections = async (): Promise<void> => {
   try {
     await sequelize.close();
-    logger.info("📴 Database connection closed");
+    logger.info("Database connection closed");
 
     redis.disconnect();
     bullQueueClient.disconnect();
     bullQueueSubscriber.disconnect();
     cacheRedis.disconnect();
-    logger.info("📴 Redis connections closed");
+    logger.info("Redis connections closed");
   } catch (error) {
     logger.error("❌ Error closing connections:", error);
   }
