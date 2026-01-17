@@ -165,7 +165,7 @@ async def health_check():
 async def analyze_contract(request: AnalysisRequest, background_tasks: BackgroundTasks):
     """Analyze a smart contract"""
     try:
-        logger.info(f"📊 Starting analysis for job {request.job_id}")
+        logger.info(f"Starting analysis for job {request.job_id}")
 
         # Validate request
         if len(request.contract_code) > 5_000_000:  # 5MB limit
@@ -192,7 +192,7 @@ async def analyze_contract(request: AnalysisRequest, background_tasks: Backgroun
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ Failed to start analysis: {e}")
+        logger.error(f"Failed to start analysis: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 async def process_analysis(
@@ -203,7 +203,7 @@ async def process_analysis(
 ):
     """Process contract analysis in background"""
     try:
-        logger.info(f"🔄 Processing analysis for job {job_id}")
+        logger.info(f"Processing analysis for job {job_id}")
 
         # Update job status to processing
         await update_job_status(job_id, "processing", 10, "Initializing analysis")
@@ -287,14 +287,14 @@ async def process_analysis(
         # Update job status to completed
         await update_job_status(job_id, "completed", 100, "Analysis completed")
 
-        logger.info(f"✅ Analysis completed for job {job_id}")
+        logger.info(f"Analysis completed for job {job_id}")
 
         # TODO: Send callback if provided
         if callback_url:
             await send_callback(callback_url, job_id, analysis_result)
 
     except Exception as e:
-        logger.error(f"❌ Analysis failed for job {job_id}: {e}")
+        logger.error(f"Analysis failed for job {job_id}: {e}")
         logger.error(traceback.format_exc())
 
         # Update job status to failed
@@ -417,7 +417,7 @@ if __name__ == "__main__":
     workers = int(os.getenv("WORKERS", "1"))
     log_level = os.getenv("LOG_LEVEL", "info")
 
-    logger.info(f"🚀 Starting server on {host}:{port}")
+    logger.info(f"Starting server on {host}:{port}")
 
     # Run server
     uvicorn.run(
