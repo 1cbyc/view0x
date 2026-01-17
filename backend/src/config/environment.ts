@@ -241,7 +241,7 @@ export const isTest = (): boolean => env.NODE_ENV === 'test';
 export const env = parseEnvironmentConfig();
 
 // Log configuration on startup (excluding secrets)
-console.log('🔧 Environment Configuration:');
+console.log('Environment Configuration:');
 console.log(`  NODE_ENV: ${env.NODE_ENV}`);
 console.log(`  PORT: ${env.PORT}`);
 console.log(`  API_VERSION: ${env.API_VERSION}`);
