@@ -28,7 +28,7 @@ async function verifyPhase1And2() {
   let hasFailed = false;
 
   console.log(
-    `${BOLD}🚀 KICKING OFF COMPREHENSIVE VERIFICATION FOR PHASE 1 & 2...${RESET}`,
+    `${BOLD}KICKING OFF COMPREHENSIVE VERIFICATION FOR PHASE 1 & 2...${RESET}`,
   );
 
   // --- Verification Step 1: Database Connection ---
