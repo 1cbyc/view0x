@@ -67,14 +67,14 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager"""
     global redis_client, slither_analyzer, mythril_analyzer_instance, semgrep_analyzer_instance
 
-    logger.info("🚀 Starting view0x Analysis Server...")
+    logger.info("Starting view0x Analysis Server...")
 
     try:
         # Initialize Redis connection
         redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
         redis_client = redis.from_url(redis_url, decode_responses=True)
         await redis_client.ping()
-        logger.info("✅ Redis connection established")
+        logger.info("Redis connection established")
 
         # Initialize analyzers
         slither_analyzer = SlitherAnalyzer()
