@@ -147,7 +147,7 @@ export const closeConnections = async (): Promise<void> => {
     cacheRedis.disconnect();
     logger.info("Redis connections closed");
   } catch (error) {
-    logger.error("❌ Error closing connections:", error);
+    logger.error("Error closing connections:", error);
   }
 };
 
