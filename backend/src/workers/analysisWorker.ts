@@ -236,11 +236,11 @@ const processAnalysisJob = async (job: Queue.Job<AnalysisJobPayload>) => {
     });
 
     logger.info(
-      `[WORKER] ✅ Analysis job ${analysisId} completed successfully.`,
+      `[WORKER] Analysis job ${analysisId} completed successfully.`,
     );
     return { success: true, result };
   } catch (error: any) {
-    logger.error(`[WORKER] ❌ Analysis job ${analysisId} failed:`, error);
+    logger.error(`[WORKER] Analysis job ${analysisId} failed:`, error);
 
     const errorMessage =
       error.response?.data?.detail ||
