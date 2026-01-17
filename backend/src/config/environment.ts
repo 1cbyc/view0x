@@ -138,6 +138,7 @@ function parseEnvironmentConfig(): EnvironmentConfig {
 
     // Analysis
     PYTHON_WORKER_PATH: process.env.PYTHON_WORKER_PATH || defaults.PYTHON_WORKER_PATH!,
+    PYTHON_API_URL: process.env.PYTHON_API_URL || defaults.PYTHON_API_URL!,
     SLITHER_TIMEOUT: parseInt(process.env.SLITHER_TIMEOUT || '') || defaults.SLITHER_TIMEOUT!,
     MAX_CONTRACT_SIZE: parseInt(process.env.MAX_CONTRACT_SIZE || '') || defaults.MAX_CONTRACT_SIZE!,
     MAX_CONCURRENT_ANALYSES: parseInt(process.env.MAX_CONCURRENT_ANALYSES || '') || defaults.MAX_CONCURRENT_ANALYSES!,
