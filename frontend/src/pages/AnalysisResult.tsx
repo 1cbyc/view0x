@@ -68,8 +68,10 @@ const formatDate = (dateString: string): string => {
 const getSeverityVariant = (
   severity:
     | Vulnerability["impact"]
-    | AnalysisDetail["result"]["summary"]["riskLevel"],
+    | AnalysisDetail["result"]["summary"]["riskLevel"]
+    | undefined,
 ): "destructive" | "secondary" | "outline" | "default" => {
+  if (!severity) return "default";
   switch (severity) {
     case "High":
     case "HIGH":
@@ -210,10 +212,10 @@ const AnalysisResultPage: React.FC = () => {
                   Overall Risk
                 </p>
                 <Badge
-                  variant={getSeverityVariant(result.summary.riskLevel)}
+                  variant={getSeverityVariant(result?.summary?.riskLevel)}
                   className="text-2xl font-bold mt-1 px-4 py-1"
                 >
-                  {result.summary.riskLevel}
+                  {result?.summary?.riskLevel || "N/A"}
                 </Badge>
               </div>
               <div className="text-center">
@@ -221,7 +223,7 @@ const AnalysisResultPage: React.FC = () => {
                   Security Score
                 </p>
                 <p className="text-3xl font-bold">
-                  {result.summary.overallScore}/100
+                  {result?.summary?.overallScore || 0}/100
                 </p>
               </div>
               <div className="grid grid-cols-3 gap-2 text-center">
@@ -230,7 +232,7 @@ const AnalysisResultPage: React.FC = () => {
                     High
                   </p>
                   <p className="text-xl font-bold text-destructive">
-                    {result.summary.highSeverity}
+                    {result?.summary?.highSeverity || 0}
                   </p>
                 </div>
                 <div>
@@ -238,7 +240,7 @@ const AnalysisResultPage: React.FC = () => {
                     Medium
                   </p>
                   <p className="text-xl font-bold text-yellow-500">
-                    {result.summary.mediumSeverity}
+                    {result?.summary?.mediumSeverity || 0}
                   </p>
                 </div>
                 <div>
@@ -246,7 +248,7 @@ const AnalysisResultPage: React.FC = () => {
                     Low
                   </p>
                   <p className="text-xl font-bold text-blue-500">
-                    {result.summary.lowSeverity}
+                    {result?.summary?.lowSeverity || 0}
                   </p>
                 </div>
               </div>

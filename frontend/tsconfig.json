@@ -21,5 +21,22 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src"],
+  "exclude": [
+    "src/components/ui/calendar.tsx",
+    "src/components/ui/carousel.tsx",
+    "src/components/ui/command.tsx",
+    "src/components/ui/drawer.tsx",
+    "src/components/ui/form.tsx",
+    "src/components/ui/input-otp.tsx",
+    "src/components/ui/resizable.tsx",
+    "src/components/ui/select.tsx",
+    "src/components/ui/separator.tsx",
+    "src/components/ui/sidebar.tsx",
+    "src/components/ui/sonner.tsx",
+    "src/components/ui/switch.tsx",
+    "src/components/ui/tabs.tsx",
+    "src/components/ui/toggle-group.tsx",
+    "src/components/ui/toggle.tsx"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

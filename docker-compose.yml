@@ -18,8 +18,9 @@ services:
     # To make this work, the frontend container will talk to the host,
     # and the backend container must expose its port to the host.
     environment:
-      - VITE_API_URL=http://localhost:3001/api
+      - VITE_API_URL=/api  # Use relative path, Vite proxy will handle it
       - VITE_SOCKET_URL=http://localhost:3001
+      - VITE_BACKEND_URL=http://backend:3001  # For Vite proxy to backend service
     depends_on:
       - backend
 

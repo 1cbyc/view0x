@@ -10,9 +10,11 @@ ENV PYTHONUNBUFFERED 1
 
 # Install system dependencies required for building Python packages
 # libpq-dev is needed for psycopg (PostgreSQL driver)
+# curl is needed for healthcheck
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpq-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy the requirements file into the container
