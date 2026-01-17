@@ -37,8 +37,8 @@ export default {
           foreground: "hsl(var(--muted-foreground))",
         },
         accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
+          DEFAULT: "#8367c7",
+          foreground: "#000000",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",
@@ -67,6 +67,16 @@ export default {
           "0%, 100%": { transform: "translateY(0px)" },
           "50%": { transform: "translateY(-20px)" },
         },
+        "fade-in": {
+          from: {
+            opacity: "0",
+            transform: "translateY(10px)",
+          },
+          to: {
+            opacity: "1",
+            transform: "translateY(0)",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -74,8 +84,10 @@ export default {
         float: "float 6s ease-in-out infinite",
         "pulse-slow": "pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite",
         "bounce-slow": "bounce 3s infinite",
+        "fade-in": "fade-in 0.5s ease-out",
       },
       fontFamily: {
+        sans: ['"Geom"', "sans-serif"],
         mono: ["JetBrains Mono", "Fira Code", "monospace"],
       },
     },
