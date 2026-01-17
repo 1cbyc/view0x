@@ -15,7 +15,7 @@ import Footer from "./components/Footer";
 const App: React.FC = () => {
   return (
     <Router>
-      <div className="min-h-screen bg-black text-white flex flex-col">
+      <div className="min-h-screen bg-black text-white selection:bg-accent/30 flex flex-col">
         <Navbar />
         <main className="flex-1 w-full">
           <Routes>
