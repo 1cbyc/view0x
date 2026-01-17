@@ -1,0 +1,4 @@
+# This file is intentionally empty.
+# Cloudflare Pages detects yarn.lock at the root and tries to use yarn workspaces.
+# This empty file tells yarn that frontend is a separate project, not part of the workspace.
+# The frontend actually uses npm (package-lock.json), but this prevents workspace errors.
