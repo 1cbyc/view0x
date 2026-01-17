@@ -107,7 +107,7 @@ function parseEnvironmentConfig(): EnvironmentConfig {
   // Parse CORS origins
   const corsOrigins = process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
-    : ['http://localhost:3000', 'https://localhost:3000'];
+    : ['http://localhost:3000', 'https://localhost:3000', 'https://view0x.com', 'https://www.view0x.com'];
 
   // Build configuration object
   const config: EnvironmentConfig = {
