@@ -58,8 +58,8 @@ const registerSchema = Joi.object({
     name: Joi.string().min(2).max(100).required(),
     email: Joi.string().email().required(),
     password: Joi.string().min(8).required(),
-    company: Joi.string().max(100).optional(),
-    agreeToTerms: Joi.boolean().valid(true).required(),
+    company: Joi.string().max(100).optional().allow(''),
+    agreeToTerms: Joi.boolean().optional(),
 });
 
 export const validateRegister = (req: Request, res: Response, next: NextFunction) => {
