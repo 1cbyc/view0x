@@ -41,17 +41,17 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <nav className="container flex h-14 max-w-screen-2xl items-center">
+    <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-black/60">
+      <nav className="container flex h-14 max-w-screen-2xl items-center px-6">
         <div className="mr-4 flex">
           <Link to="/" className="mr-6 flex items-center space-x-2">
-            <ShieldCheck className="h-6 w-6 text-primary" />
-            <span className="font-bold">view0x</span>
+            <ShieldCheck className="h-6 w-6 text-accent" />
+            <span className="font-bold text-white">view0x</span>
           </Link>
           <div className="hidden md:flex items-center space-x-6 text-sm font-medium">
             <Link
               to="/analyze"
-              className="transition-colors hover:text-foreground/80 text-foreground/60"
+              className="transition-colors hover:text-white text-white/60"
             >
               Scanner
             </Link>
@@ -62,17 +62,17 @@ const Navbar: React.FC = () => {
           {user ? (
             <div className="flex items-center space-x-4">
               <Link to="/dashboard">
-                <Button variant="ghost">Dashboard</Button>
+                <Button variant="ghost" className="text-white/60 hover:text-white">Dashboard</Button>
               </Link>
-              <Button onClick={handleLogout}>Logout</Button>
+              <Button onClick={handleLogout} className="bg-white text-black hover:bg-gray-200">Logout</Button>
             </div>
           ) : (
             <>
               <Link to="/login">
-                <Button variant="ghost">Sign In</Button>
+                <Button variant="ghost" className="text-white/60 hover:text-white">Sign In</Button>
               </Link>
               <Link to="/register">
-                <Button>Sign Up</Button>
+                <Button className="bg-white text-black hover:bg-gray-200">Sign Up</Button>
               </Link>
             </>
           )}

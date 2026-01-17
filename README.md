@@ -27,6 +27,107 @@ view0x/
 └── docker-compose.yml # Container orchestration
 ```
 
+## How to Run
+
+### Option 1: Using Docker Compose (Recommended)
+
+The easiest way to run the entire project is using Docker Compose:
+
+1. **Prerequisites:**
+   - Docker and Docker Compose installed
+   - Create environment files (if needed)
+
+2. **Create environment files:**
+
+   Create `backend/.env`:
+   ```env
+   NODE_ENV=development
+   PORT=3001
+   DATABASE_URL=postgresql://postgres:password@db:5432/view0x_dev
+   REDIS_URL=redis://redis:6379
+   PYTHON_API_URL=http://python-worker:8000
+   JWT_SECRET=your-secret-key-here
+   JWT_EXPIRES_IN=24h
+   REFRESH_TOKEN_SECRET=your-refresh-secret-here
+   REFRESH_TOKEN_EXPIRES_IN=7d
+   ```
+
+   Create `python/.env` (if needed):
+   ```env
+   REDIS_URL=redis://redis:6379
+   ```
+
+3. **Start all services:**
+   ```bash
+   docker-compose up
+   ```
+
+   Or run in detached mode:
+   ```bash
+   docker-compose up -d
+   ```
+
+4. **Access the application:**
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:3001
+   - PostgreSQL: localhost:5432
+
+5. **Stop services:**
+   ```bash
+   docker-compose down
+   ```
+
+### Option 2: Manual Setup (Development)
+
+If you prefer to run services individually:
+
+1. **Start PostgreSQL and Redis:**
+   ```bash
+   docker-compose up db redis -d
+   ```
+
+2. **Backend Setup:**
+   ```bash
+   cd backend
+   npm install
+   # Create .env file with your configuration
+   npm run build
+   npm run dev  # Runs on http://localhost:3001
+   ```
+
+3. **Frontend Setup:**
+   ```bash
+   cd frontend
+   npm install
+   npm run dev  # Runs on http://localhost:5173 (Vite default)
+   ```
+
+4. **Python Worker (Optional):**
+   ```bash
+   cd python
+   pip install -r requirements.txt
+   python main.py  # Runs on http://localhost:8000
+   ```
+
+5. **Scanner Engine (Optional):**
+   ```bash
+   cd scanner-engine
+   npm install
+   npm run build
+   npm start
+   ```
+
+### Environment Variables
+
+Key environment variables needed for the backend (in `backend/.env`):
+
+- `DATABASE_URL` - PostgreSQL connection string
+- `REDIS_URL` - Redis connection string
+- `JWT_SECRET` - Secret for JWT tokens
+- `PYTHON_API_URL` - URL for Python analysis worker
+- `PORT` - Backend server port (default: 3001)
+
+---
 
 i just realized i hardcoded it to localhost:3001/api/analysis/public. that is why when i shut down my pc it does not scan. anyways, in api.ts i have fixed it to take from render where i updated the api.
 
