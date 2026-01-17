@@ -1,24 +1,14 @@
 import React from 'react';
-import { Twitter, Linkedin, Heart } from 'lucide-react';
+import { Twitter, Linkedin } from 'lucide-react';
 
 const Footer: React.FC = () => {
   return (
-    <footer className="bg-white/80 backdrop-blur-md border-t border-gray-200/50 mt-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <footer className="bg-black border-t border-white/10 mt-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
-          <div className="flex items-center space-x-2 text-gray-600">
-            <span>© 2025 by </span>
-            <a
-              href="https://nsisong.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-700 font-medium transition-colors"
-            >
-              Isaac Emmanuel
-            </a>
-            <span className="hidden sm:inline">•</span>
-            <span className="hidden sm:inline">Made with</span>
-            <Heart className="w-4 h-4 text-red-500" />
+          <div className="flex items-center space-x-2 text-white/60">
+            <span>© {new Date().getFullYear()} </span>
+            <span className="font-bold text-white">view0x</span>
           </div>
           
           <div className="flex items-center space-x-6">
@@ -26,7 +16,7 @@ const Footer: React.FC = () => {
               href="https://x.com/1cbyc"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors"
+              className="flex items-center space-x-2 text-white/60 hover:text-white transition-colors"
             >
               <Twitter className="w-5 h-5" />
               <span className="hidden sm:inline">Twitter</span>
@@ -36,7 +26,7 @@ const Footer: React.FC = () => {
               href="https://linkedin.com/in/isaacnsisong"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors"
+              className="flex items-center space-x-2 text-white/60 hover:text-white transition-colors"
             >
               <Linkedin className="w-5 h-5" />
               <span className="hidden sm:inline">LinkedIn</span>
@@ -44,8 +34,8 @@ const Footer: React.FC = () => {
           </div>
         </div>
         
-        <div className="mt-4 text-center text-sm text-gray-500">
-          <p>view0x by Nsisong Labs - Smart Contract Vuln Scanner</p>
+        <div className="mt-4 text-center text-sm text-white/40">
+          <p>Smart Contract Security Analysis Platform</p>
         </div>
       </div>
     </footer>
