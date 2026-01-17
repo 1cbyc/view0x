@@ -60,6 +60,13 @@ export const analysisApi = {
     api.post("/analysis", data),
 
   /**
+   * Public analysis endpoint (no authentication required).
+   * Returns synchronous results without WebSocket updates.
+   */
+  createPublicAnalysis: (data: { contractCode: string; options?: any }) =>
+    api.post("/analysis/public", data),
+
+  /**
    * Fetches the analysis history for the logged-in user.
    */
   getHistory: () => api.get("/analysis"),

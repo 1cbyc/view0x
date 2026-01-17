@@ -68,30 +68,41 @@ pragma solidity ^0.8.0;
 contract VulnerableContract {
     mapping(address => uint256) public balances;
     address public owner;
+    bool private locked;
 
     constructor() {
         owner = msg.sender;
     }
 
-    // Missing access control
+    // Missing access control - anyone can change owner
     function setOwner(address newOwner) public {
         owner = newOwner;
     }
 
-    // Reentrancy vulnerability
+    // Reentrancy vulnerability - state updated after external call
     function withdraw(uint256 amount) public {
         require(balances[msg.sender] >= amount, "Insufficient balance");
-
+        
+        balances[msg.sender] -= amount;
+        
         (bool success, ) = msg.sender.call{value: amount}("");
         require(success, "Transfer failed");
-
-        balances[msg.sender] -= amount;
     }
 
-    // Dangerous tx.origin usage
+    // Dangerous tx.origin usage - vulnerable to phishing
     function transfer(address to, uint256 amount) public {
         require(tx.origin == owner, "Not authorized");
         balances[to] += amount;
+    }
+
+    // Integer overflow/underflow (fixed in Solidity 0.8.0+, but shown for demonstration)
+    function deposit() public payable {
+        balances[msg.sender] += msg.value;
+    }
+
+    // Missing zero address check
+    function setBalance(address account, uint256 amount) public {
+        balances[account] = amount;
     }
 }`;
 
@@ -176,20 +187,71 @@ const ContractAnalyzer: React.FC = () => {
     setProgressMessage("Submitting for analysis...");
 
     try {
-      const response = await analysisApi.createAnalysis({ contractCode });
-      const initialAnalysis = response.data.data;
+      // Check if user is authenticated
+      const token = localStorage.getItem("accessToken");
+      
+      if (token) {
+        // Use authenticated endpoint with WebSocket updates
+        const response = await analysisApi.createAnalysis({ contractCode });
+        const initialAnalysis = response.data.data;
 
-      if (initialAnalysis && initialAnalysis.id) {
-        setCurrentAnalysisId(initialAnalysis.id);
+        if (initialAnalysis && initialAnalysis.id) {
+          setCurrentAnalysisId(initialAnalysis.id);
+        } else {
+          throw new Error("Failed to start analysis: No analysis ID received.");
+        }
       } else {
-        throw new Error("Failed to start analysis: No analysis ID received.");
+        // Use public endpoint (synchronous, no WebSocket)
+        setProgressMessage("Analyzing contract...");
+        const response = await analysisApi.createPublicAnalysis({ contractCode });
+        const result = response.data.data;
+
+        if (result) {
+          // Transform public API response to match expected format
+          const transformedVulnerabilities: Vulnerability[] = (result.vulnerabilities || []).map((vuln: any) => ({
+            check: vuln.type || "Unknown",
+            description: vuln.description || "",
+            impact: (vuln.severity === "HIGH" ? "High" : 
+                    vuln.severity === "MEDIUM" ? "Medium" : 
+                    vuln.severity === "LOW" ? "Low" : "Informational") as Vulnerability["impact"],
+            confidence: "High" as Vulnerability["confidence"],
+            elements: [{
+              type: "function",
+              name: vuln.type || "Unknown",
+              source_mapping: {
+                lines: vuln.lineNumber ? [vuln.lineNumber] : []
+              }
+            }]
+          }));
+
+          setAnalysisResult({
+            id: `public-${Date.now()}`,
+            summary: {
+              highSeverity: result.summary.highSeverity || 0,
+              mediumSeverity: result.summary.mediumSeverity || 0,
+              lowSeverity: result.summary.lowSeverity || 0,
+              overallScore: result.summary.totalVulnerabilities > 0 ? 50 : 100,
+              riskLevel: result.summary.highSeverity > 0 ? "HIGH" : 
+                        result.summary.mediumSeverity > 0 ? "MEDIUM" : "LOW",
+            },
+            vulnerabilities: transformedVulnerabilities,
+          });
+          setIsAnalyzing(false);
+        } else {
+          throw new Error("Failed to analyze contract.");
+        }
       }
     } catch (err: any) {
-      const errorMessage =
-        err.response?.data?.error?.message ||
-        err.message ||
-        "Failed to submit analysis.";
-      setError(errorMessage);
+      // Handle 401 specifically
+      if (err.response?.status === 401) {
+        setError("Please log in to use the full analysis features with real-time updates.");
+      } else {
+        const errorMessage =
+          err.response?.data?.error?.message ||
+          err.message ||
+          "Failed to submit analysis.";
+        setError(errorMessage);
+      }
       setIsAnalyzing(false);
     }
   };
