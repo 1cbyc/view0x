@@ -112,7 +112,7 @@ app.use("/api/analysis", analysisRoutes);
 // Root endpoint with API information
 app.get("/", (req, res) => {
   res.json({
-    name: "Secure Audit Backend API",
+    name: "view0x Backend API",
     version: "1.0.0",
     status: "running",
     timestamp: new Date().toISOString(),
@@ -186,7 +186,7 @@ export { app, server, io };
 // Initialize database connections and start server
 export async function initializeApp(): Promise<void> {
   try {
-    logger.info("🚀 Initializing Secure Audit Backend...");
+    logger.info("🚀 Initializing view0x Backend...");
     await initializeConnections();
     logger.info("✅ Database connections established");
     await syncModels();
