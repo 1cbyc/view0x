@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import {
   Loader2,
   AlertTriangle,
   CheckCircle,
   ShieldAlert,
   FileText,
-  ChevronRight,
-  Share2,
 } from "lucide-react";
 
 // UI Components from the new theme
@@ -305,10 +302,10 @@ const ContractAnalyzer: React.FC = () => {
     }
 
     return (
-      <Card className="text-center p-8 border-2 border-dashed">
-        <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-xl font-semibold">Ready to Analyze</h3>
-        <p className="mt-2 text-muted-foreground">
+      <Card className="text-center p-8 border-2 border-dashed border-white/10 bg-black/50">
+        <FileText className="w-16 h-16 text-white/40 mx-auto mb-4" />
+        <h3 className="text-xl font-semibold text-white">Ready to Analyze</h3>
+        <p className="mt-2 text-white/60">
           Paste your contract code to get started.
         </p>
       </Card>
@@ -318,10 +315,10 @@ const ContractAnalyzer: React.FC = () => {
   return (
     <div className="container mx-auto py-8">
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold tracking-tight">
+        <h1 className="text-4xl font-bold tracking-tight text-white">
           Smart Contract Security Scanner
         </h1>
-        <p className="text-lg text-muted-foreground mt-4 max-w-2xl mx-auto">
+        <p className="text-lg text-white/60 mt-4 max-w-2xl mx-auto">
           Paste your Solidity code to get an instant security analysis, powered
           by Slither.
         </p>
