@@ -151,8 +151,8 @@ const AnalysisResultPage: React.FC = () => {
   if (isLoading) {
     return (
       <div className="text-center py-20">
-        <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto" />
-        <p className="mt-4 text-muted-foreground">
+        <Loader2 className="w-12 h-12 animate-spin text-accent mx-auto" />
+        <p className="mt-4 text-white/60">
           Loading analysis results...
         </p>
       </div>
@@ -161,11 +161,11 @@ const AnalysisResultPage: React.FC = () => {
 
   if (error) {
     return (
-      <Alert variant="destructive">
-        <AlertTriangle className="h-4 w-4" />
-        <AlertTitle>An Error Occurred</AlertTitle>
-        <AlertDescription>{error}</AlertDescription>
-        <Button asChild variant="link" className="p-0 h-auto mt-4">
+      <Alert variant="destructive" className="bg-red-500/10 border-red-500/20">
+        <AlertTriangle className="h-4 w-4 text-red-400" />
+        <AlertTitle className="text-red-400">An Error Occurred</AlertTitle>
+        <AlertDescription className="text-red-400">{error}</AlertDescription>
+        <Button asChild variant="link" className="p-0 h-auto mt-4 text-accent hover:text-accent/80">
           <Link to="/dashboard">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
@@ -184,16 +184,16 @@ const AnalysisResultPage: React.FC = () => {
   return (
     <div className="container mx-auto py-8 space-y-6">
       <div>
-        <Button asChild variant="ghost" className="mb-4 -ml-4">
+        <Button asChild variant="ghost" className="mb-4 -ml-4 text-white/60 hover:text-white">
           <Link to="/dashboard">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
           </Link>
         </Button>
-        <h1 className="text-3xl font-bold">
+        <h1 className="text-3xl font-bold text-white">
           {contractInfo.name || "Analysis Details"}
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-sm text-white/60 mt-1">
           Analyzed on {formatDate(createdAt)}
         </p>
       </div>
@@ -284,10 +284,10 @@ const AnalysisResultPage: React.FC = () => {
       )}
 
       {result && result.vulnerabilities.length === 0 && (
-        <div className="text-center py-12 border-2 border-dashed border-border rounded-lg">
+        <div className="text-center py-12 border-2 border-dashed border-white/10 rounded-lg bg-black/50">
           <ShieldCheck className="w-16 h-16 text-green-500 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold">No Vulnerabilities Found</h3>
-          <p className="mt-2 text-muted-foreground">
+          <h3 className="text-xl font-semibold text-white">No Vulnerabilities Found</h3>
+          <p className="mt-2 text-white/60">
             Our scanner did not find any issues in this contract.
           </p>
         </div>
