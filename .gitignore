@@ -123,3 +123,4 @@ CopilotIndices/
 docs/
 *.md
 !README.md
+*.sh

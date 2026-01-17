@@ -3,9 +3,10 @@ import Redis from "ioredis";
 import { logger } from "../utils/logger";
 
 // Database configuration
-const dbUrl =
-  process.env.DATABASE_URL ||
-  "postgresql://postgres:password@localhost:5432/secure_audit_dev";
+const dbUrl = process.env.DATABASE_URL || "";
+if (!dbUrl) {
+  throw new Error("DATABASE_URL environment variable is required");
+}
 const isPostgres = dbUrl.startsWith("postgres");
 const isSQLite = false;
 
@@ -70,7 +71,7 @@ export const sequelize = new Sequelize(dbConfig.url, dbConfig.options);
 // Initialize Redis clients
 export const redis = new Redis(redisConfig.url, {
   ...redisConfig.options,
-  keyPrefix: "secure-audit:",
+  keyPrefix: "view0x:",
 });
 
 // Separate Redis clients for Bull queue as per library requirements
@@ -79,30 +80,30 @@ export const bullQueueClient = new Redis(redisConfig.url, {
   ...redisConfig.options,
   maxRetriesPerRequest: null, // Bull manages its own retries
   enableReadyCheck: false,
-  keyPrefix: "secure-audit:queue:",
+  keyPrefix: "view0x:queue:",
 });
 
 export const bullQueueSubscriber = new Redis(redisConfig.url, {
   ...redisConfig.options,
   maxRetriesPerRequest: null, // Bull manages its own retries
   enableReadyCheck: false,
-  keyPrefix: "secure-audit:queue:",
+  keyPrefix: "view0x:queue:",
 });
 
 // Redis client for caching
 const cacheRedis = new Redis(redisConfig.url, {
   ...redisConfig.options,
-  keyPrefix: "secure-audit:cache:",
+  keyPrefix: "view0x:cache:",
 });
 
 // Database connection test
 export const testDatabaseConnection = async (): Promise<boolean> => {
   try {
     await sequelize.authenticate();
-    logger.info("✅ Database connection established successfully");
+    logger.info("Database connection established successfully");
     return true;
   } catch (error) {
-    logger.error("❌ Unable to connect to database:", error);
+    logger.error("Unable to connect to database:", error);
     return false;
   }
 };
@@ -112,12 +113,12 @@ export const testRedisConnection = async (): Promise<boolean> => {
   try {
     const result = await redis.ping();
     if (result === "PONG") {
-      logger.info("✅ Redis connection established successfully");
+      logger.info("Redis connection established successfully");
       return true;
     }
     throw new Error("Redis ping failed");
   } catch (error) {
-    logger.error("❌ Unable to connect to Redis:", error);
+    logger.error("Unable to connect to Redis:", error);
     return false;
   }
 };
@@ -139,15 +140,15 @@ export const initializeConnections = async (): Promise<void> => {
 export const closeConnections = async (): Promise<void> => {
   try {
     await sequelize.close();
-    logger.info("📴 Database connection closed");
+    logger.info("Database connection closed");
 
     redis.disconnect();
     bullQueueClient.disconnect();
     bullQueueSubscriber.disconnect();
     cacheRedis.disconnect();
-    logger.info("📴 Redis connections closed");
+    logger.info("Redis connections closed");
   } catch (error) {
-    logger.error("❌ Error closing connections:", error);
+    logger.error("Error closing connections:", error);
   }
 };
 
