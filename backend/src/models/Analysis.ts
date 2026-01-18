@@ -456,9 +456,11 @@ Analysis.init(
       },
       afterCreate: (analysis: Analysis) => {
         // Log analysis creation
-        console.log(
-          `📊 Analysis created: ${analysis.id} for user ${analysis.userId || "anonymous"}`,
-        );
+        const { logger } = require('../utils/logger');
+        logger.info('Analysis created', {
+          analysisId: analysis.id,
+          userId: analysis.userId || 'anonymous',
+        });
       },
     },
     scopes: {
