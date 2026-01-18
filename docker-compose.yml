@@ -75,8 +75,8 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=view0x_dev
     ports:
-      # Expose port 5432 to the host for direct database access/debugging
-      - "5432:5432"
+      # Expose port 5433 to the host to avoid conflict with local PostgreSQL
+      - "5433:5432"
     volumes:
       # Persist database data across container restarts
       - postgres_data:/var/lib/postgresql/data
@@ -91,9 +91,9 @@ services:
     image: redis:7-alpine
     container_name: redis
     restart: always
-    # The port is exposed to other services, but not the host
-    expose:
-      - "6379"
+    # Expose port to host for local development
+    ports:
+      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
