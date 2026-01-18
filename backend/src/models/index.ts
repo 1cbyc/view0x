@@ -75,6 +75,17 @@ function defineAssociations() {
     as: "user",
   });
 
+  // User <-> AnalysisTemplate (One-to-Many)
+  User.hasMany(AnalysisTemplate, {
+    foreignKey: "userId",
+    as: "templates",
+    onDelete: "CASCADE",
+  });
+  AnalysisTemplate.belongsTo(User, {
+    foreignKey: "userId",
+    as: "user",
+  });
+
   logger.info("[MODELS] Model associations defined successfully.");
 }
 

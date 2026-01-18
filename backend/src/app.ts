@@ -22,6 +22,7 @@ import { requestLogger } from "./middleware/logging";
 import authRoutes from "./routes/auth";
 import analysisRoutes from "./routes/analysis";
 import vulnerabilityRoutes from "./routes/vulnerabilities";
+import templateRoutes from "./routes/templates";
 // import userRoutes from './routes/users';
 
 // Initialize Express app
@@ -109,6 +110,7 @@ app.get("/health", async (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/analysis", analysisRoutes);
 app.use("/api/vulnerabilities", vulnerabilityRoutes);
+app.use("/api/templates", templateRoutes);
 // app.use('/api/users', userRoutes);
 
 // Root endpoint with API information
