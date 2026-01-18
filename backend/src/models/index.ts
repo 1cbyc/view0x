@@ -4,6 +4,7 @@ import { Analysis } from "./Analysis";
 import { Vulnerability } from "./Vulnerability";
 import { VulnerabilityComment } from "./VulnerabilityComment";
 import { ActivityLog } from "./ActivityLog";
+import { AnalysisTemplate } from "./AnalysisTemplate";
 import { logger } from "../utils/logger";
 
 // 1. Initialize all models
