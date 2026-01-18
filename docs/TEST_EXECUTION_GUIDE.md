@@ -47,9 +47,9 @@ This will test:
 4. Verify results appear
 
 **Expected Results:**
-- ✅ Analysis completes without requiring login
-- ✅ Results display with vulnerabilities
-- ✅ No 401 errors
+- Analysis completes without requiring login
+- Results display with vulnerabilities
+- No 401 errors
 
 **Sample Contract:**
 ```solidity
