@@ -66,6 +66,9 @@ const Navbar: React.FC = () => {
               <Link to="/dashboard">
                 <Button variant="ghost" className="text-white/60 hover:text-white">Dashboard</Button>
               </Link>
+              <Link to="/profile">
+                <Button variant="ghost" className="text-white/60 hover:text-white">Profile</Button>
+              </Link>
               <Button onClick={handleLogout} className="bg-white text-black hover:bg-gray-200">Logout</Button>
             </div>
           ) : (

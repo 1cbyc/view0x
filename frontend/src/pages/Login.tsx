@@ -57,9 +57,8 @@ const Login: React.FC = () => {
         // Trigger storage event so Navbar can update
         window.dispatchEvent(new Event('storage'));
 
-        // Redirect to the main analyzer page on successful login
-        // A full implementation would also update a global auth state
-        navigate('/', { replace: true });
+        // Redirect to dashboard on successful login
+        navigate('/dashboard', { replace: true });
       } else {
         throw new Error('Invalid response from server');
       }
@@ -161,9 +160,9 @@ const Login: React.FC = () => {
 
           <div className="flex items-center justify-between">
             <div className="text-sm">
-              <a href="#" className="font-medium text-white/60 hover:text-white">
+              <Link to="/forgot-password" className="font-medium text-white/60 hover:text-white">
                 Forgot your password?
-              </a>
+              </Link>
             </div>
           </div>
 
