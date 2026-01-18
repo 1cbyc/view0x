@@ -180,10 +180,65 @@ const ContractAnalyzer: React.FC = () => {
         if (payload.analysisId !== currentAnalysisId) return;
 
         setProgress(payload.progress);
-        setProgressMessage(payload.message || "");
+        setProgressMessage(payload.currentStep || payload.message || "");
 
         if (payload.status === "completed") {
-          setAnalysisResult(payload.result);
+          // Transform backend result format to match frontend format if needed
+          if (payload.result) {
+            // Backend sends result directly, transform if needed
+            const result = payload.result;
+            
+            // Transform vulnerabilities if needed
+            const transformedVulnerabilities: Vulnerability[] = (result.vulnerabilities || []).map((vuln: any) => ({
+              check: vuln.check || vuln.type || "Unknown",
+              description: vuln.description || "",
+              impact: (vuln.impact === "HIGH" || vuln.severity === "HIGH" ? "High" : 
+                      vuln.impact === "MEDIUM" || vuln.severity === "MEDIUM" ? "Medium" : 
+                      vuln.impact === "LOW" || vuln.severity === "LOW" ? "Low" : "Informational") as Vulnerability["impact"],
+              confidence: (vuln.confidence || "High") as Vulnerability["confidence"],
+              elements: vuln.elements || [{
+                type: "function",
+                name: vuln.type || "Unknown",
+                source_mapping: {
+                  lines: vuln.lineNumber ? [vuln.lineNumber] : []
+                }
+              }]
+            }));
+
+            // Transform gas optimizations
+            const gasOptimizations: GasOptimization[] = (result.gasOptimizations || []).map((opt: any) => ({
+              type: opt.type || "unknown",
+              description: opt.description || "",
+              recommendation: opt.recommendation || "",
+              potentialSavings: opt.potentialSavings,
+              lineNumber: opt.location?.line || opt.lineNumber
+            }));
+
+            // Transform code quality issues
+            const codeQuality: CodeQualityIssue[] = (result.codeQuality || []).map((issue: any) => ({
+              type: issue.type || "unknown",
+              description: issue.description || "",
+              recommendation: issue.recommendation || "",
+              severity: (issue.severity || "MEDIUM") as "HIGH" | "MEDIUM" | "LOW",
+              lineNumber: issue.location?.line || issue.lineNumber
+            }));
+
+            setAnalysisResult({
+              id: result.id || currentAnalysisId || `analysis-${Date.now()}`,
+              summary: result.summary || {
+                highSeverity: result.highSeverity || 0,
+                mediumSeverity: result.mediumSeverity || 0,
+                lowSeverity: result.lowSeverity || 0,
+                overallScore: result.overallScore || 50,
+                riskLevel: result.riskLevel || "MEDIUM",
+                gasOptimizations: gasOptimizations.length,
+                codeQualityIssues: codeQuality.length,
+              },
+              vulnerabilities: transformedVulnerabilities,
+              gasOptimizations,
+              codeQuality,
+            });
+          }
           setIsAnalyzing(false);
           setCurrentAnalysisId(null);
         } else if (payload.status === "failed") {
@@ -226,11 +281,23 @@ const ContractAnalyzer: React.FC = () => {
     setIsAnalyzing(true);
     setProgressMessage("Submitting for analysis...");
 
-    // Always use public endpoint - no login required for scanning
-    // Users can login to save their analysis history later
+    // Check if user is logged in
+    const token = localStorage.getItem("accessToken");
+    const isAuthenticated = !!token;
+
     try {
-      setProgressMessage("Analyzing contract...");
-      const response = await analysisApi.createPublicAnalysis({ contractCode });
+      if (isAuthenticated) {
+        // Use authenticated endpoint - saves to account with WebSocket updates
+        setProgressMessage("Creating analysis job...");
+        const response = await analysisApi.createAnalysis({ contractCode });
+        const jobId = response.data.data.jobId;
+        setCurrentAnalysisId(jobId);
+        setProgressMessage("Analysis queued. Waiting for results...");
+        // WebSocket will handle updates via useEffect hook
+      } else {
+        // Use public endpoint - no login required, but results aren't saved
+        setProgressMessage("Analyzing contract...");
+        const response = await analysisApi.createPublicAnalysis({ contractCode });
         const result = response.data.data;
 
         if (result) {
@@ -289,6 +356,7 @@ const ContractAnalyzer: React.FC = () => {
         } else {
           throw new Error("Failed to analyze contract.");
         }
+      }
     } catch (err: any) {
       // Handle errors
       const errorMessage =
@@ -542,18 +610,10 @@ const ContractAnalyzer: React.FC = () => {
             <CardHeader>
               <CardTitle>Contract Code</CardTitle>
               <CardDescription>
-                Upload a file or paste your Solidity source code below.
+                Paste your Solidity source code below or upload a file.
               </CardDescription>
             </CardHeader>
                   <CardContent className="space-y-4">
-                    <FileUpload
-                      onFileSelect={(content, fileName) => {
-                        setContractCode(content);
-                        setError(null);
-                      }}
-                      accept=".sol,.vy,.txt"
-                      maxSize={5 * 1024 * 1024}
-                    />
                     <div className="border border-border rounded-md overflow-hidden">
                       <CodeMirror
                         value={contractCode}
@@ -570,6 +630,14 @@ const ContractAnalyzer: React.FC = () => {
                         }}
                       />
                     </div>
+                    <FileUpload
+                      onFileSelect={(content, fileName) => {
+                        setContractCode(content);
+                        setError(null);
+                      }}
+                      accept=".sol,.vy,.txt"
+                      maxSize={5 * 1024 * 1024}
+                    />
                   </CardContent>
                   <CardFooter className="flex flex-col sm:flex-row justify-between gap-2 sm:gap-0">
               <div className="space-x-2">

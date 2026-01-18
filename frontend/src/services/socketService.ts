@@ -5,6 +5,7 @@ export interface AnalysisUpdatePayload {
   analysisId: string;
   status: "processing" | "completed" | "failed";
   progress: number;
+  currentStep?: string;
   message?: string;
   error?: string;
   result?: any;
