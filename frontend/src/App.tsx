@@ -10,6 +10,7 @@ import AnalysisDetailPage from "./pages/AnalysisResult";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
+import Webhooks from "./pages/Webhooks";
 
 // Layout Components
 import Navbar from "./components/Navbar";
@@ -50,6 +51,7 @@ const App: React.FC = () => {
             {/* User-specific pages */}
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/webhooks" element={<Webhooks />} />
             <Route path="/analysis/:id" element={<AnalysisDetailPage />} />
           </Routes>
         </main>
