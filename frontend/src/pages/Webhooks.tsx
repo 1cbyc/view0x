@@ -96,7 +96,7 @@ const Webhooks: React.FC = () => {
           formData.url,
           formData.events,
           formData.secret || undefined,
-          true
+          editingWebhook.isActive // Preserve current active status
         );
       } else {
         await webhookApi.createWebhook(
