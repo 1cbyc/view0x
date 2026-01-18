@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authApi } from '../services/api';
 import { Loader2, AlertTriangle } from 'lucide-react';
+import { PasswordInput } from '@/components/PasswordInput';
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
@@ -124,10 +125,9 @@ const Register: React.FC = () => {
             </div>
             <div>
               <label htmlFor="password" className="sr-only">Password</label>
-              <input
+              <PasswordInput
                 id="password"
                 name="password"
-                type="password"
                 autoComplete="new-password"
                 required
                 className="relative block w-full appearance-none rounded-none border border-white/10 bg-white/5 px-3 py-2 text-white placeholder-white/40 focus:z-10 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent sm:text-sm"

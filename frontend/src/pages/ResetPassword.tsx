@@ -5,7 +5,7 @@ import { Loader2, AlertTriangle, CheckCircle, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/PasswordInput';
 
 const ResetPassword: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -104,9 +104,8 @@ const ResetPassword: React.FC = () => {
                 <label htmlFor="password" className="text-sm font-medium text-white">
                   New Password
                 </label>
-                <Input
+                <PasswordInput
                   id="password"
-                  type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter new password (min 8 characters)"
@@ -120,9 +119,8 @@ const ResetPassword: React.FC = () => {
                 <label htmlFor="confirmPassword" className="text-sm font-medium text-white">
                   Confirm Password
                 </label>
-                <Input
+                <PasswordInput
                   id="confirmPassword"
-                  type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Confirm new password"
