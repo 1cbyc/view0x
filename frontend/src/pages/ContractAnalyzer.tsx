@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Loader2,
   AlertTriangle,
   CheckCircle,
   ShieldAlert,
   FileText,
+  Save,
+  LogIn,
 } from "lucide-react";
 import CodeMirror from "@uiw/react-codemirror";
 import { javascript } from "@codemirror/lang-javascript";
@@ -189,6 +191,7 @@ const useTypingAnimation = (text: string, speed: number = 100) => {
 };
 
 const ContractAnalyzer: React.FC = () => {
+  const navigate = useNavigate();
   const [contractCode, setContractCode] = useState<string>("");
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [showExamplesDialog, setShowExamplesDialog] = useState<boolean>(false);
@@ -196,6 +199,9 @@ const ContractAnalyzer: React.FC = () => {
     null,
   );
   const [error, setError] = useState<string | null>(null);
+  
+  // Check if user is logged in
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
   // Real-time update state
   const [progress, setProgress] = useState<number>(0);
@@ -295,6 +301,7 @@ const ContractAnalyzer: React.FC = () => {
           setIsAnalyzing(false);
           setCurrentAnalysisId(null);
         } else if (payload.status === "failed") {
+          clearTimeout(timeoutId);
           setError(payload.error || "An unknown error occurred during analysis.");
           setIsAnalyzing(false);
           setCurrentAnalysisId(null);
@@ -316,6 +323,21 @@ const ContractAnalyzer: React.FC = () => {
   // Disconnect socket on component unmount
   useEffect(() => () => socketService.disconnect(), []);
 
+  // Check authentication status
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    setIsAuthenticated(!!token);
+    
+    // Listen for storage changes (login/logout in other tabs)
+    const handleStorageChange = () => {
+      const newToken = localStorage.getItem("accessToken");
+      setIsAuthenticated(!!newToken);
+    };
+    
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
   const resetState = () => {
     setIsAnalyzing(false);
     setAnalysisResult(null);
@@ -335,12 +357,12 @@ const ContractAnalyzer: React.FC = () => {
     setIsAnalyzing(true);
     setProgressMessage("Submitting for analysis...");
 
-    // Check if user is logged in
+    // Use state variable for authentication check
     const token = localStorage.getItem("accessToken");
-    const isAuthenticated = !!token;
+    const userIsAuthenticated = !!token || isAuthenticated;
 
     try {
-      if (isAuthenticated) {
+      if (userIsAuthenticated) {
         // Use authenticated endpoint - saves to account with WebSocket updates
         setProgressMessage("Creating analysis job...");
         const response = await analysisApi.createAnalysis({ contractCode });
@@ -455,6 +477,38 @@ const ContractAnalyzer: React.FC = () => {
       const { summary, vulnerabilities, gasOptimizations, codeQuality } = analysisResult;
       return (
         <div className="space-y-6">
+          {/* Save Prompt Banner for Non-Logged-In Users */}
+          {!isAuthenticated && (
+            <Alert className="bg-primary/10 border-primary/20">
+              <Save className="h-4 w-4 text-primary" />
+              <AlertTitle className="text-primary">Save Your Analysis</AlertTitle>
+              <AlertDescription className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-2">
+                <span className="text-sm text-muted-foreground">
+                  Sign up or log in to save this analysis to your account and access it anytime.
+                </span>
+                <div className="flex gap-2 shrink-0">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => navigate("/register")}
+                    className="text-xs sm:text-sm"
+                  >
+                    <LogIn className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                    Sign Up
+                  </Button>
+                  <Button 
+                    variant="default" 
+                    size="sm"
+                    onClick={() => navigate("/login")}
+                    className="text-xs sm:text-sm"
+                  >
+                    Log In
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <Card>
             <CardHeader>
               <CardTitle>Analysis Summary</CardTitle>
