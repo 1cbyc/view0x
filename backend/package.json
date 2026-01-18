@@ -7,7 +7,10 @@
     "start": "node dist/server.js",
     "dev": "nodemon src/server.ts",
     "build": "tsc",
-    "test": "jest"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:integration": "jest --testPathPattern=integration"
   },
   "dependencies": {
     "@solidity-parser/parser": "^0.20.2",
@@ -58,9 +61,11 @@
     "@types/jest": "^30.0.0",
     "@types/morgan": "^1.9.10",
     "@types/node": "^24.9.1",
+    "@types/supertest": "^6.0.3",
     "@types/uuid": "^10.0.0",
     "jest": "^30.2.0",
     "nodemon": "^2.0.22",
+    "supertest": "^7.2.2",
     "ts-jest": "^29.4.5",
     "ts-node": "^10.9.2"
   }
