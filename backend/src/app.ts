@@ -20,6 +20,7 @@ import { errorHandler } from "./middleware/errorHandler";
 import { rateLimiter } from "./middleware/rateLimit";
 import { requestLogger } from "./middleware/logging";
 import { csrfProtection } from "./middleware/csrf";
+import { requestSigningMiddleware } from "./middleware/requestSigning";
 
 // Routes
 import authRoutes from "./routes/auth";
@@ -103,6 +104,9 @@ app.use(rateLimiter);
 
 // CSRF protection (after rate limiting, before routes)
 app.use(csrfProtection);
+
+// Request signing for API key requests (after CSRF, before routes)
+app.use(requestSigningMiddleware);
 
 // Caching middleware for public endpoints (applied per-route in route files)
 
