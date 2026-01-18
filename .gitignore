@@ -130,7 +130,11 @@ docs/
 !CODE_OF_CONDUCT.md
 !CHANGELOG.md
 !TESTING.md
+!TEST_REPORT.md
+
+# Shell scripts (but keep test scripts)
 *.sh
+!scripts/*.sh
 
 # sample-ui-web (reference only, not part of project)
 sample-ui-web/

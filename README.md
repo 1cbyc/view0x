@@ -1,31 +1,34 @@
 # view0x
 
-okay, today is a new day on my one project daily aim, and i am trying to build a smart contract audit tool. i noticed people i taught in 2021 became a big deal in just 18 months of work. the universe rewards those who put in their efforts and try their best.
+**Smart Contract Security Analysis Platform**
 
-to be honest, i have to perfect everything with the yarn setup and then i setup docker for this to work efficiently.
+view0x is a cloud-native SaaS platform for automated smart contract security analysis, providing developers with comprehensive vulnerability detection, gas optimization suggestions, and code quality assessments.
 
-finally, the vuln scanner is working fine without errors. but i think it is not detecting vulnerabilities, gas optimizations or coe quality issues, because i intentionally used bad code from one hack for this. but i think this is because some detection methods i used are still stubs and need more robust AST traversal logic.
-
-maybe because i am not much of a ui guy, so i want to perfect the vuln detection method before doing anything about the frontend/backend integration or even the UI itself. 
-
-So, I will implement tx.origin usage detection, unchecked external calls, weak randomness sources, missing access control, and dangerous delegatecall usage before i sleep.
-
-i am used to getting my setup run properly on cli before trying to add a web ui for it. just to feel like a god!
-
-okay, let me just work up the frontend at this point. let's even see what i have going. i downgraded my express from 5.x to 4.x and it is smooth now. backend running fine, time to get back to the frontend. some org wasted my time for an interview that never held, and while at it i lost funds i requested withdrawal for, i guess life is not fair.
-
-freaking pissed, because why on earth would tailwind be causing so much errors.
-
-okay, i use this method:
+## Project Structure
 
 ```bash
 view0x/
 ├── scanner-engine/     # Core analysis engine
 ├── backend/           # Express.js API server
 ├── frontend/          # React application
-├── docs/             # Documentation
+├── python/            # Python analysis worker (Slither)
 └── docker-compose.yml # Container orchestration
 ```
+
+## Screenshots
+
+![Contract Analyzer](screenshots/screenshot-2026-01-18-at-1.13.07-am.png)
+
+![Login Page](screenshots/screenshot-2026-01-18-at-1.13.28-am.png)
+
+## Features
+
+- **Automated Security Scanning** - Detect vulnerabilities in Solidity smart contracts
+- **Real-time Analysis** - Get instant results with WebSocket updates
+- **Modern UI** - Beautiful dark theme interface
+- **Public & Authenticated** - Scan contracts without login, save history with account
+- **Detailed Reports** - Comprehensive vulnerability analysis with severity levels
+- **Fast & Scalable** - Built for performance and reliability
 
 ## How to Run
 
@@ -127,27 +130,27 @@ Key environment variables needed for the backend (in `backend/.env`):
 - `PYTHON_API_URL` - URL for Python analysis worker
 - `PORT` - Backend server port (default: 3001)
 
----
+## Deployment
 
-i just realized i hardcoded it to localhost:3001/api/analysis/public. that is why when i shut down my pc it does not scan. anyways, in api.ts i have fixed it to take from render where i updated the api.
+### Production
 
-```tsx
-import { contractApi } from '../services/api';
-```
+- **Frontend**: Deployed on [Cloudflare Pages](https://pages.cloudflare.com) at `view0x.com`
+- **Backend**: Deployed on [Railway](https://railway.app) at `api.view0x.com`
+- **Database**: PostgreSQL on Railway
+- **Cache**: Redis on Railway
 
-okay, in the end, i simply setup a wrangler for cloudflare workers to get it running well.
+See [CLOUDFLARE.md](CLOUDFLARE.md) and [RAILWAY.md](RAILWAY.md) for detailed deployment instructions.
 
-```bash
-# wanted to know the list of what's here in the frontend
-cd frontend; Get-ChildItem dist
-# trying to get list of deployed pages:
-npx wrangler pages deploy dist --project-name view0x-frontend
-# tried to get the list of urls o
-npx wrangler pages domain list --project-name view0x-frontend
-# then i did this
-npx wrangler pages deploy dist --project-name view0x
-```
+## Contributing
 
-okay, this is the end of it. i would use AI to write commit messages. i cant be explaining myself again. this stuff giving me brain rot, i cant even think clearly about full definition to give per fix i make. 
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-it's 2026, and i have decided to rename, thank you!
+## License
+
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+
+## Links
+
+- **Website**: https://view0x.com
+- **API**: https://api.view0x.com
+- **GitHub**: https://github.com/1cbyc/view0x
