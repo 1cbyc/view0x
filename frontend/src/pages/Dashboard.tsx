@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { analysisApi } from "@/services/api";
 import {
   Loader2,
@@ -53,11 +53,19 @@ const formatDate = (dateString: string): string => {
 };
 
 const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [analyses, setAnalyses] = useState<AnalysisSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Check if user is authenticated
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      navigate("/login", { replace: true });
+      return;
+    }
+
     const fetchHistory = async () => {
       try {
         setIsLoading(true);
@@ -65,6 +73,14 @@ const Dashboard: React.FC = () => {
         const response = await analysisApi.getHistory();
         setAnalyses(response.data.data);
       } catch (err: any) {
+        // If unauthorized, redirect to login
+        if (err.response?.status === 401 || err.response?.status === 403) {
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+          localStorage.removeItem("user");
+          navigate("/login", { replace: true });
+          return;
+        }
         setError(
           err.error?.message ||
             "Failed to fetch analysis history. Please try again.",
@@ -75,7 +91,7 @@ const Dashboard: React.FC = () => {
     };
 
     fetchHistory();
-  }, []);
+  }, [navigate]);
 
   const getStatusIndicator = (status: AnalysisSummary["status"]) => {
     switch (status) {
