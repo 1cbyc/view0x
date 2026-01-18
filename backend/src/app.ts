@@ -26,6 +26,8 @@ import analysisRoutes from "./routes/analysis";
 import vulnerabilityRoutes from "./routes/vulnerabilities";
 import templateRoutes from "./routes/templates";
 import webhookRoutes from "./routes/webhooks";
+import twoFactorRoutes from "./routes/2fa";
+import activityLogRoutes from "./routes/activityLogs";
 // import userRoutes from './routes/users';
 
 // Initialize Express app
@@ -133,6 +135,8 @@ app.use("/api/analysis", analysisRoutes);
 app.use("/api/vulnerabilities", vulnerabilityRoutes);
 app.use("/api/templates", templateRoutes);
 app.use("/api/webhooks", webhookRoutes);
+app.use("/api/2fa", twoFactorRoutes);
+app.use("/api/activity-logs", activityLogRoutes);
 // app.use('/api/users', userRoutes);
 
 // Root endpoint with API information
