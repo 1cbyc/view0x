@@ -138,33 +138,37 @@ const ContractAnalyzer: React.FC = () => {
   );
 
   useEffect(() => {
-    socketService.connect();
-    const handleUpdate = (payload: AnalysisUpdatePayload) => {
-      if (payload.analysisId !== currentAnalysisId) return;
+    // Only connect to WebSocket if user is authenticated
+    const token = localStorage.getItem("accessToken");
+    
+    if (token && currentAnalysisId) {
+      socketService.connect();
+      const handleUpdate = (payload: AnalysisUpdatePayload) => {
+        if (payload.analysisId !== currentAnalysisId) return;
 
-      setProgress(payload.progress);
-      setProgressMessage(payload.message || "");
+        setProgress(payload.progress);
+        setProgressMessage(payload.message || "");
 
-      if (payload.status === "completed") {
-        setAnalysisResult(payload.result);
-        setIsAnalyzing(false);
-        setCurrentAnalysisId(null);
-      } else if (payload.status === "failed") {
-        setError(payload.error || "An unknown error occurred during analysis.");
-        setIsAnalyzing(false);
-        setCurrentAnalysisId(null);
-      }
-    };
+        if (payload.status === "completed") {
+          setAnalysisResult(payload.result);
+          setIsAnalyzing(false);
+          setCurrentAnalysisId(null);
+        } else if (payload.status === "failed") {
+          setError(payload.error || "An unknown error occurred during analysis.");
+          setIsAnalyzing(false);
+          setCurrentAnalysisId(null);
+        }
+      };
 
-    if (currentAnalysisId) {
       socketService.subscribeToAnalysis(currentAnalysisId, handleUpdate);
-    }
 
-    return () => {
-      if (currentAnalysisId) {
+      return () => {
         socketService.unsubscribeFromAnalysis(currentAnalysisId);
-      }
-    };
+      };
+    } else {
+      // Disconnect WebSocket if not authenticated
+      socketService.disconnect();
+    }
   }, [currentAnalysisId]);
 
   // Disconnect socket on component unmount
@@ -189,24 +193,11 @@ const ContractAnalyzer: React.FC = () => {
     setIsAnalyzing(true);
     setProgressMessage("Submitting for analysis...");
 
-    // Check if user is authenticated
-    const token = localStorage.getItem("accessToken");
-
+    // Always use public endpoint - no login required for scanning
+    // Users can login to save their analysis history later
     try {
-      if (token) {
-        // Use authenticated endpoint with WebSocket updates
-        const response = await analysisApi.createAnalysis({ contractCode });
-        const initialAnalysis = response.data.data;
-
-        if (initialAnalysis && initialAnalysis.id) {
-          setCurrentAnalysisId(initialAnalysis.id);
-        } else {
-          throw new Error("Failed to start analysis: No analysis ID received.");
-        }
-      } else {
-        // Use public endpoint (synchronous, no WebSocket)
-        setProgressMessage("Analyzing contract...");
-        const response = await analysisApi.createPublicAnalysis({ contractCode });
+      setProgressMessage("Analyzing contract...");
+      const response = await analysisApi.createPublicAnalysis({ contractCode });
         const result = response.data.data;
 
         if (result) {
@@ -243,10 +234,7 @@ const ContractAnalyzer: React.FC = () => {
         } else {
           throw new Error("Failed to analyze contract.");
         }
-      }
     } catch (err: any) {
-      // Handle 401 specifically - fallback to public endpoint
-      if (err.response?.status === 401 && token) {
         // Token expired or invalid, try public endpoint instead
         try {
           setProgressMessage("Analyzing contract (public mode)...");
