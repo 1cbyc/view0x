@@ -14,6 +14,7 @@ const models = {
   Vulnerability,
   VulnerabilityComment,
   ActivityLog,
+  AnalysisTemplate,
 };
 
 // 2. Define associations (relationships) between models
