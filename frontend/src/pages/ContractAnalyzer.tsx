@@ -7,6 +7,9 @@ import {
   ShieldAlert,
   FileText,
 } from "lucide-react";
+import CodeMirror from "@uiw/react-codemirror";
+import { javascript } from "@codemirror/lang-javascript";
+import { oneDark } from "@codemirror/theme-one-dark";
 
 // UI Components from the new theme
 import { Button } from "@/components/ui/button";
@@ -18,7 +21,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -136,33 +138,37 @@ const ContractAnalyzer: React.FC = () => {
   );
 
   useEffect(() => {
-    socketService.connect();
-    const handleUpdate = (payload: AnalysisUpdatePayload) => {
-      if (payload.analysisId !== currentAnalysisId) return;
+    // Only connect to WebSocket if user is authenticated
+    const token = localStorage.getItem("accessToken");
+    
+    if (token && currentAnalysisId) {
+      socketService.connect();
+      const handleUpdate = (payload: AnalysisUpdatePayload) => {
+        if (payload.analysisId !== currentAnalysisId) return;
 
-      setProgress(payload.progress);
-      setProgressMessage(payload.message || "");
+        setProgress(payload.progress);
+        setProgressMessage(payload.message || "");
 
-      if (payload.status === "completed") {
-        setAnalysisResult(payload.result);
-        setIsAnalyzing(false);
-        setCurrentAnalysisId(null);
-      } else if (payload.status === "failed") {
-        setError(payload.error || "An unknown error occurred during analysis.");
-        setIsAnalyzing(false);
-        setCurrentAnalysisId(null);
-      }
-    };
+        if (payload.status === "completed") {
+          setAnalysisResult(payload.result);
+          setIsAnalyzing(false);
+          setCurrentAnalysisId(null);
+        } else if (payload.status === "failed") {
+          setError(payload.error || "An unknown error occurred during analysis.");
+          setIsAnalyzing(false);
+          setCurrentAnalysisId(null);
+        }
+      };
 
-    if (currentAnalysisId) {
       socketService.subscribeToAnalysis(currentAnalysisId, handleUpdate);
-    }
 
-    return () => {
-      if (currentAnalysisId) {
+      return () => {
         socketService.unsubscribeFromAnalysis(currentAnalysisId);
-      }
-    };
+      };
+    } else {
+      // Disconnect WebSocket if not authenticated
+      socketService.disconnect();
+    }
   }, [currentAnalysisId]);
 
   // Disconnect socket on component unmount
@@ -187,24 +193,11 @@ const ContractAnalyzer: React.FC = () => {
     setIsAnalyzing(true);
     setProgressMessage("Submitting for analysis...");
 
-    // Check if user is authenticated
-    const token = localStorage.getItem("accessToken");
-
+    // Always use public endpoint - no login required for scanning
+    // Users can login to save their analysis history later
     try {
-      if (token) {
-        // Use authenticated endpoint with WebSocket updates
-        const response = await analysisApi.createAnalysis({ contractCode });
-        const initialAnalysis = response.data.data;
-
-        if (initialAnalysis && initialAnalysis.id) {
-          setCurrentAnalysisId(initialAnalysis.id);
-        } else {
-          throw new Error("Failed to start analysis: No analysis ID received.");
-        }
-      } else {
-        // Use public endpoint (synchronous, no WebSocket)
-        setProgressMessage("Analyzing contract...");
-        const response = await analysisApi.createPublicAnalysis({ contractCode });
+      setProgressMessage("Analyzing contract...");
+      const response = await analysisApi.createPublicAnalysis({ contractCode });
         const result = response.data.data;
 
         if (result) {
@@ -241,67 +234,12 @@ const ContractAnalyzer: React.FC = () => {
         } else {
           throw new Error("Failed to analyze contract.");
         }
-      }
     } catch (err: any) {
-      // Handle 401 specifically - fallback to public endpoint
-      if (err.response?.status === 401 && token) {
-        // Token expired or invalid, try public endpoint instead
-        try {
-          setProgressMessage("Analyzing contract (public mode)...");
-          const response = await analysisApi.createPublicAnalysis({ contractCode });
-          const result = response.data.data;
-
-          if (result) {
-            const transformedVulnerabilities: Vulnerability[] = (result.vulnerabilities || []).map((vuln: any) => ({
-              check: vuln.type || "Unknown",
-              description: vuln.description || "",
-              impact: (vuln.severity === "HIGH" ? "High" : 
-                      vuln.severity === "MEDIUM" ? "Medium" : 
-                      vuln.severity === "LOW" ? "Low" : "Informational") as Vulnerability["impact"],
-              confidence: "High" as Vulnerability["confidence"],
-              elements: [{
-                type: "function",
-                name: vuln.type || "Unknown",
-                source_mapping: {
-                  lines: vuln.lineNumber ? [vuln.lineNumber] : []
-                }
-              }]
-            }));
-
-            setAnalysisResult({
-              id: `public-${Date.now()}`,
-              summary: {
-                highSeverity: result.summary.highSeverity || 0,
-                mediumSeverity: result.summary.mediumSeverity || 0,
-                lowSeverity: result.summary.lowSeverity || 0,
-                overallScore: result.summary.totalVulnerabilities > 0 ? 50 : 100,
-                riskLevel: result.summary.highSeverity > 0 ? "HIGH" : 
-                          result.summary.mediumSeverity > 0 ? "MEDIUM" : "LOW",
-              },
-              vulnerabilities: transformedVulnerabilities,
-            });
-            setIsAnalyzing(false);
-            // Clear invalid token
-            localStorage.removeItem("accessToken");
-            return;
-          }
-        } catch (publicErr: any) {
-          // If public endpoint also fails, show error
-          const errorMessage =
-            publicErr.response?.data?.error?.message ||
-            publicErr.message ||
-            "Failed to analyze contract. Please try again.";
-          setError(errorMessage);
-          setIsAnalyzing(false);
-          return;
-        }
-      }
-      
-      // Other errors
+      // Handle errors
       const errorMessage =
         err.response?.data?.error?.message ||
         err.message ||
-        "Failed to submit analysis.";
+        "Failed to analyze contract. Please try again.";
       setError(errorMessage);
       setIsAnalyzing(false);
     }
@@ -453,12 +391,22 @@ const ContractAnalyzer: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Textarea
-                value={contractCode}
-                onChange={(e) => setContractCode(e.target.value)}
-                placeholder="// Your Solidity code here..."
-                className="w-full h-96 font-mono text-sm"
-              />
+              <div className="border border-border rounded-md overflow-hidden">
+                <CodeMirror
+                  value={contractCode}
+                  height="384px"
+                  theme={oneDark}
+                  extensions={[javascript({ jsx: false })]}
+                  onChange={(value) => setContractCode(value)}
+                  placeholder="// Your Solidity code here..."
+                  basicSetup={{
+                    lineNumbers: true,
+                    foldGutter: true,
+                    dropCursor: false,
+                    allowMultipleSelections: false,
+                  }}
+                />
+              </div>
             </CardContent>
             <CardFooter className="flex justify-between">
               <div className="space-x-2">
