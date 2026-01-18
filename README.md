@@ -1,26 +1,24 @@
 # view0x
 
-A cloud-native SaaS platform for automated smart contract security analysis, providing developers with comprehensive vulnerability detection, gas optimization suggestions, and code quality assessments.
+okay, today is a new day on my one project daily aim, and i am trying to build a smart contract audit tool. i noticed people i taught in 2021 became a big deal in just 18 months of work. the universe rewards those who put in their efforts and try their best.
 
-## Screenshots
+to be honest, i have to perfect everything with the yarn setup and then i setup docker for this to work efficiently.
 
-![Contract Analyzer](screenshots/screenshot-2026-01-18-at-1.13.07-am.png)
+finally, the vuln scanner is working fine without errors. but i think it is not detecting vulnerabilities, gas optimizations or coe quality issues, because i intentionally used bad code from one hack for this. but i think this is because some detection methods i used are still stubs and need more robust AST traversal logic.
 
-![Login Page](screenshots/screenshot-2026-01-18-at-1.13.28-am.png)
+maybe because i am not much of a ui guy, so i want to perfect the vuln detection method before doing anything about the frontend/backend integration or even the UI itself. 
 
-## Features
+So, I will implement tx.origin usage detection, unchecked external calls, weak randomness sources, missing access control, and dangerous delegatecall usage before i sleep.
 
-- **Automated Security Scanning** - Detect vulnerabilities in Solidity smart contracts using multiple analysis engines
-- **Real-time Analysis** - Get instant results with WebSocket updates
-- **Modern UI** - Beautiful dark theme interface
-- **Public & Authenticated** - Scan contracts without login, save history with account
-- **Detailed Reports** - Comprehensive vulnerability analysis with severity levels
-- **Fast & Scalable** - Built for performance and reliability
-- **Multi-Engine Analysis** - Uses both TypeScript scanner-engine and Python-based tools (Slither, Mythril, Semgrep)
+i am used to getting my setup run properly on cli before trying to add a web ui for it. just to feel like a god!
 
-## Project Structure
+okay, let me just work up the frontend at this point. let's even see what i have going. i downgraded my express from 5.x to 4.x and it is smooth now. backend running fine, time to get back to the frontend. some org wasted my time for an interview that never held, and while at it i lost funds i requested withdrawal for, i guess life is not fair.
 
-```
+freaking pissed, because why on earth would tailwind be causing so much errors.
+
+okay, i use this method:
+
+```bash
 view0x/
 ├── backend/                    # Node.js/Express API server
 │   ├── src/
@@ -38,26 +36,23 @@ view0x/
 └── docker-compose.yml         # Container orchestration
 ```
 
-## Analysis Engines
 
-view0x uses multiple analysis engines for comprehensive security scanning:
+view0x is a cloud-native SaaS platform for automated smart contract security analysis, providing developers with comprehensive vulnerability detection, gas optimization suggestions, and code quality assessments.
 
-1. **Scanner Engine** (TypeScript) - Fast, lightweight static analysis
-   - Located in `backend/src/scanner-engine/`
-   - Detects common vulnerabilities, gas optimizations, and code quality issues
-   - Uses AST traversal for pattern detection
+## Screenshots
 
-2. **Python Worker** (FastAPI) - Professional-grade analysis tools
-   - Located in `python/`
-   - **Slither** - Industry-standard Solidity static analyzer
-   - **Mythril** - Symbolic execution tool for vulnerability detection
-   - **Semgrep** - Pattern-based security scanner
-   - Gas optimization and code quality analyzers
+![Contract Analyzer](screenshots/screenshot-2026-01-18-at-1.13.07-am.png)
 
-The backend can be configured to use either engine or both via the `ANALYSIS_ENGINE` environment variable:
-- `python` - Use Python worker only (default)
-- `scanner-engine` - Use TypeScript scanner only
-- `both` or `all` - Use both engines and merge results
+![Login Page](screenshots/screenshot-2026-01-18-at-1.13.28-am.png)
+
+## Features
+
+- **Automated Security Scanning** - Detect vulnerabilities in Solidity smart contracts
+- **Real-time Analysis** - Get instant results with WebSocket updates
+- **Modern UI** - Beautiful dark theme interface
+- **Public & Authenticated** - Scan contracts without login, save history with account
+- **Detailed Reports** - Comprehensive vulnerability analysis with severity levels
+- **Fast & Scalable** - Built for performance and reliability
 
 ## How to Run
 
@@ -78,11 +73,10 @@ The easiest way to run the entire project is using Docker Compose:
    DATABASE_URL=postgresql://postgres:password@db:5432/view0x_dev
    REDIS_URL=redis://redis:6379
    PYTHON_API_URL=http://python-worker:8000
-   JWT_SECRET=your-secret-key-here-minimum-32-characters
+   JWT_SECRET=your-secret-key-here
    JWT_EXPIRES_IN=24h
-   REFRESH_TOKEN_SECRET=your-refresh-secret-here-minimum-32-characters
+   REFRESH_TOKEN_SECRET=your-refresh-secret-here
    REFRESH_TOKEN_EXPIRES_IN=7d
-   ANALYSIS_ENGINE=python
    ```
 
    Create `python/.env` (if needed):
@@ -102,9 +96,8 @@ The easiest way to run the entire project is using Docker Compose:
 
 4. **Access the application:**
    - Frontend: http://localhost:3000
-   - Backend API: http://localhost:3001
-   - API Documentation: http://localhost:3001/api-docs
-   - Python Worker: http://localhost:8000
+   - Backend API: http://api.view0x.com/
+   - API Documentation: http://api.view0x.com//api-docs
    - PostgreSQL: localhost:5433 (Note: Port 5433 to avoid conflict with local PostgreSQL)
 
 5. **Stop services:**
@@ -134,17 +127,23 @@ If you prefer to run services individually:
    ```bash
    cd frontend
    npm install
-   npm run dev  # Runs on http://localhost:3000
+   npm run dev  # Runs on http://localhost:5173 (Vite default)
    ```
 
-4. **Python Worker (Optional but Recommended):**
+4. **Python Worker (Optional):**
    ```bash
    cd python
    pip install -r requirements.txt
    python main.py  # Runs on http://localhost:8000
    ```
-   
-   The Python worker provides professional-grade analysis using Slither, Mythril, and Semgrep.
+
+5. **Scanner Engine (Optional):**
+   ```bash
+   cd scanner-engine
+   npm install
+   npm run build
+   npm start
+   ```
 
 ### Environment Variables
 
@@ -152,13 +151,13 @@ Key environment variables needed for the backend (in `backend/.env`):
 
 - `DATABASE_URL` - PostgreSQL connection string
 - `REDIS_URL` - Redis connection string
-- `JWT_SECRET` - Secret for JWT tokens (minimum 32 characters)
-- `REFRESH_TOKEN_SECRET` - Secret for refresh tokens (minimum 32 characters)
-- `PYTHON_API_URL` - URL for Python analysis worker (default: http://localhost:8000)
-- `ANALYSIS_ENGINE` - Which engine to use: `python`, `scanner-engine`, `both`, or `all` (default: `python`)
+- `JWT_SECRET` - Secret for JWT tokens
+- `PYTHON_API_URL` - URL for Python analysis worker
 - `PORT` - Backend server port (default: 3001)
 
 ## Deployment
+
+i just realized i hardcoded it to localhost:3001/api/analysis/public. that is why when i shut down my pc it does not scan. anyways, in api.ts i have fixed it to take from render where i updated the api.
 
 ### Production
 
@@ -167,29 +166,23 @@ Key environment variables needed for the backend (in `backend/.env`):
 - **API Documentation**: Available at `https://api.view0x.com/api-docs` (Swagger/OpenAPI)
 - **Database**: PostgreSQL on Railway
 - **Cache**: Redis on Railway
-- **Python Worker**: Can be deployed as a separate service on Railway (see [RAILWAY.md](docs/RAILWAY.md))
 
-See [docs/CLOUDFLARE.md](docs/CLOUDFLARE.md) and [docs/RAILWAY.md](docs/RAILWAY.md) for detailed deployment instructions.
-
-### Railway Deployment Notes
-
-For Railway deployment, you have two options:
-
-1. **Backend Only** (Simpler): Deploy just the backend with `ANALYSIS_ENGINE=scanner-engine` to use the built-in TypeScript scanner
-2. **Backend + Python Worker** (Recommended): Deploy both services separately on Railway:
-   - Backend service with `PYTHON_API_URL` pointing to the Python worker service
-   - Python worker service running on port 8000
-   - Set `ANALYSIS_ENGINE=python` or `ANALYSIS_ENGINE=both` for comprehensive analysis
-
-The Python worker provides more accurate analysis using industry-standard tools (Slither, Mythril, Semgrep), while the scanner-engine provides faster, lightweight analysis.
+See [CLOUDFLARE.md](CLOUDFLARE.md) and [RAILWAY.md](RAILWAY.md) for detailed deployment instructions.
 
 ## Contributing
 
 We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
+okay, in the end, i simply setup a wrangler for cloudflare workers to get it running well.
+
 ## License
 
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+
+okay, this is the end of it. i would use AI to write commit messages. i cant be explaining myself again. this stuff giving me brain rot, i cant even think clearly about full definition to give per fix i make. 
+
+
+it's 2026, and i have decided to rename, thank you!
 
 ## Links
 
