@@ -529,8 +529,7 @@ const ContractAnalyzer: React.FC = () => {
         <p className="text-xs sm:text-sm text-white/40 mt-2">
           <Link 
             to="/login" 
-            className="text-primary hover:text-primary/80 underline focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded"
-            aria-label="Sign in to save analysis history"
+            className="text-primary hover:text-primary/80 underline"
           >
             Sign in
           </Link>
@@ -556,12 +555,7 @@ const ContractAnalyzer: React.FC = () => {
                       accept=".sol,.vy,.txt"
                       maxSize={5 * 1024 * 1024}
                     />
-                    <div 
-                      className="border border-border rounded-md overflow-hidden"
-                      role="textbox"
-                      aria-label="Contract code editor"
-                      aria-multiline="true"
-                    >
+                    <div className="border border-border rounded-md overflow-hidden">
                       <CodeMirror
                         value={contractCode}
                         height="300px"
@@ -743,17 +737,16 @@ const ContractAnalyzer: React.FC = () => {
                       onClick={handleAnalyze}
                       disabled={isAnalyzing || !contractCode.trim()}
                       className="w-full sm:w-auto"
-                      aria-label={isAnalyzing ? "Analyzing contract, please wait" : "Analyze contract"}
                     >
                       {isAnalyzing ? (
                         <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden="true" />
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                           <span className="hidden sm:inline">Analyzing...</span>
                           <span className="sm:hidden">Analyzing</span>
                         </>
                       ) : (
                         <>
-                          <ShieldAlert className="w-4 h-4 mr-2" aria-hidden="true" />
+                          <ShieldAlert className="w-4 h-4 mr-2" />
                           <span className="hidden sm:inline">Analyze Contract</span>
                           <span className="sm:hidden">Analyze</span>
                         </>
