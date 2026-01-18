@@ -45,28 +45,20 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    <header 
-      className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-black/60"
-      role="banner"
-    >
-      <nav 
-        className="container flex h-14 max-w-screen-2xl items-center px-4 sm:px-6"
-        aria-label="Main navigation"
-      >
+    <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-black/60">
+      <nav className="container flex h-14 max-w-screen-2xl items-center px-4 sm:px-6">
         <div className="mr-4 flex flex-1 sm:flex-initial">
           <Link 
             to="/" 
-            className="mr-4 sm:mr-6 flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded"
-            aria-label="view0x home"
+            className="mr-4 sm:mr-6 flex items-center space-x-2"
           >
-            <ShieldCheck className="h-5 w-5 sm:h-6 sm:w-6 text-accent" aria-hidden="true" />
+            <ShieldCheck className="h-5 w-5 sm:h-6 sm:w-6 text-accent" />
             <span className="font-bold text-white text-base sm:text-lg">view0x</span>
           </Link>
           <div className="hidden md:flex items-center space-x-6 text-sm font-medium">
             <Link
               to="/analyze"
-              className="transition-colors hover:text-white text-white/60 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded px-2"
-              aria-label="Contract Scanner"
+              className="transition-colors hover:text-white text-white/60"
             >
               Scanner
             </Link>
@@ -82,7 +74,6 @@ const Navbar: React.FC = () => {
                 <Button 
                   variant="ghost" 
                   className="text-white/60 hover:text-white text-xs sm:text-sm px-2 sm:px-4"
-                  aria-label="Dashboard"
                 >
                   <span className="hidden sm:inline">Dashboard</span>
                   <span className="sm:hidden">Dash</span>
@@ -92,7 +83,6 @@ const Navbar: React.FC = () => {
                 <Button 
                   variant="ghost" 
                   className="text-white/60 hover:text-white text-xs sm:text-sm px-2 sm:px-4"
-                  aria-label="Profile"
                 >
                   Profile
                 </Button>
@@ -100,7 +90,6 @@ const Navbar: React.FC = () => {
               <Button 
                 onClick={handleLogout} 
                 className="bg-white text-black hover:bg-gray-200 text-xs sm:text-sm px-2 sm:px-4"
-                aria-label="Logout"
               >
                 <span className="hidden sm:inline">Logout</span>
                 <span className="sm:hidden">Out</span>
@@ -112,7 +101,6 @@ const Navbar: React.FC = () => {
                 <Button 
                   variant="ghost" 
                   className="text-white/60 hover:text-white text-xs sm:text-sm px-2 sm:px-4"
-                  aria-label="Sign In"
                 >
                   <span className="hidden sm:inline">Sign In</span>
                   <span className="sm:hidden">In</span>
@@ -121,7 +109,6 @@ const Navbar: React.FC = () => {
               <Link to="/register">
                 <Button 
                   className="bg-white text-black hover:bg-gray-200 text-xs sm:text-sm px-2 sm:px-4"
-                  aria-label="Sign Up"
                 >
                   <span className="hidden sm:inline">Sign Up</span>
                   <span className="sm:hidden">Up</span>

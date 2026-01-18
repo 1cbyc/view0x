@@ -392,10 +392,9 @@ const Dashboard: React.FC = () => {
           <Button 
             asChild 
             className="bg-white text-black hover:bg-gray-200 flex-1 sm:flex-initial text-sm sm:text-base"
-            aria-label="Create new analysis"
           >
             <Link to="/analyze">
-              <ShieldAlert className="w-4 h-4 mr-2" aria-hidden="true" />
+              <ShieldAlert className="w-4 h-4 mr-2" />
               <span className="hidden sm:inline">New Analysis</span>
               <span className="sm:hidden">New</span>
             </Link>
@@ -671,15 +670,15 @@ const Dashboard: React.FC = () => {
                     <TableCell>
                       {analysis.status === "completed" && analysis.summary ? (
                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-3 text-xs sm:text-sm">
-                          <span className="text-destructive font-bold" aria-label={`${analysis.summary.highSeverity} high severity vulnerabilities`}>
+                          <span className="text-destructive font-bold">
                             <span className="hidden sm:inline">{analysis.summary.highSeverity} High</span>
                             <span className="sm:hidden">{analysis.summary.highSeverity}H</span>
                           </span>
-                          <span className="text-yellow-500 font-bold" aria-label={`${analysis.summary.mediumSeverity} medium severity vulnerabilities`}>
+                          <span className="text-yellow-500 font-bold">
                             <span className="hidden sm:inline">{analysis.summary.mediumSeverity} Med</span>
                             <span className="sm:hidden">{analysis.summary.mediumSeverity}M</span>
                           </span>
-                          <span className="text-blue-500 font-bold" aria-label={`${analysis.summary.lowSeverity} low severity vulnerabilities`}>
+                          <span className="text-blue-500 font-bold">
                             <span className="hidden sm:inline">{analysis.summary.lowSeverity} Low</span>
                             <span className="sm:hidden">{analysis.summary.lowSeverity}L</span>
                           </span>
@@ -697,12 +696,11 @@ const Dashboard: React.FC = () => {
                         variant="ghost" 
                         size="sm"
                         className="text-xs sm:text-sm"
-                        aria-label={`View details for ${analysis.contractName || 'Untitled Contract'}`}
                       >
                         <Link to={`/analysis/${analysis.id}`}>
                           <span className="hidden sm:inline">View Details</span>
                           <span className="sm:hidden">View</span>
-                          <ChevronRight className="w-4 h-4 ml-1" aria-hidden="true" />
+                          <ChevronRight className="w-4 h-4 ml-1" />
                         </Link>
                       </Button>
                     </TableCell>
