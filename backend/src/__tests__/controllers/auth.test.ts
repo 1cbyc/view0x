@@ -1,11 +1,37 @@
+// Mock database FIRST before any imports
+jest.mock('../../config/database', () => ({
+  sequelize: {
+    define: jest.fn(),
+    transaction: jest.fn((callback) => callback({})),
+  },
+  cacheRedis: {
+    get: jest.fn().mockResolvedValue(null),
+    set: jest.fn(),
+  },
+}));
+
+// Mock models
+jest.mock('../../models/User', () => ({
+  User: {
+    findByEmail: jest.fn(),
+    createUser: jest.fn(),
+  },
+}));
+
+jest.mock('../../utils/logger', () => ({
+  logger: {
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+  },
+}));
+
+// Now import after mocks
 import { Request, Response } from 'express';
 import { register, login } from '../../controllers/auth';
 import { User } from '../../models/User';
 import { AuthenticationError, ValidationError } from '../../middleware/errorHandler';
-
-// Mock dependencies
-jest.mock('../../models/User');
-jest.mock('../../utils/logger');
 
 describe('Auth Controller', () => {
   let mockReq: Partial<Request>;
@@ -49,12 +75,19 @@ describe('Auth Controller', () => {
       };
 
       (User.findByEmail as jest.Mock).mockResolvedValue(null);
-      (User.create as jest.Mock).mockResolvedValue(mockUser);
+      (User.createUser as jest.Mock).mockResolvedValue(mockUser);
 
       await register(mockReq as Request, mockRes as Response);
 
       expect(User.findByEmail).toHaveBeenCalledWith('test@example.com');
-      expect(User.create).toHaveBeenCalled();
+      expect(User.createUser).toHaveBeenCalledWith({
+        name: 'Test User',
+        email: 'test@example.com',
+        password: 'SecurePass123!',
+        company: undefined,
+        plan: 'free',
+      });
+      expect(mockRes.status).toHaveBeenCalledWith(201);
       expect(mockRes.json).toHaveBeenCalled();
     });
 
