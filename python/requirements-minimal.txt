@@ -1,0 +1,15 @@
+# Minimal requirements for Railway deployment (faster builds)
+# Core analysis tools - Slither only (most important)
+slither-analyzer==0.10.0
+
+# Web framework for Python workers
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+gunicorn==23.0.0
+
+# Database and caching
+redis==5.0.7
+
+# Utilities
+pydantic==2.8.2
+python-dotenv==1.0.1
