@@ -32,6 +32,7 @@ export class User extends Model<
   declare resetPasswordToken: CreationOptional<string>;
   declare resetPasswordExpires: CreationOptional<Date>;
   declare emailVerificationToken: CreationOptional<string>;
+  declare emailVerificationExpires: CreationOptional<Date | null>;
   declare twoFactorSecret: CreationOptional<string>;
   declare twoFactorEnabled: CreationOptional<boolean>;
   declare refreshToken: CreationOptional<string>;
