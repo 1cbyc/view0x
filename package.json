@@ -4,5 +4,10 @@
   "description": "view0x - Smart Contract Security Analysis Platform",
   "dependencies": {
     "socket.io-client": "^4.8.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.57.0",
+    "@vitest/coverage-v8": "^4.0.17",
+    "playwright": "^1.57.0"
   }
 }
