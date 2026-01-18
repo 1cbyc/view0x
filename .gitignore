@@ -131,6 +131,7 @@ docs/
 !CHANGELOG.md
 !TESTING.md
 !TEST_REPORT.md
+!ISSUE_COMPLETION_STATUS.md
 
 # Shell scripts (but keep test scripts)
 *.sh
