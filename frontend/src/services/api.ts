@@ -211,3 +211,45 @@ export const webhookApi = {
    */
   triggerTestWebhook: (id: string) => api.post(`/webhooks/${id}/test`),
 };
+
+// --- Activity Logs API Endpoints ---
+export const activityLogApi = {
+  /**
+   * Gets activity logs for the authenticated user.
+   */
+  getActivityLogs: (params?: { page?: number; limit?: number; search?: string; action?: string }) =>
+    api.get("/activity-logs", { params }),
+
+  /**
+   * Gets a specific activity log by ID.
+   */
+  getActivityLogById: (id: string) =>
+    api.get(`/activity-logs/${id}`),
+};
+
+// --- Two-Factor Authentication API Endpoints ---
+export const twoFactorApi = {
+  /**
+   * Generates a 2FA secret and QR code.
+   */
+  generate2FASecret: () =>
+    api.post("/2fa/generate"),
+
+  /**
+   * Verifies a 2FA token.
+   */
+  verify2FA: (token: string) =>
+    api.post("/2fa/verify", { token }),
+
+  /**
+   * Enables 2FA after verification.
+   */
+  enable2FA: (token: string) =>
+    api.post("/2fa/enable", { token }),
+
+  /**
+   * Disables 2FA (requires password).
+   */
+  disable2FA: (password: string) =>
+    api.post("/2fa/disable", { password }),
+};
