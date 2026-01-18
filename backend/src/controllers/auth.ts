@@ -520,6 +520,58 @@ export const revokeApiKey = async (req: Request, res: Response) => {
   }
 };
 
+// Verify email
+export const verifyEmail = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.body;
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        error: { code: "MISSING_REQUIRED_FIELD", message: "Token is required" },
+      });
+    }
+    const user = await User.findByEmailVerificationToken(token);
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        error: { code: "INVALID_TOKEN", message: "Invalid token" },
+      });
+    }
+    user.emailVerified = true;
+    user.emailVerificationToken = null;
+    await user.save();
+    logger.info(`Email verified: ${user.email}`);
+    res.json({ success: true, message: "Email verified" });
+  } catch (error) {
+    logger.error("Verify email error:", error);
+    res.status(500).json({ success: false, error: { code: "INTERNAL_SERVER_ERROR", message: "Internal error" } });
+  }
+};
+
+// Resend verification
+export const resendVerification = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        error: { code: "MISSING_REQUIRED_FIELD", message: "Email required" },
+      });
+    }
+    const user = await User.findByEmail(email);
+    if (!user || user.emailVerified) {
+      return res.json({ success: true, message: "If registered, verification link sent" });
+    }
+    user.generateEmailVerificationToken();
+    await user.save();
+    logger.info(`Verification email requested: ${email}`);
+    res.json({ success: true, message: "If registered, verification link sent" });
+  } catch (error) {
+    logger.error("Resend verification error:", error);
+    res.status(500).json({ success: false, error: { code: "INTERNAL_SERVER_ERROR", message: "Internal error" } });
+  }
+};
+
 // Logout controller
 export const logout = async (req: Request, res: Response) => {
   try {
