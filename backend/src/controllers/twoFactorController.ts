@@ -78,6 +78,44 @@ export const verify2FA = async (req: Request, res: Response) => {
     });
   }
 
+  res.json({
+    success: true,
+    message: "2FA token is valid",
+  });
+};
+
+export const enable2FA = async (req: Request, res: Response) => {
+  const userId = req.user?.userId;
+  const { token } = req.body;
+
+  if (!userId) {
+    throw new AuthenticationError("Authentication required");
+  }
+
+  if (!token) {
+    throw new ValidationError("Token is required");
+  }
+
+  const user = await User.findByPk(userId);
+  if (!user || !user.twoFactorSecret) {
+    throw new AuthenticationError("2FA secret not generated. Please generate a secret first.");
+  }
+
+  const isValid = verify({
+    token,
+    secret: user.twoFactorSecret,
+  });
+
+  if (!isValid) {
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: "INVALID_TOKEN",
+        message: "Invalid 2FA token. Cannot enable.",
+      },
+    });
+  }
+
   user.twoFactorEnabled = true;
   await user.save();
 
