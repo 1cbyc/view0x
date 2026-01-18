@@ -1,4 +1,5 @@
 import { config } from 'dotenv';
+import { logger } from '../utils/logger';
 
 // Load environment variables from .env file
 config();
@@ -246,14 +247,15 @@ export const isTest = (): boolean => env.NODE_ENV === 'test';
 export const env = parseEnvironmentConfig();
 
 // Log configuration on startup (excluding secrets)
-console.log('Environment Configuration:');
-console.log(`  NODE_ENV: ${env.NODE_ENV}`);
-console.log(`  PORT: ${env.PORT}`);
-console.log(`  API_VERSION: ${env.API_VERSION}`);
-console.log(`  DATABASE_URL: ${env.DATABASE_URL.replace(/:([^@]+)@/, ':****@')}`);
-console.log(`  REDIS_URL: ${env.REDIS_URL.replace(/:([^@]+)@/, ':****@')}`);
-console.log(`  MAX_CONTRACT_SIZE: ${env.MAX_CONTRACT_SIZE} bytes`);
-console.log(`  MAX_CONCURRENT_ANALYSES: ${env.MAX_CONCURRENT_ANALYSES}`);
-console.log(`  CORS_ORIGINS: ${env.CORS_ORIGINS.join(', ')}`);
+logger.info('Environment Configuration:', {
+  NODE_ENV: env.NODE_ENV,
+  PORT: env.PORT,
+  API_VERSION: env.API_VERSION,
+  DATABASE_URL: env.DATABASE_URL.replace(/:([^@]+)@/, ':****@'),
+  REDIS_URL: env.REDIS_URL.replace(/:([^@]+)@/, ':****@'),
+  MAX_CONTRACT_SIZE: `${env.MAX_CONTRACT_SIZE} bytes`,
+  MAX_CONCURRENT_ANALYSES: env.MAX_CONCURRENT_ANALYSES,
+  CORS_ORIGINS: env.CORS_ORIGINS.join(', '),
+});
 
 export default env;
