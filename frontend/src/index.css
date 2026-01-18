@@ -1,4 +1,4 @@
-@import url(https://fonts.googleapis.com/css?family=Geom:300,regular,500,600,700,800,900,300italic,italic,500italic,600italic,700italic,800italic,900italic);
+@import url('https://fonts.googleapis.com/css2?family=Geom:wght@300;400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -61,6 +61,84 @@
         font-feature-settings:
             "rlig" 1,
             "calt" 1;
+    }
+    
+    /* High contrast mode support */
+    @media (prefers-contrast: high) {
+        :root {
+            --background: 0 0% 0%;
+            --foreground: 0 0% 100%;
+            --border: 0 0% 50%;
+            --ring: 258 90% 66%;
+        }
+        .dark {
+            --background: 0 0% 0%;
+            --foreground: 0 0% 100%;
+            --border: 0 0% 50%;
+        }
+    }
+    
+    /* Manual high contrast mode */
+    .high-contrast {
+        --background: 0 0% 0% !important;
+        --foreground: 0 0% 100% !important;
+        --border: 0 0% 50% !important;
+        --ring: 258 90% 66% !important;
+        --card: 0 0% 5% !important;
+        --card-foreground: 0 0% 100% !important;
+        --primary: 258 90% 66% !important;
+        --primary-foreground: 0 0% 100% !important;
+        --destructive: 0 100% 50% !important;
+        --destructive-foreground: 0 0% 100% !important;
+    }
+    
+    .high-contrast * {
+        border-color: hsl(0, 0%, 50%) !important;
+    }
+    
+    /* Reduced motion support */
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
+    
+    /* Focus visible styles for keyboard navigation */
+    *:focus-visible {
+        outline: 2px solid hsl(var(--ring));
+        outline-offset: 2px;
+    }
+    
+    /* Font size adjustments */
+    html {
+        font-size: 16px;
+    }
+    
+    @media (min-width: 640px) {
+        html {
+            font-size: 16px;
+        }
+    }
+    
+    @media (min-width: 1024px) {
+        html {
+            font-size: 16px;
+        }
+    }
+    
+    /* Large text support */
+    .text-large {
+        font-size: 1.125rem;
+        line-height: 1.75;
+    }
+    
+    .text-xl-large {
+        font-size: 1.25rem;
+        line-height: 1.75;
     }
 }
 

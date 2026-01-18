@@ -54,21 +54,106 @@ export class SimpleScanner {
 
     const lines = contractCode.split('\n');
 
+    // Check for reentrancy vulnerabilities (state update after external call)
+    // Track function context and detect patterns
+    const functionStack: number[] = [];
+    const functionCalls: Map<number, number> = new Map(); // functionStart -> callLine
+    const functionStateUpdates: Map<number, number[]> = new Map(); // functionStart -> [stateUpdateLines]
+
+    lines.forEach((line, index) => {
+      const lineNumber = index + 1;
+      const lowerLine = line.toLowerCase();
+      const trimmedLine = line.trim();
+      const indentLevel = line.length - trimmedLine.length;
+
+      // Detect function start
+      if (trimmedLine.includes('function ') && (trimmedLine.includes('public') || trimmedLine.includes('external'))) {
+        functionStack.push(index);
+        functionCalls.set(index, -1);
+        functionStateUpdates.set(index, []);
+      }
+
+      // Detect function end - closing brace at same or less indentation as function start
+      if (functionStack.length > 0 && trimmedLine === '}') {
+        const functionStart = functionStack[functionStack.length - 1];
+        const functionIndent = lines[functionStart].length - lines[functionStart].trim().length;
+        
+        if (indentLevel <= functionIndent) {
+          // Function ended - check for reentrancy
+          const callLine = functionCalls.get(functionStart);
+          const stateUpdateLines = functionStateUpdates.get(functionStart) || [];
+          
+          if (callLine !== -1 && callLine !== undefined) {
+            // Check if any state update happens after the call
+            const hasStateUpdateAfterCall = stateUpdateLines.some(updateLine => updateLine > callLine);
+            
+            if (hasStateUpdateAfterCall) {
+              vulnerabilities.push({
+                type: 'Reentrancy Vulnerability',
+                severity: 'HIGH',
+                description: 'State update happens after external call - vulnerable to reentrancy attacks',
+                lineNumber: callLine + 1,
+                recommendation: 'Update state before external calls (Checks-Effects-Interactions pattern)'
+              });
+            }
+          }
+          
+          functionStack.pop();
+          functionCalls.delete(functionStart);
+          functionStateUpdates.delete(functionStart);
+        }
+      }
+
+      // Track external calls within current function
+      if (functionStack.length > 0) {
+        const currentFunction = functionStack[functionStack.length - 1];
+        
+        // Detect external calls
+        if (lowerLine.includes('.call{') || lowerLine.includes('.call(') || 
+            lowerLine.includes('.send(') || lowerLine.includes('.transfer(')) {
+          const existingCall = functionCalls.get(currentFunction);
+          if (existingCall === -1 || existingCall === undefined) {
+            functionCalls.set(currentFunction, index);
+          }
+        }
+
+        // Detect state variable updates (mapping updates, storage variable assignments)
+        // Look for patterns like: balances[xxx] -=, balances[xxx] =, variable -=, variable =
+        if (lowerLine.match(/balances\[.*\]\s*[-+]=/) || 
+            lowerLine.match(/balances\[.*\]\s*=/) ||
+            lowerLine.match(/\w+\s*[-+]=/) ||
+            (lowerLine.includes('=') && !lowerLine.includes('==') && !lowerLine.includes('!=') && 
+             !lowerLine.includes('function') && !lowerLine.includes('return') && 
+             !lowerLine.includes('require') && !lowerLine.includes('if') && 
+             !lowerLine.includes('for') && !lowerLine.includes('while'))) {
+          const updates = functionStateUpdates.get(currentFunction) || [];
+          updates.push(index);
+          functionStateUpdates.set(currentFunction, updates);
+        }
+      }
+    });
+
     // Check for common vulnerabilities using regex patterns
     lines.forEach((line, index) => {
       const lineNumber = index + 1;
       const lowerLine = line.toLowerCase();
 
-      // Check for reentrancy patterns
+      // Check for unchecked external calls
       if (lowerLine.includes('call(') || lowerLine.includes('send(') || lowerLine.includes('transfer(')) {
         if (lowerLine.includes('call(') && !lowerLine.includes('require(') && !lowerLine.includes('revert(')) {
-          vulnerabilities.push({
-            type: 'Unchecked External Call',
-            severity: 'HIGH',
-            description: 'External call without proper error handling',
-            lineNumber,
-            recommendation: 'Always check the return value of external calls and handle failures appropriately'
-          });
+          // Only add if not already flagged as reentrancy
+          const isReentrancy = vulnerabilities.some(v => 
+            v.type === 'Reentrancy Vulnerability' && v.lineNumber === lineNumber
+          );
+          if (!isReentrancy) {
+            vulnerabilities.push({
+              type: 'Unchecked External Call',
+              severity: 'HIGH',
+              description: 'External call without proper error handling',
+              lineNumber,
+              recommendation: 'Always check the return value of external calls and handle failures appropriately'
+            });
+          }
         }
       }
 
