@@ -12,6 +12,7 @@ import { logger } from "../utils/logger";
 import { SimpleScanner } from "../services/simpleScanner";
 import { ReportGenerator, ReportOptions } from "../services/reportGenerator";
 import crypto from "crypto";
+import { Op } from "sequelize";
 
 /**
  * @description Public analysis endpoint (no authentication required) - synchronous response
@@ -200,14 +201,14 @@ export const getUserAnalyses = async (req: Request, res: Response) => {
   }
   if (search) {
     where.contractName = {
-      [require("sequelize").Op.iLike]: `%${search}%`,
+      [Op.iLike]: `%${search}%`,
     };
   }
 
   // Build order clause
   const validSortFields = ["createdAt", "contractName", "status"];
   const orderField = validSortFields.includes(sortBy) ? sortBy : "createdAt";
-  const order: [string, "ASC" | "DESC"] = [[orderField, sortOrder]];
+  const order: [string, "ASC" | "DESC"][] = [[orderField, sortOrder]];
 
   const { count, rows } = await Analysis.findAndCountAll({
     where,
