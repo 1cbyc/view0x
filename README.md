@@ -88,8 +88,8 @@ The easiest way to run the entire project is using Docker Compose:
 
 4. **Access the application:**
    - Frontend: http://localhost:3000
-   - Backend API: http://localhost:3001
-   - API Documentation: http://localhost:3001/api-docs
+   - Backend API: http://api.view0x.com/
+   - API Documentation: http://api.view0x.com//api-docs
    - PostgreSQL: localhost:5433 (Note: Port 5433 to avoid conflict with local PostgreSQL)
 
 5. **Stop services:**
