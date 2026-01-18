@@ -538,7 +538,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
       });
     }
     user.emailVerified = true;
-    user.emailVerificationToken = null;
+    user.emailVerificationToken = null as any;
     await user.save();
     logger.info(`Email verified: ${user.email}`);
     res.json({ success: true, message: "Email verified" });

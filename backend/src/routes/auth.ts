@@ -7,6 +7,8 @@ import {
   getCurrentUser,
   requestPasswordReset,
   resetPassword,
+  verifyEmail,
+  resendVerification,
   generateApiKey,
   revokeApiKey,
 } from "../controllers/auth";
@@ -44,6 +46,12 @@ router.post(
 
 // Reset a password with a token
 router.post("/reset-password", authRateLimiter, asyncHandler(resetPassword));
+
+// Verify email
+router.post("/verify-email", authRateLimiter, asyncHandler(verifyEmail));
+
+// Resend verification email
+router.post("/resend-verification", authRateLimiter, asyncHandler(resendVerification));
 
 // =================================
 // Protected Authentication Routes
