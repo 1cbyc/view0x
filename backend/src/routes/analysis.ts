@@ -14,6 +14,8 @@ import {
   getPublicAnalysis,
   revokeShareToken,
   toggleFavorite,
+  batchAnalysis,
+  compareAnalyses,
 } from "../controllers/analysisController";
 import { validateCreateAnalysis } from "../middleware/validation";
 
