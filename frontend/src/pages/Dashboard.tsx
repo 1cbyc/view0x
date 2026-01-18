@@ -603,13 +603,11 @@ const Dashboard: React.FC = () => {
                       size="sm"
                       className="h-8 -ml-3"
                       onClick={() => handleSort("contractName")}
-                      aria-label="Sort by contract name"
-                      aria-sort={sortField === "contractName" ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}
                     >
                       <span className="hidden sm:inline">Contract</span>
                       <span className="sm:hidden">Name</span>
                       {sortField === "contractName" && (
-                        <ArrowUpDown className="w-3 h-3 ml-1" aria-hidden="true" />
+                        <ArrowUpDown className="w-3 h-3 ml-1" />
                       )}
                     </Button>
                   </TableHead>
@@ -619,11 +617,9 @@ const Dashboard: React.FC = () => {
                       size="sm"
                       className="h-8 -ml-3"
                       onClick={() => handleSort("status")}
-                      aria-label="Sort by status"
-                      aria-sort={sortField === "status" ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}
                     >
                       Status
-                      {sortField === "status" && <ArrowUpDown className="w-3 h-3 ml-1" aria-hidden="true" />}
+                      {sortField === "status" && <ArrowUpDown className="w-3 h-3 ml-1" />}
                     </Button>
                   </TableHead>
                   <TableHead>
@@ -632,13 +628,11 @@ const Dashboard: React.FC = () => {
                       size="sm"
                       className="h-8 -ml-3"
                       onClick={() => handleSort("highSeverity")}
-                      aria-label="Sort by vulnerabilities"
-                      aria-sort={sortField === "highSeverity" ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}
                     >
                       <span className="hidden sm:inline">Vulnerabilities</span>
                       <span className="sm:hidden">Vulns</span>
                       {sortField === "highSeverity" && (
-                        <ArrowUpDown className="w-3 h-3 ml-1" aria-hidden="true" />
+                        <ArrowUpDown className="w-3 h-3 ml-1" />
                       )}
                     </Button>
                   </TableHead>
@@ -648,15 +642,13 @@ const Dashboard: React.FC = () => {
                       size="sm"
                       className="h-8 -ml-3"
                       onClick={() => handleSort("createdAt")}
-                      aria-label="Sort by date"
-                      aria-sort={sortField === "createdAt" ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}
                     >
                       Date
-                      {sortField === "createdAt" && <ArrowUpDown className="w-3 h-3 ml-1" aria-hidden="true" />}
+                      {sortField === "createdAt" && <ArrowUpDown className="w-3 h-3 ml-1" />}
                     </Button>
                   </TableHead>
                   <TableHead>
-                    <span className="sr-only">Actions</span>
+                    <span>Actions</span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
