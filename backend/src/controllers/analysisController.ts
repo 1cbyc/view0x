@@ -510,14 +510,31 @@ export const batchAnalysis = async (req: Request, res: Response) => {
     throw new AuthenticationError("User not found");
   }
 
+  // Check usage limit before processing batch
+  if (!user.canAnalyze()) {
+    throw new ValidationError("Analysis limit reached for your plan");
+  }
+
   const results = [];
+  let successCount = 0;
   for (const contractData of contracts) {
     if (!contractData.contractCode) {
       continue;
     }
 
+    // Check usage limit for each contract
+    if (!user.canAnalyze()) {
+      results.push({
+        contractName: contractData.contractName || "Untitled",
+        error: "Analysis limit reached",
+      });
+      continue;
+    }
+
     try {
       const analysisJob = await analysisService.create(userId, contractData);
+      await user.incrementUsage();
+      successCount++;
       results.push({
         contractName: contractData.contractName || "Untitled",
         jobId: analysisJob.id,
@@ -530,8 +547,6 @@ export const batchAnalysis = async (req: Request, res: Response) => {
       });
     }
   }
-
-  await user.incrementUsage();
 
   logger.info(`Batch analysis created for user ${userId}: ${results.length} jobs`);
 
