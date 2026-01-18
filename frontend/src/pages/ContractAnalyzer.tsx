@@ -40,6 +40,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Services and Types
 import { analysisApi } from "@/services/api";
@@ -576,45 +578,146 @@ const ContractAnalyzer: React.FC = () => {
                       Load Example
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                  <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
                     <DialogHeader>
                       <DialogTitle>Contract Examples Library</DialogTitle>
                       <DialogDescription>
-                        Select an example contract to load and analyze. These examples demonstrate various patterns and vulnerabilities.
+                        Browse and load example smart contracts to analyze. These examples demonstrate various patterns and vulnerabilities.
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="grid grid-cols-1 gap-3 mt-4">
-                      {contractExamples.map((example) => (
-                        <Card
-                          key={example.id}
-                          className="cursor-pointer hover:bg-white/5 transition-colors"
-                          onClick={() => {
-                            resetState();
-                            setContractCode(example.code);
-                            setShowExamplesDialog(false);
-                          }}
-                        >
-                          <CardHeader>
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <CardTitle className="text-lg">{example.name}</CardTitle>
-                                <CardDescription className="mt-1">{example.description}</CardDescription>
-                              </div>
-                              <Badge variant="outline">{example.difficulty}</Badge>
-                            </div>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="flex flex-wrap gap-2">
-                              {example.tags.map((tag) => (
-                                <Badge key={tag} variant="secondary" className="text-xs">
-                                  {tag}
-                                </Badge>
+                    <Tabs defaultValue="vulnerable" className="flex-1 flex flex-col overflow-hidden mt-4">
+                      <TabsList className="grid w-full grid-cols-3">
+                        <TabsTrigger value="vulnerable">Vulnerable</TabsTrigger>
+                        <TabsTrigger value="basic">Basic</TabsTrigger>
+                        <TabsTrigger value="best-practice">Best Practice</TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="vulnerable" className="flex-1 overflow-hidden mt-4">
+                        <ScrollArea className="h-full pr-4">
+                          <div className="space-y-3">
+                            {contractExamples
+                              .filter((e) => e.category === "vulnerable")
+                              .map((example) => (
+                                <Card
+                                  key={example.id}
+                                  className="cursor-pointer hover:bg-white/5 transition-colors bg-card border-border"
+                                  onClick={() => {
+                                    resetState();
+                                    setContractCode(example.code);
+                                    setShowExamplesDialog(false);
+                                  }}
+                                >
+                                  <CardHeader>
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex-1">
+                                        <CardTitle className="text-lg text-foreground">{example.name}</CardTitle>
+                                        <CardDescription className="mt-1 text-muted-foreground">
+                                          {example.description}
+                                        </CardDescription>
+                                      </div>
+                                      <Badge variant="outline" className="ml-2">
+                                        {example.difficulty}
+                                      </Badge>
+                                    </div>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <div className="flex flex-wrap gap-2">
+                                      {example.tags.map((tag) => (
+                                        <Badge key={tag} variant="secondary" className="text-xs">
+                                          {tag}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  </CardContent>
+                                </Card>
                               ))}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
+                          </div>
+                        </ScrollArea>
+                      </TabsContent>
+                      <TabsContent value="basic" className="flex-1 overflow-hidden mt-4">
+                        <ScrollArea className="h-full pr-4">
+                          <div className="space-y-3">
+                            {contractExamples
+                              .filter((e) => e.category === "basic" || e.category === "erc20" || e.category === "erc721")
+                              .map((example) => (
+                                <Card
+                                  key={example.id}
+                                  className="cursor-pointer hover:bg-white/5 transition-colors bg-card border-border"
+                                  onClick={() => {
+                                    resetState();
+                                    setContractCode(example.code);
+                                    setShowExamplesDialog(false);
+                                  }}
+                                >
+                                  <CardHeader>
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex-1">
+                                        <CardTitle className="text-lg text-foreground">{example.name}</CardTitle>
+                                        <CardDescription className="mt-1 text-muted-foreground">
+                                          {example.description}
+                                        </CardDescription>
+                                      </div>
+                                      <Badge variant="outline" className="ml-2">
+                                        {example.difficulty}
+                                      </Badge>
+                                    </div>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <div className="flex flex-wrap gap-2">
+                                      {example.tags.map((tag) => (
+                                        <Badge key={tag} variant="secondary" className="text-xs">
+                                          {tag}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                          </div>
+                        </ScrollArea>
+                      </TabsContent>
+                      <TabsContent value="best-practice" className="flex-1 overflow-hidden mt-4">
+                        <ScrollArea className="h-full pr-4">
+                          <div className="space-y-3">
+                            {contractExamples
+                              .filter((e) => e.category === "best-practice")
+                              .map((example) => (
+                                <Card
+                                  key={example.id}
+                                  className="cursor-pointer hover:bg-white/5 transition-colors bg-card border-border"
+                                  onClick={() => {
+                                    resetState();
+                                    setContractCode(example.code);
+                                    setShowExamplesDialog(false);
+                                  }}
+                                >
+                                  <CardHeader>
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex-1">
+                                        <CardTitle className="text-lg text-foreground">{example.name}</CardTitle>
+                                        <CardDescription className="mt-1 text-muted-foreground">
+                                          {example.description}
+                                        </CardDescription>
+                                      </div>
+                                      <Badge variant="outline" className="ml-2">
+                                        {example.difficulty}
+                                      </Badge>
+                                    </div>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <div className="flex flex-wrap gap-2">
+                                      {example.tags.map((tag) => (
+                                        <Badge key={tag} variant="secondary" className="text-xs">
+                                          {tag}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                          </div>
+                        </ScrollArea>
+                      </TabsContent>
+                    </Tabs>
                   </DialogContent>
                 </Dialog>
                 <Button
