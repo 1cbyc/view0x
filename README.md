@@ -89,7 +89,8 @@ The easiest way to run the entire project is using Docker Compose:
 4. **Access the application:**
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:3001
-   - PostgreSQL: localhost:5432
+   - API Documentation: http://localhost:3001/api-docs
+   - PostgreSQL: localhost:5433 (Note: Port 5433 to avoid conflict with local PostgreSQL)
 
 5. **Stop services:**
    ```bash
@@ -154,6 +155,7 @@ i just realized i hardcoded it to localhost:3001/api/analysis/public. that is wh
 
 - **Frontend**: Deployed on [Cloudflare Pages](https://pages.cloudflare.com) at `view0x.com`
 - **Backend**: Deployed on [Railway](https://railway.app) at `api.view0x.com`
+- **API Documentation**: Available at `https://api.view0x.com/api-docs` (Swagger/OpenAPI)
 - **Database**: PostgreSQL on Railway
 - **Cache**: Redis on Railway
 
@@ -178,4 +180,5 @@ it's 2026, and i have decided to rename, thank you!
 
 - **Website**: https://view0x.com
 - **API**: https://api.view0x.com
+- **API Documentation**: https://api.view0x.com/api-docs
 - **GitHub**: https://github.com/1cbyc/view0x
