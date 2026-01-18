@@ -20,12 +20,20 @@ okay, i use this method:
 
 ```bash
 view0x/
-├── scanner-engine/     # Core analysis engine
-├── backend/           # Express.js API server
-├── frontend/          # React application
-├── docs/             # Documentation
-├── python/            # Python analysis worker (Slither)
-└── docker-compose.yml # Container orchestration
+├── backend/                    # Node.js/Express API server
+│   ├── src/
+│   │   ├── scanner-engine/    # TypeScript-based analysis engine (moved from root)
+│   │   ├── services/          # Business logic services
+│   │   ├── controllers/       # API route handlers
+│   │   ├── models/            # Database models
+│   │   └── workers/           # Background job processors
+│   └── package.json
+├── frontend/                   # React + Vite application
+├── python/                     # Python analysis worker (FastAPI)
+│   ├── analyzers/             # Slither, Mythril, Semgrep wrappers
+│   └── main.py               # FastAPI server
+├── docs/                      # Documentation
+└── docker-compose.yml         # Container orchestration
 ```
 
 

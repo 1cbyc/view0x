@@ -1,35 +1,21 @@
 import { logger } from "../utils/logger";
-
-// Type definitions
-interface Vulnerability {
-  severity: 'HIGH' | 'MEDIUM' | 'LOW';
-  title: string;
-  description: string;
-  location: { start: number; end: number };
-  recommendation: string;
-}
-
-interface VulnerabilityReport {
-  vulnerabilities: Vulnerability[];
-  warnings: any[];
-  suggestions: any[];
-}
+import { ScannerEngine } from "../scanner-engine/ScannerEngine";
+import type { VulnerabilityReport } from "../scanner-engine/types/VulnerabilityReport";
 
 /**
  * Scanner Engine Service
- * Provides an alternative analysis engine using the scanner-engine package
+ * Provides an alternative analysis engine using the local scanner-engine
  */
 class ScannerEngineService {
-  private engine: any = null;
+  private engine: ScannerEngine | null = null;
 
   constructor() {
     try {
-      // Try to load the scanner-engine module
-      const ScannerEngineModule = require('scanner-engine');
-      this.engine = new ScannerEngineModule.ScannerEngine();
+      // Initialize the scanner engine
+      this.engine = new ScannerEngine();
       logger.info('[SCANNER-ENGINE] Scanner engine initialized successfully');
     } catch (error) {
-      logger.warn('[SCANNER-ENGINE] Failed to load scanner-engine:', error);
+      logger.warn('[SCANNER-ENGINE] Failed to initialize scanner-engine:', error);
       this.engine = null;
     }
   }
@@ -54,7 +40,7 @@ class ScannerEngineService {
 
     try {
       logger.info('[SCANNER-ENGINE] Starting contract analysis');
-      const result = await this.engine.analyzeContract(contractCode, options);
+      const result = await this.engine.analyzeContract(contractCode);
       logger.info('[SCANNER-ENGINE] Analysis completed successfully');
       return result;
     } catch (error) {
