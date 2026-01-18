@@ -2,6 +2,7 @@ import { Router } from "express";
 import { asyncHandler } from "../middleware/errorHandler";
 import { analysisRateLimiter } from "../middleware/rateLimit";
 import { auth } from "../middleware/auth";
+import { cacheMiddleware } from "../middleware/cacheMiddleware";
 import {
   createAnalysis,
   getAnalysis,
@@ -21,8 +22,8 @@ import { validateCreateAnalysis } from "../middleware/validation";
 
 const router = Router();
 
-// Public analysis endpoint (no auth required)
-router.post("/public", asyncHandler(publicAnalysis));
+// Public analysis endpoint (no auth required) - with caching
+router.post("/public", cacheMiddleware(600), asyncHandler(publicAnalysis));
 
 // Create new analysis (authenticated) - follows system design: creates job and queues it
 router.post(
@@ -51,7 +52,7 @@ router.post("/:id/report", auth, asyncHandler(generateReport));
 // Share analysis (public links)
 router.post("/:id/share", auth, asyncHandler(generateShareToken));
 router.delete("/:id/share", auth, asyncHandler(revokeShareToken));
-router.get("/public/:token", asyncHandler(getPublicAnalysis)); // No auth required
+router.get("/public/:token", cacheMiddleware(600), asyncHandler(getPublicAnalysis)); // No auth required, cached
 
 // Bookmark/favorite analysis
 router.patch("/:id/favorite", auth, asyncHandler(toggleFavorite));

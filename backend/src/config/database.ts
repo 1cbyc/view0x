@@ -19,10 +19,11 @@ const dbConfig = {
         ? (sql: string) => logger.debug("SQL:", sql)
         : false,
     pool: {
-      max: parseInt(process.env.DB_POOL_MAX || "10"),
-      min: parseInt(process.env.DB_POOL_MIN || "2"),
+      max: parseInt(process.env.DB_POOL_MAX || "20"), // Increased for better concurrency
+      min: parseInt(process.env.DB_POOL_MIN || "5"), // Increased minimum connections
       acquire: parseInt(process.env.DB_POOL_ACQUIRE || "30000"),
       idle: parseInt(process.env.DB_POOL_IDLE || "10000"),
+      evict: parseInt(process.env.DB_POOL_EVICT || "1000"), // Connection eviction interval
     },
     retry: {
       max: 3,
@@ -95,7 +96,7 @@ export const bullQueueSubscriber = new Redis(redisConfig.url, {
 });
 
 // Redis client for caching
-const cacheRedis = new Redis(redisConfig.url, {
+export const cacheRedis = new Redis(redisConfig.url, {
   ...redisConfig.options,
   keyPrefix: "view0x:cache:",
 });
@@ -221,4 +222,4 @@ redis.on("close", () => {
 });
 
 // Export individual clients for specific use cases
-export { redis as defaultRedis, cacheRedis };
+export { redis as defaultRedis };
