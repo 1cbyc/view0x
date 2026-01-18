@@ -33,6 +33,7 @@ const App: React.FC = () => {
 
             {/* User-specific pages */}
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/analysis/:id" element={<AnalysisDetailPage />} />
           </Routes>
         </main>
