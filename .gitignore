@@ -121,8 +121,14 @@ CopilotIndices/
 
 # personal
 docs/
+
+# Markdown files (but keep important docs)
 *.md
 !README.md
+!LICENSE
+!CONTRIBUTING.md
+!CODE_OF_CONDUCT.md
+!CHANGELOG.md
 *.sh
 
 # sample-ui-web (reference only, not part of project)
