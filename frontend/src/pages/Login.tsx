@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { authApi } from '../services/api';
 import { Loader2, AlertTriangle, CheckCircle } from 'lucide-react';
+import { PasswordInput } from '@/components/PasswordInput';
 
 // In a real application, you would use a context to manage the auth state.
 // For now, we'll manage it by saving the token to localStorage.
@@ -143,10 +144,9 @@ const Login: React.FC = () => {
             </div>
             <div>
               <label htmlFor="password" className="sr-only">Password</label>
-              <input
+              <PasswordInput
                 id="password"
                 name="password"
-                type="password"
                 autoComplete="current-password"
                 required
                 className="relative block w-full appearance-none rounded-none rounded-b-md border border-white/10 bg-white/5 px-3 py-2 text-white placeholder-white/40 focus:z-10 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent sm:text-sm"
