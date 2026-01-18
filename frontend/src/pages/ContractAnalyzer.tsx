@@ -569,15 +569,54 @@ const ContractAnalyzer: React.FC = () => {
             </CardContent>
             <CardFooter className="flex justify-between">
               <div className="space-x-2">
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    resetState();
-                    setContractCode(sampleContract);
-                  }}
-                >
-                  Load Sample
-                </Button>
+                <Dialog open={showExamplesDialog} onOpenChange={setShowExamplesDialog}>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost">
+                      <FileText className="w-4 h-4 mr-2" />
+                      Load Example
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Contract Examples Library</DialogTitle>
+                      <DialogDescription>
+                        Select an example contract to load and analyze. These examples demonstrate various patterns and vulnerabilities.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid grid-cols-1 gap-3 mt-4">
+                      {contractExamples.map((example) => (
+                        <Card
+                          key={example.id}
+                          className="cursor-pointer hover:bg-white/5 transition-colors"
+                          onClick={() => {
+                            resetState();
+                            setContractCode(example.code);
+                            setShowExamplesDialog(false);
+                          }}
+                        >
+                          <CardHeader>
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <CardTitle className="text-lg">{example.name}</CardTitle>
+                                <CardDescription className="mt-1">{example.description}</CardDescription>
+                              </div>
+                              <Badge variant="outline">{example.difficulty}</Badge>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="flex flex-wrap gap-2">
+                              {example.tags.map((tag) => (
+                                <Badge key={tag} variant="secondary" className="text-xs">
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </DialogContent>
+                </Dialog>
                 <Button
                   variant="ghost"
                   onClick={() => {
