@@ -379,20 +379,25 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto py-8 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto py-4 sm:py-8 space-y-4 sm:space-y-6 px-4 sm:px-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">Analysis Dashboard</h1>
-          <p className="text-sm text-white/60 mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">Analysis Dashboard</h1>
+          <p className="text-xs sm:text-sm text-white/60 mt-1">
             View and manage your smart contract analyses
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <ThemeToggle />
-          <Button asChild className="bg-white text-black hover:bg-gray-200">
+          <Button 
+            asChild 
+            className="bg-white text-black hover:bg-gray-200 flex-1 sm:flex-initial text-sm sm:text-base"
+            aria-label="Create new analysis"
+          >
             <Link to="/analyze">
-              <ShieldAlert className="w-4 h-4 mr-2" />
-              New Analysis
+              <ShieldAlert className="w-4 h-4 mr-2" aria-hidden="true" />
+              <span className="hidden sm:inline">New Analysis</span>
+              <span className="sm:hidden">New</span>
             </Link>
           </Button>
         </div>
@@ -599,10 +604,13 @@ const Dashboard: React.FC = () => {
                       size="sm"
                       className="h-8 -ml-3"
                       onClick={() => handleSort("contractName")}
+                      aria-label="Sort by contract name"
+                      aria-sort={sortField === "contractName" ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}
                     >
-                      Contract
+                      <span className="hidden sm:inline">Contract</span>
+                      <span className="sm:hidden">Name</span>
                       {sortField === "contractName" && (
-                        <ArrowUpDown className="w-3 h-3 ml-1" />
+                        <ArrowUpDown className="w-3 h-3 ml-1" aria-hidden="true" />
                       )}
                     </Button>
                   </TableHead>
@@ -612,9 +620,11 @@ const Dashboard: React.FC = () => {
                       size="sm"
                       className="h-8 -ml-3"
                       onClick={() => handleSort("status")}
+                      aria-label="Sort by status"
+                      aria-sort={sortField === "status" ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}
                     >
                       Status
-                      {sortField === "status" && <ArrowUpDown className="w-3 h-3 ml-1" />}
+                      {sortField === "status" && <ArrowUpDown className="w-3 h-3 ml-1" aria-hidden="true" />}
                     </Button>
                   </TableHead>
                   <TableHead>
@@ -623,10 +633,13 @@ const Dashboard: React.FC = () => {
                       size="sm"
                       className="h-8 -ml-3"
                       onClick={() => handleSort("highSeverity")}
+                      aria-label="Sort by vulnerabilities"
+                      aria-sort={sortField === "highSeverity" ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}
                     >
-                      Vulnerabilities
+                      <span className="hidden sm:inline">Vulnerabilities</span>
+                      <span className="sm:hidden">Vulns</span>
                       {sortField === "highSeverity" && (
-                        <ArrowUpDown className="w-3 h-3 ml-1" />
+                        <ArrowUpDown className="w-3 h-3 ml-1" aria-hidden="true" />
                       )}
                     </Button>
                   </TableHead>
@@ -636,9 +649,11 @@ const Dashboard: React.FC = () => {
                       size="sm"
                       className="h-8 -ml-3"
                       onClick={() => handleSort("createdAt")}
+                      aria-label="Sort by date"
+                      aria-sort={sortField === "createdAt" ? (sortOrder === "asc" ? "ascending" : "descending") : "none"}
                     >
                       Date
-                      {sortField === "createdAt" && <ArrowUpDown className="w-3 h-3 ml-1" />}
+                      {sortField === "createdAt" && <ArrowUpDown className="w-3 h-3 ml-1" aria-hidden="true" />}
                     </Button>
                   </TableHead>
                   <TableHead>
@@ -655,27 +670,39 @@ const Dashboard: React.FC = () => {
                     <TableCell>{getStatusIndicator(analysis.status)}</TableCell>
                     <TableCell>
                       {analysis.status === "completed" && analysis.summary ? (
-                        <div className="flex items-center space-x-3 text-sm">
-                          <span className="text-destructive font-bold">
-                            {analysis.summary.highSeverity} High
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-3 text-xs sm:text-sm">
+                          <span className="text-destructive font-bold" aria-label={`${analysis.summary.highSeverity} high severity vulnerabilities`}>
+                            <span className="hidden sm:inline">{analysis.summary.highSeverity} High</span>
+                            <span className="sm:hidden">{analysis.summary.highSeverity}H</span>
                           </span>
-                          <span className="text-yellow-500 font-bold">
-                            {analysis.summary.mediumSeverity} Med
+                          <span className="text-yellow-500 font-bold" aria-label={`${analysis.summary.mediumSeverity} medium severity vulnerabilities`}>
+                            <span className="hidden sm:inline">{analysis.summary.mediumSeverity} Med</span>
+                            <span className="sm:hidden">{analysis.summary.mediumSeverity}M</span>
                           </span>
-                          <span className="text-blue-500 font-bold">
-                            {analysis.summary.lowSeverity} Low
+                          <span className="text-blue-500 font-bold" aria-label={`${analysis.summary.lowSeverity} low severity vulnerabilities`}>
+                            <span className="hidden sm:inline">{analysis.summary.lowSeverity} Low</span>
+                            <span className="sm:hidden">{analysis.summary.lowSeverity}L</span>
                           </span>
                         </div>
                       ) : (
                         <span className="text-sm text-muted-foreground">-</span>
                       )}
                     </TableCell>
-                    <TableCell>{formatDate(analysis.createdAt)}</TableCell>
+                    <TableCell>
+                      <span className="text-xs sm:text-sm">{formatDate(analysis.createdAt)}</span>
+                    </TableCell>
                     <TableCell className="text-right">
-                      <Button asChild variant="ghost" size="sm">
+                      <Button 
+                        asChild 
+                        variant="ghost" 
+                        size="sm"
+                        className="text-xs sm:text-sm"
+                        aria-label={`View details for ${analysis.contractName || 'Untitled Contract'}`}
+                      >
                         <Link to={`/analysis/${analysis.id}`}>
-                          View Details
-                          <ChevronRight className="w-4 h-4 ml-1" />
+                          <span className="hidden sm:inline">View Details</span>
+                          <span className="sm:hidden">View</span>
+                          <ChevronRight className="w-4 h-4 ml-1" aria-hidden="true" />
                         </Link>
                       </Button>
                     </TableCell>

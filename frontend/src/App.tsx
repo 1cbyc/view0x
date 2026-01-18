@@ -16,6 +16,7 @@ const Webhooks = lazy(() => import("./pages/Webhooks"));
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import { CommandPalette } from "./components/CommandPalette";
+import { SkipLink } from "./components/SkipLink";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { Loader2 } from "lucide-react";
 
@@ -43,8 +44,9 @@ const App: React.FC = () => {
   return (
     <Router>
       <div className="min-h-screen bg-black text-white selection:bg-accent/30 flex flex-col">
+        <SkipLink />
         <Navbar />
-        <main className="flex-1 w-full">
+        <main id="main-content" className="flex-1 w-full" tabIndex={-1}>
           <Suspense fallback={<PageLoader />}>
             <Routes>
               {/* Main analysis page */}

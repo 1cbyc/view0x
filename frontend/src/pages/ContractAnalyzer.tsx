@@ -517,24 +517,28 @@ const ContractAnalyzer: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold tracking-tight text-white">
+    <div className="container mx-auto py-4 sm:py-8 px-4 sm:px-6">
+      <div className="text-center mb-8 sm:mb-12">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-white">
           Smart Contract Security Scanner
         </h1>
-        <p className="text-lg text-white/60 mt-4 max-w-2xl mx-auto">
+        <p className="text-base sm:text-lg text-white/60 mt-4 max-w-2xl mx-auto">
           Paste your Solidity code to get an instant security analysis, powered
           by Slither. No login required to scan contracts.
         </p>
-        <p className="text-sm text-white/40 mt-2">
-          <Link to="/login" className="text-primary hover:text-primary/80 underline">
+        <p className="text-xs sm:text-sm text-white/40 mt-2">
+          <Link 
+            to="/login" 
+            className="text-primary hover:text-primary/80 underline focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-black rounded"
+            aria-label="Sign in to save analysis history"
+          >
             Sign in
           </Link>
           {' '}to save your analysis history and track your scans.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
         <div className="space-y-4">
           <Card>
             <CardHeader>
@@ -543,33 +547,38 @@ const ContractAnalyzer: React.FC = () => {
                 Upload a file or paste your Solidity source code below.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <FileUpload
-                onFileSelect={(content, fileName) => {
-                  setContractCode(content);
-                  setError(null);
-                }}
-                accept=".sol,.vy,.txt"
-                maxSize={5 * 1024 * 1024}
-              />
-              <div className="border border-border rounded-md overflow-hidden">
-                <CodeMirror
-                  value={contractCode}
-                  height="384px"
-                  theme={oneDark}
-                  extensions={[javascript({ jsx: false })]}
-                  onChange={(value) => setContractCode(value)}
-                  placeholder="// Your Solidity code here..."
-                  basicSetup={{
-                    lineNumbers: true,
-                    foldGutter: true,
-                    dropCursor: false,
-                    allowMultipleSelections: false,
-                  }}
-                />
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-between">
+                  <CardContent className="space-y-4">
+                    <FileUpload
+                      onFileSelect={(content, fileName) => {
+                        setContractCode(content);
+                        setError(null);
+                      }}
+                      accept=".sol,.vy,.txt"
+                      maxSize={5 * 1024 * 1024}
+                    />
+                    <div 
+                      className="border border-border rounded-md overflow-hidden"
+                      role="textbox"
+                      aria-label="Contract code editor"
+                      aria-multiline="true"
+                    >
+                      <CodeMirror
+                        value={contractCode}
+                        height="300px"
+                        theme={oneDark}
+                        extensions={[javascript({ jsx: false })]}
+                        onChange={(value) => setContractCode(value)}
+                        placeholder="// Your Solidity code here..."
+                        basicSetup={{
+                          lineNumbers: true,
+                          foldGutter: true,
+                          dropCursor: false,
+                          allowMultipleSelections: false,
+                        }}
+                      />
+                    </div>
+                  </CardContent>
+                  <CardFooter className="flex flex-col sm:flex-row justify-between gap-2 sm:gap-0">
               <div className="space-x-2">
                 <Dialog open={showExamplesDialog} onOpenChange={setShowExamplesDialog}>
                   <DialogTrigger asChild>
@@ -730,22 +739,26 @@ const ContractAnalyzer: React.FC = () => {
                   Clear
                 </Button>
               </div>
-              <Button
-                onClick={handleAnalyze}
-                disabled={isAnalyzing || !contractCode.trim()}
-              >
-                {isAnalyzing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Analyzing...
-                  </>
-                ) : (
-                  <>
-                    <ShieldAlert className="w-4 h-4 mr-2" />
-                    Analyze Contract
-                  </>
-                )}
-              </Button>
+                    <Button
+                      onClick={handleAnalyze}
+                      disabled={isAnalyzing || !contractCode.trim()}
+                      className="w-full sm:w-auto"
+                      aria-label={isAnalyzing ? "Analyzing contract, please wait" : "Analyze contract"}
+                    >
+                      {isAnalyzing ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden="true" />
+                          <span className="hidden sm:inline">Analyzing...</span>
+                          <span className="sm:hidden">Analyzing</span>
+                        </>
+                      ) : (
+                        <>
+                          <ShieldAlert className="w-4 h-4 mr-2" aria-hidden="true" />
+                          <span className="hidden sm:inline">Analyze Contract</span>
+                          <span className="sm:hidden">Analyze</span>
+                        </>
+                      )}
+                    </Button>
             </CardFooter>
           </Card>
         </div>
