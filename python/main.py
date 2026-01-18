@@ -28,6 +28,13 @@ from analyzers.slither_analyzer import SlitherAnalyzer
 from analyzers.gas_optimizer import GasOptimizer
 from analyzers.code_quality import CodeQualityAnalyzer
 
+# Configure logging FIRST before any logger usage
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
 # Optional analyzers - import only if available
 try:
     from analyzers.mythril_analyzer import mythril_analyzer
@@ -40,13 +47,6 @@ try:
 except ImportError:
     semgrep_analyzer = None
     logger.warning("Semgrep analyzer not available (package not installed)")
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 # Pydantic models for request/response
 class AnalysisRequest(BaseModel):
@@ -83,38 +83,62 @@ async def lifespan(app: FastAPI):
     logger.info("Starting view0x Analysis Server...")
 
     try:
-        # Initialize Redis connection
+        # Initialize Redis connection (optional - app can run without it)
         redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
-        redis_client = redis.from_url(redis_url, decode_responses=True)
-        await redis_client.ping()
-        logger.info("Redis connection established")
+        try:
+            redis_client = redis.from_url(redis_url, decode_responses=True)
+            await redis_client.ping()
+            logger.info("Redis connection established")
+        except Exception as redis_error:
+            logger.warning(f"Redis connection failed (continuing without Redis): {redis_error}")
+            redis_client = None
+            # App can still function without Redis, just won't have job status updates
 
-        # Initialize analyzers
-        slither_analyzer = SlitherAnalyzer()
+        # Initialize analyzers (with error handling)
+        try:
+            slither_analyzer = SlitherAnalyzer()
+            if slither_analyzer.is_available():
+                logger.info("Slither analyzer available")
+            else:
+                logger.warning("Slither analyzer not available")
+        except Exception as e:
+            logger.error(f"Failed to initialize Slither analyzer: {e}")
+            slither_analyzer = None
+            # App can still start, but analysis won't work
+
         mythril_analyzer_instance = mythril_analyzer if mythril_analyzer is not None else None
         semgrep_analyzer_instance = semgrep_analyzer if semgrep_analyzer is not None else None
 
         # Log analyzer availability
-        if slither_analyzer.is_available():
-            logger.info("Slither analyzer available")
-        else:
-            logger.warning("Slither analyzer not available")
+        if mythril_analyzer_instance:
+            try:
+                if mythril_analyzer_instance.is_available():
+                    logger.info("Mythril analyzer available")
+                else:
+                    logger.warning("Mythril analyzer not available")
+            except Exception as e:
+                logger.warning(f"Mythril analyzer check failed: {e}")
 
-        if mythril_analyzer_instance and mythril_analyzer_instance.is_available():
-            logger.info("Mythril analyzer available")
-        else:
-            logger.warning("Mythril analyzer not available")
+        if semgrep_analyzer_instance:
+            try:
+                if semgrep_analyzer_instance.is_available():
+                    logger.info("Semgrep analyzer available")
+                else:
+                    logger.warning("Semgrep analyzer not available")
+            except Exception as e:
+                logger.warning(f"Semgrep analyzer check failed: {e}")
 
-        if semgrep_analyzer_instance and semgrep_analyzer_instance.is_available():
-            logger.info("Semgrep analyzer available")
+        # Check if at least one analyzer is available
+        if not slither_analyzer or not slither_analyzer.is_available():
+            logger.error("No analyzers available! Server will start but analysis will fail.")
         else:
-            logger.warning("Semgrep analyzer not available")
-
-        logger.info("Analysis server started successfully")
+            logger.info("Analysis server started successfully")
 
     except Exception as e:
         logger.error(f"Failed to initialize server: {e}")
-        raise
+        logger.error(traceback.format_exc())
+        # Don't raise - allow app to start even if some components fail
+        # The health endpoint will report the actual status
 
     yield
 
@@ -161,7 +185,9 @@ async def health_check():
             "semgrep": semgrep_analyzer_instance.is_available() if semgrep_analyzer_instance else False,
         }
 
-        status = "healthy" if redis_ok and any(analyzers_status.values()) else "unhealthy"
+        # App is healthy if at least one analyzer is available
+        # Redis is optional (nice to have but not required)
+        status = "healthy" if any(analyzers_status.values()) else "unhealthy"
 
         return HealthResponse(
             status=status,
@@ -218,8 +244,9 @@ async def process_analysis(
     try:
         logger.info(f"Processing analysis for job {job_id}")
 
-        # Update job status to processing
-        await update_job_status(job_id, "processing", 10, "Initializing analysis")
+        # Update job status to processing (if Redis available)
+        if redis_client:
+            await update_job_status(job_id, "processing", 10, "Initializing analysis")
 
         # Determine which engine to use
         engine = options.get('engine', 'slither') if options else 'slither'
@@ -233,7 +260,8 @@ async def process_analysis(
             if not slither_analyzer or not slither_analyzer.is_available():
                 raise Exception("Slither analyzer not available")
             
-            await update_job_status(job_id, "processing", 30, "Running Slither analysis")
+            if redis_client:
+                await update_job_status(job_id, "processing", 30, "Running Slither analysis")
             result = await loop.run_in_executor(
                 None,
                 slither_analyzer.analyze,
@@ -244,7 +272,8 @@ async def process_analysis(
             if not mythril_analyzer_instance or not mythril_analyzer_instance.is_available():
                 raise Exception("Mythril analyzer not available")
             
-            await update_job_status(job_id, "processing", 30, "Running Mythril analysis")
+            if redis_client:
+                await update_job_status(job_id, "processing", 30, "Running Mythril analysis")
             result = await loop.run_in_executor(
                 None,
                 mythril_analyzer_instance.analyze,
@@ -255,7 +284,8 @@ async def process_analysis(
             if not semgrep_analyzer_instance or not semgrep_analyzer_instance.is_available():
                 raise Exception("Semgrep analyzer not available")
             
-            await update_job_status(job_id, "processing", 30, "Running Semgrep analysis")
+            if redis_client:
+                await update_job_status(job_id, "processing", 30, "Running Semgrep analysis")
             result = await loop.run_in_executor(
                 None,
                 semgrep_analyzer_instance.analyze,
@@ -267,7 +297,8 @@ async def process_analysis(
         if not result:
             raise Exception("Analysis returned no result")
 
-        await update_job_status(job_id, "processing", 70, "Running gas optimization analysis")
+        if redis_client:
+            await update_job_status(job_id, "processing", 70, "Running gas optimization analysis")
         
         # Run gas optimization analysis
         gas_optimizer = GasOptimizer()
@@ -277,7 +308,8 @@ async def process_analysis(
             contract_code
         )
 
-        await update_job_status(job_id, "processing", 80, "Running code quality analysis")
+        if redis_client:
+            await update_job_status(job_id, "processing", 80, "Running code quality analysis")
         
         # Run code quality analysis
         code_quality_analyzer = CodeQualityAnalyzer()
@@ -287,7 +319,8 @@ async def process_analysis(
             contract_code
         )
 
-        await update_job_status(job_id, "processing", 85, "Processing results")
+        if redis_client:
+            await update_job_status(job_id, "processing", 85, "Processing results")
 
         # Format results for our system
         analysis_result = {
@@ -314,11 +347,13 @@ async def process_analysis(
             }
         }
 
-        # Store results in Redis
-        await store_analysis_result(job_id, analysis_result)
-
-        # Update job status to completed
-        await update_job_status(job_id, "completed", 100, "Analysis completed")
+        # Store results in Redis (if available)
+        if redis_client:
+            await store_analysis_result(job_id, analysis_result)
+            # Update job status to completed
+            await update_job_status(job_id, "completed", 100, "Analysis completed")
+        else:
+            logger.warning("Redis not available - skipping result storage")
 
         logger.info(f"Analysis completed for job {job_id}")
 
@@ -330,16 +365,18 @@ async def process_analysis(
         logger.error(f"Analysis failed for job {job_id}: {e}")
         logger.error(traceback.format_exc())
 
-        # Update job status to failed
-        await update_job_status(job_id, "failed", 0, f"Analysis failed: {str(e)}")
-
-        # Store error in Redis
-        error_result = {
-            "error": str(e),
-            "timestamp": time.time(),
-            "job_id": job_id
-        }
-        await store_analysis_result(job_id, error_result, failed=True)
+        # Update job status to failed (if Redis available)
+        if redis_client:
+            await update_job_status(job_id, "failed", 0, f"Analysis failed: {str(e)}")
+            # Store error in Redis
+            error_result = {
+                "error": str(e),
+                "timestamp": time.time(),
+                "job_id": job_id
+            }
+            await store_analysis_result(job_id, error_result, failed=True)
+        else:
+            logger.warning("Redis not available - skipping error storage")
 
 async def update_job_status(
     job_id: str,
