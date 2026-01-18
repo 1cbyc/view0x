@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { ShieldCheck } from "lucide-react";
 import { Button } from "./ui/button";
 import { ThemeToggle } from "./ThemeToggle";
-import { AccessibilitySettings } from "./AccessibilitySettings";
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
@@ -66,7 +65,6 @@ const Navbar: React.FC = () => {
         </div>
 
         <div className="flex flex-1 items-center justify-end space-x-1 sm:space-x-2">
-          <AccessibilitySettings />
           <ThemeToggle />
           {user ? (
             <div className="flex items-center space-x-2 sm:space-x-4">
