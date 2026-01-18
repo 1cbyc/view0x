@@ -18,11 +18,13 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy the requirements file into the container
-COPY ./requirements.txt .
+# Use minimal requirements for faster builds (Slither only, no Mythril/Semgrep)
+COPY ./requirements-minimal.txt ./requirements.txt
 
 # Install the Python dependencies
 # --no-cache-dir reduces image size
-RUN pip install --no-cache-dir --upgrade pip
+# Use --no-deps flag for faster installation (dependencies are already specified)
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application code into the container
