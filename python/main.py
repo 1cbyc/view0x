@@ -25,10 +25,21 @@ import redis.asyncio as redis
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from analyzers.slither_analyzer import SlitherAnalyzer
-from analyzers.mythril_analyzer import mythril_analyzer
-from analyzers.semgrep_analyzer import semgrep_analyzer
 from analyzers.gas_optimizer import GasOptimizer
 from analyzers.code_quality import CodeQualityAnalyzer
+
+# Optional analyzers - import only if available
+try:
+    from analyzers.mythril_analyzer import mythril_analyzer
+except ImportError:
+    mythril_analyzer = None
+    logger.warning("Mythril analyzer not available (package not installed)")
+
+try:
+    from analyzers.semgrep_analyzer import semgrep_analyzer
+except ImportError:
+    semgrep_analyzer = None
+    logger.warning("Semgrep analyzer not available (package not installed)")
 
 # Configure logging
 logging.basicConfig(
@@ -80,8 +91,8 @@ async def lifespan(app: FastAPI):
 
         # Initialize analyzers
         slither_analyzer = SlitherAnalyzer()
-        mythril_analyzer_instance = mythril_analyzer
-        semgrep_analyzer_instance = semgrep_analyzer
+        mythril_analyzer_instance = mythril_analyzer if mythril_analyzer is not None else None
+        semgrep_analyzer_instance = semgrep_analyzer if semgrep_analyzer is not None else None
 
         # Log analyzer availability
         if slither_analyzer.is_available():
@@ -89,12 +100,12 @@ async def lifespan(app: FastAPI):
         else:
             logger.warning("Slither analyzer not available")
 
-        if mythril_analyzer_instance.is_available():
+        if mythril_analyzer_instance and mythril_analyzer_instance.is_available():
             logger.info("Mythril analyzer available")
         else:
             logger.warning("Mythril analyzer not available")
 
-        if semgrep_analyzer_instance.is_available():
+        if semgrep_analyzer_instance and semgrep_analyzer_instance.is_available():
             logger.info("Semgrep analyzer available")
         else:
             logger.warning("Semgrep analyzer not available")
