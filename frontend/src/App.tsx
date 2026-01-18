@@ -7,6 +7,8 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import AnalysisDetailPage from "./pages/AnalysisResult";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 // Layout Components
 import Navbar from "./components/Navbar";
@@ -26,6 +28,8 @@ const App: React.FC = () => {
             {/* Authentication pages */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* User-specific pages */}
             <Route path="/dashboard" element={<Dashboard />} />
