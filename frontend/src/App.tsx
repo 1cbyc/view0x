@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import AnalysisDetailPage from "./pages/AnalysisResult";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import Profile from "./pages/Profile";
 
 // Layout Components
 import Navbar from "./components/Navbar";
