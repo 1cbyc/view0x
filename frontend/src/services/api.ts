@@ -25,10 +25,10 @@ api.interceptors.request.use(
 // Add a response interceptor for centralized error handling
 api.interceptors.response.use(
   (response) => {
-    // Extract rate limit headers and store them
-    const remaining = response.headers["x-ratelimit-remaining"];
-    const reset = response.headers["x-ratelimit-reset"];
-    const limit = response.headers["x-ratelimit-limit"];
+    // Extract rate limit headers and store them (using standard RateLimit-* headers)
+    const remaining = response.headers["ratelimit-remaining"] || response.headers["x-ratelimit-remaining"];
+    const reset = response.headers["ratelimit-reset"] || response.headers["x-ratelimit-reset"];
+    const limit = response.headers["ratelimit-limit"] || response.headers["x-ratelimit-limit"];
     
     if (remaining !== undefined) {
       // Store rate limit info for UI feedback
