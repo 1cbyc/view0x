@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { User } from "../models/User";
-import { authenticator } from "otplib";
+import { TOTP, generateSecret } from "otplib";
 import QRCode from "qrcode";
 import {
   AuthenticationError,
@@ -20,11 +20,11 @@ export const setup2FA = async (req: Request, res: Response) => {
     throw new AuthenticationError("User not found");
   }
 
-  const secret = authenticator.generateSecret();
+  const secret = generateSecret();
   const serviceName = "view0x";
   const accountName = user.email;
 
-  const otpauth = authenticator.keyuri(accountName, serviceName, secret);
+  const otpauth = TOTP.keyuri(accountName, serviceName, secret);
 
   const qrCodeUrl = await QRCode.toDataURL(otpauth);
 
@@ -59,7 +59,7 @@ export const verify2FA = async (req: Request, res: Response) => {
     throw new AuthenticationError("2FA not set up");
   }
 
-  const isValid = authenticator.verify({
+  const isValid = TOTP.verify({
     token,
     secret: user.twoFactorSecret,
   });
