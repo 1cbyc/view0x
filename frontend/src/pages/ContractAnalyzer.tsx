@@ -410,6 +410,84 @@ const ContractAnalyzer: React.FC = () => {
               </p>
             </Card>
           )}
+
+          {gasOptimizations && gasOptimizations.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Gas Optimizations ({gasOptimizations.length})</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Accordion type="single" collapsible className="w-full">
+                  {gasOptimizations.map((opt, index) => (
+                    <AccordionItem value={`gas-${index}`} key={index}>
+                      <AccordionTrigger>
+                        <div className="flex items-center gap-4">
+                          <Badge variant="outline" className="text-purple-500 border-purple-500">
+                            Gas
+                          </Badge>
+                          <span>{opt.type}</span>
+                          {opt.potentialSavings && (
+                            <span className="text-xs text-muted-foreground ml-auto">
+                              {opt.potentialSavings}
+                            </span>
+                          )}
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-2">
+                        <p className="text-sm text-muted-foreground">{opt.description}</p>
+                        <p className="text-sm font-medium text-foreground">
+                          Recommendation: {opt.recommendation}
+                        </p>
+                        {opt.lineNumber && (
+                          <p className="text-xs font-mono text-muted-foreground">
+                            Line {opt.lineNumber}
+                          </p>
+                        )}
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </CardContent>
+            </Card>
+          )}
+
+          {codeQuality && codeQuality.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Code Quality Issues ({codeQuality.length})</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Accordion type="single" collapsible className="w-full">
+                  {codeQuality.map((issue, index) => (
+                    <AccordionItem value={`quality-${index}`} key={index}>
+                      <AccordionTrigger>
+                        <div className="flex items-center gap-4">
+                          <Badge 
+                            variant={issue.severity === "HIGH" ? "destructive" : 
+                                    issue.severity === "MEDIUM" ? "secondary" : "outline"}
+                          >
+                            {issue.severity}
+                          </Badge>
+                          <span>{issue.type}</span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-2">
+                        <p className="text-sm text-muted-foreground">{issue.description}</p>
+                        <p className="text-sm font-medium text-foreground">
+                          Recommendation: {issue.recommendation}
+                        </p>
+                        {issue.lineNumber && (
+                          <p className="text-xs font-mono text-muted-foreground">
+                            Line {issue.lineNumber}
+                          </p>
+                        )}
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </CardContent>
+            </Card>
+          )}
         </div>
       );
     }
