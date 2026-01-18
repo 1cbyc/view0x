@@ -324,3 +324,131 @@ export const generateReport = async (req: Request, res: Response) => {
     });
   }
 };
+
+/**
+ * @description Generate a share token for an analysis (creates public link)
+ * @route POST /api/analysis/:id/share
+ */
+export const generateShareToken = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const userId = req.user?.userId;
+
+  const analysis = await Analysis.findByPk(id);
+
+  if (!analysis) {
+    throw new NotFoundError("Analysis not found.");
+  }
+
+  if (analysis.userId !== userId) {
+    throw new AuthorizationError("You are not authorized to share this analysis.");
+  }
+
+  if (analysis.status !== "completed") {
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: "BAD_REQUEST",
+        message: "Analysis must be completed before sharing.",
+      },
+    });
+  }
+
+  // Generate a unique share token
+  const shareToken = crypto.randomBytes(32).toString("hex");
+  analysis.shareToken = shareToken;
+  analysis.isPublic = true;
+  await analysis.save();
+
+  const shareUrl = `${req.protocol}://${req.get("host")}/api/analysis/public/${shareToken}`;
+
+  logger.info(`Share token generated for analysis ${id} by user ${userId}`);
+
+  res.json({
+    success: true,
+    data: {
+      shareToken,
+      shareUrl,
+      publicUrl: `${req.protocol}://${req.get("host")}/share/${shareToken}`,
+    },
+  });
+};
+
+/**
+ * @description Revoke share token (make analysis private again)
+ * @route DELETE /api/analysis/:id/share
+ */
+export const revokeShareToken = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const userId = req.user?.userId;
+
+  const analysis = await Analysis.findByPk(id);
+
+  if (!analysis) {
+    throw new NotFoundError("Analysis not found.");
+  }
+
+  if (analysis.userId !== userId) {
+    throw new AuthorizationError("You are not authorized to revoke sharing for this analysis.");
+  }
+
+  analysis.shareToken = null;
+  analysis.isPublic = false;
+  await analysis.save();
+
+  logger.info(`Share token revoked for analysis ${id} by user ${userId}`);
+
+  res.json({
+    success: true,
+    message: "Share token revoked successfully.",
+  });
+};
+
+/**
+ * @description Get public analysis by share token (no auth required)
+ * @route GET /api/analysis/public/:token
+ */
+export const getPublicAnalysis = async (req: Request, res: Response) => {
+  const { token } = req.params;
+
+  const analysis = await Analysis.findOne({
+    where: {
+      shareToken: token,
+      isPublic: true,
+      status: "completed",
+    },
+  });
+
+  if (!analysis) {
+    return res.status(404).json({
+      success: false,
+      error: {
+        code: "NOT_FOUND",
+        message: "Shared analysis not found or has been revoked.",
+      },
+    });
+  }
+
+  // Check if analysis has expired
+  if (analysis.expiresAt && new Date(analysis.expiresAt) < new Date()) {
+    return res.status(404).json({
+      success: false,
+      error: {
+        code: "EXPIRED",
+        message: "This shared analysis has expired.",
+      },
+    });
+  }
+
+  res.json({
+    success: true,
+    data: {
+      id: analysis.id,
+      contractName: analysis.contractName,
+      status: analysis.status,
+      createdAt: analysis.createdAt,
+      completedAt: analysis.completedAt,
+      result: analysis.result,
+      contractInfo: analysis.getContractInfo(),
+    },
+  });
+};
