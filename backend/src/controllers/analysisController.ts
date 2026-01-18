@@ -46,10 +46,14 @@ export const publicAnalysis = async (req: Request, res: Response) => {
           lowSeverity: result.vulnerabilities.filter(v => v.severity === 'LOW').length,
           totalWarnings: result.warnings.length,
           totalSuggestions: result.suggestions.length,
+          gasOptimizations: result.gasOptimizations?.length || 0,
+          codeQualityIssues: result.codeQuality?.length || 0,
         },
         vulnerabilities: result.vulnerabilities,
         warnings: result.warnings,
         suggestions: result.suggestions,
+        gasOptimizations: result.gasOptimizations || [],
+        codeQuality: result.codeQuality || [],
       },
     });
   } catch (error: any) {
