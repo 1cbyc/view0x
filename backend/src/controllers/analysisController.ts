@@ -11,6 +11,7 @@ import {
 import { logger } from "../utils/logger";
 import { SimpleScanner } from "../services/simpleScanner";
 import { ReportGenerator, ReportOptions } from "../services/reportGenerator";
+import crypto from "crypto";
 
 /**
  * @description Public analysis endpoint (no authentication required) - synchronous response
