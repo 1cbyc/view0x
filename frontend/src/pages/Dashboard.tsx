@@ -102,13 +102,35 @@ const Dashboard: React.FC = () => {
       try {
         setIsLoading(true);
         setError(null);
+        // Optimistic update: show cached data if available while fetching
+        const cached = localStorage.getItem("dashboard_cache");
+        if (cached) {
+          try {
+            const cachedData = JSON.parse(cached);
+            const cacheTime = new Date(cachedData.timestamp);
+            const now = new Date();
+            // Use cache if less than 30 seconds old
+            if (now.getTime() - cacheTime.getTime() < 30000) {
+              setAnalyses(cachedData.data || []);
+            }
+          } catch (e) {
+            // Ignore cache parse errors
+          }
+        }
         const response = await analysisApi.getHistory();
-        setAnalyses(response.data.data || []);
+        const data = response.data.data || [];
+        setAnalyses(data);
+        // Cache the data
+        localStorage.setItem("dashboard_cache", JSON.stringify({
+          data,
+          timestamp: new Date().toISOString(),
+        }));
       } catch (err: any) {
         if (err.response?.status === 401 || err.response?.status === 403) {
           localStorage.removeItem("accessToken");
           localStorage.removeItem("refreshToken");
           localStorage.removeItem("user");
+          localStorage.removeItem("dashboard_cache");
           navigate("/login", { replace: true });
           return;
         }
