@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { analysisApi } from "@/services/api";
-import { Loader2, AlertTriangle, ArrowLeft, ShieldCheck, Download } from "lucide-react";
+import { analysisApi, vulnerabilityApi } from "@/services/api";
+import { Loader2, AlertTriangle, ArrowLeft, ShieldCheck, Download, MessageSquare, Send, Trash2, Edit2 } from "lucide-react";
 
 // UI Components
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Textarea } from "@/components/ui/textarea";
 
 // --- Type Definitions ---
 interface VulnerabilityElement {
@@ -25,11 +26,25 @@ interface VulnerabilityElement {
 }
 
 interface Vulnerability {
+  id?: string;
   check: string;
   description: string;
   impact: "High" | "Medium" | "Low" | "Informational" | "Optimization";
   confidence: "High" | "Medium" | "Low";
   elements: VulnerabilityElement[];
+}
+
+interface Comment {
+  id: string;
+  comment: string;
+  lineNumber?: number;
+  createdAt: string;
+  updatedAt: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
 }
 
 interface AnalysisDetail {
