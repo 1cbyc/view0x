@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { analysisApi } from "@/services/api";
+import { socketService, AnalysisUpdatePayload } from "@/services/socketService";
 import {
   Loader2,
   AlertTriangle,
@@ -275,6 +276,20 @@ const Dashboard: React.FC = () => {
     };
   }, [analyses]);
 
+  // Sanitize CSV cell to prevent CSV injection
+  const sanitizeCSVCell = (cell: any): string => {
+    const str = String(cell);
+    // Escape cells that start with formula characters to prevent CSV injection
+    if (/^[=+\-@]/.test(str)) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    // Escape cells containing commas, quotes, or newlines
+    if (/[,"\n]/.test(str)) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
+
   // Export functions
   const exportToCSV = () => {
     const headers = ["Contract Name", "Status", "High", "Medium", "Low", "Created At"];
@@ -289,7 +304,7 @@ const Dashboard: React.FC = () => {
 
     const csvContent = [
       headers.join(","),
-      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+      ...rows.map((row) => row.map((cell) => sanitizeCSVCell(cell)).join(",")),
     ].join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv" });
@@ -382,9 +397,18 @@ const Dashboard: React.FC = () => {
     <div className="container mx-auto py-4 sm:py-8 space-y-4 sm:space-y-6 px-4 sm:px-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">Analysis Dashboard</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-bold text-white">Analysis Dashboard</h1>
+            {isConnected && (
+              <Badge variant="outline" className="text-green-500 border-green-500">
+                <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse" />
+                Live
+              </Badge>
+            )}
+          </div>
           <p className="text-xs sm:text-sm text-white/60 mt-1">
             View and manage your smart contract analyses
+            {isConnected && " • Real-time updates enabled"}
           </p>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
