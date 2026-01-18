@@ -112,6 +112,7 @@ const Dashboard: React.FC = () => {
             // Use cache if less than 30 seconds old
             if (now.getTime() - cacheTime.getTime() < 30000) {
               setAnalyses(cachedData.data || []);
+              setIsLoading(false); // Clear loading state to show cached data
             }
           } catch (e) {
             // Ignore cache parse errors
@@ -233,6 +234,20 @@ const Dashboard: React.FC = () => {
     };
   }, [analyses]);
 
+  // Sanitize CSV cell to prevent CSV injection
+  const sanitizeCSVCell = (cell: any): string => {
+    const str = String(cell);
+    // Escape cells that start with formula characters to prevent CSV injection
+    if (/^[=+\-@]/.test(str)) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    // Escape cells containing commas, quotes, or newlines
+    if (/[,"\n]/.test(str)) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
+
   // Export functions
   const exportToCSV = () => {
     const headers = ["Contract Name", "Status", "High", "Medium", "Low", "Created At"];
@@ -247,7 +262,7 @@ const Dashboard: React.FC = () => {
 
     const csvContent = [
       headers.join(","),
-      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+      ...rows.map((row) => row.map((cell) => sanitizeCSVCell(cell)).join(",")),
     ].join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv" });
