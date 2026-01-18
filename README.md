@@ -41,9 +41,12 @@ view0x is a cloud-native SaaS platform for automated smart contract security ana
 
 ## Screenshots
 
-![Contract Analyzer](screenshots/screenshot-2026-01-18-at-1.13.07-am.png)
-
-![Login Page](screenshots/screenshot-2026-01-18-at-1.13.28-am.png)
+<div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+  <img src="screenshots/screenshot-2026-01-18-at-1.13.07-am.png" alt="Contract Analyzer" width="48%" />
+  <img src="screenshots/screenshot-2026-01-18-at-1.13.28-am.png" alt="Login Page" width="48%" />
+  <img src="screenshots/screenshot-2026-01-18-at-8.57.21 pm.png" alt="Login Page" width="48%" />
+  <img src="screenshots/screenshot-2026-01-18-at-8.58.01 pm.png" alt="Login Page" width="48%" />
+</div>
 
 ## Features
 
