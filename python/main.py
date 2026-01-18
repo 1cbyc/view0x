@@ -28,6 +28,13 @@ from analyzers.slither_analyzer import SlitherAnalyzer
 from analyzers.gas_optimizer import GasOptimizer
 from analyzers.code_quality import CodeQualityAnalyzer
 
+# Configure logging FIRST before any logger usage
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
 # Optional analyzers - import only if available
 try:
     from analyzers.mythril_analyzer import mythril_analyzer
@@ -40,13 +47,6 @@ try:
 except ImportError:
     semgrep_analyzer = None
     logger.warning("Semgrep analyzer not available (package not installed)")
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 # Pydantic models for request/response
 class AnalysisRequest(BaseModel):
@@ -94,28 +94,45 @@ async def lifespan(app: FastAPI):
             redis_client = None
             # App can still function without Redis, just won't have job status updates
 
-        # Initialize analyzers
-        slither_analyzer = SlitherAnalyzer()
+        # Initialize analyzers (with error handling)
+        try:
+            slither_analyzer = SlitherAnalyzer()
+            if slither_analyzer.is_available():
+                logger.info("Slither analyzer available")
+            else:
+                logger.warning("Slither analyzer not available")
+        except Exception as e:
+            logger.error(f"Failed to initialize Slither analyzer: {e}")
+            slither_analyzer = None
+            # App can still start, but analysis won't work
+
         mythril_analyzer_instance = mythril_analyzer if mythril_analyzer is not None else None
         semgrep_analyzer_instance = semgrep_analyzer if semgrep_analyzer is not None else None
 
         # Log analyzer availability
-        if slither_analyzer.is_available():
-            logger.info("Slither analyzer available")
-        else:
-            logger.warning("Slither analyzer not available")
+        if mythril_analyzer_instance:
+            try:
+                if mythril_analyzer_instance.is_available():
+                    logger.info("Mythril analyzer available")
+                else:
+                    logger.warning("Mythril analyzer not available")
+            except Exception as e:
+                logger.warning(f"Mythril analyzer check failed: {e}")
 
-        if mythril_analyzer_instance and mythril_analyzer_instance.is_available():
-            logger.info("Mythril analyzer available")
-        else:
-            logger.warning("Mythril analyzer not available")
+        if semgrep_analyzer_instance:
+            try:
+                if semgrep_analyzer_instance.is_available():
+                    logger.info("Semgrep analyzer available")
+                else:
+                    logger.warning("Semgrep analyzer not available")
+            except Exception as e:
+                logger.warning(f"Semgrep analyzer check failed: {e}")
 
-        if semgrep_analyzer_instance and semgrep_analyzer_instance.is_available():
-            logger.info("Semgrep analyzer available")
+        # Check if at least one analyzer is available
+        if not slither_analyzer or not slither_analyzer.is_available():
+            logger.error("No analyzers available! Server will start but analysis will fail.")
         else:
-            logger.warning("Semgrep analyzer not available")
-
-        logger.info("Analysis server started successfully")
+            logger.info("Analysis server started successfully")
 
     except Exception as e:
         logger.error(f"Failed to initialize server: {e}")
