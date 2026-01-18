@@ -181,7 +181,36 @@ const AnalysisResultPage: React.FC = () => {
     return null;
   }
 
-  const { contractInfo, result, status, createdAt } = analysis;
+  const { contractInfo, result, status, createdAt, id } = analysis;
+
+  const handleExportReport = async (format: 'json' | 'markdown' | 'pdf') => {
+    try {
+      const response = await analysisApi.generateReport(id, {
+        format,
+        includeCode: true,
+        includeRecommendations: true,
+        includeMetadata: true,
+      });
+
+      // Create blob and download
+      const blob = new Blob([response.data], {
+        type: format === 'json' ? 'application/json' : 
+              format === 'markdown' ? 'text/markdown' : 
+              'application/pdf'
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `analysis-${id}.${format === 'json' ? 'json' : format === 'markdown' ? 'md' : 'pdf'}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error('Failed to export report:', err);
+      alert(`Failed to export report: ${err.message || 'Unknown error'}`);
+    }
+  };
 
   return (
     <div className="container mx-auto py-8 space-y-6">
@@ -192,12 +221,44 @@ const AnalysisResultPage: React.FC = () => {
             Back to Dashboard
           </Link>
         </Button>
-        <h1 className="text-3xl font-bold text-white">
-          {contractInfo.name || "Analysis Details"}
-        </h1>
-        <p className="text-sm text-white/60 mt-1">
-          Analyzed on {formatDate(createdAt)}
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-white">
+              {contractInfo.name || "Analysis Details"}
+            </h1>
+            <p className="text-sm text-white/60 mt-1">
+              Analyzed on {formatDate(createdAt)}
+            </p>
+          </div>
+          {result && status === "completed" && (
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => handleExportReport('json')}
+                className="text-white/60 hover:text-white"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                JSON
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => handleExportReport('markdown')}
+                className="text-white/60 hover:text-white"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Markdown
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => handleExportReport('pdf')}
+                className="text-white/60 hover:text-white"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                PDF
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
       <Card>
