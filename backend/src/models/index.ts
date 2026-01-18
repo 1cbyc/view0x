@@ -3,6 +3,8 @@ import { User } from "./User";
 import { Analysis } from "./Analysis";
 import { Vulnerability } from "./Vulnerability";
 import { VulnerabilityComment } from "./VulnerabilityComment";
+import { ActivityLog } from "./ActivityLog";
+import { AnalysisTemplate } from "./AnalysisTemplate";
 import { logger } from "../utils/logger";
 
 // 1. Initialize all models
@@ -11,6 +13,7 @@ const models = {
   Analysis,
   Vulnerability,
   VulnerabilityComment,
+  ActivityLog,
 };
 
 // 2. Define associations (relationships) between models
@@ -58,6 +61,28 @@ function defineAssociations() {
     onDelete: "CASCADE",
   });
   VulnerabilityComment.belongsTo(User, {
+    foreignKey: "userId",
+    as: "user",
+  });
+
+  // User <-> ActivityLog (One-to-Many)
+  User.hasMany(ActivityLog, {
+    foreignKey: "userId",
+    as: "activityLogs",
+    onDelete: "CASCADE",
+  });
+  ActivityLog.belongsTo(User, {
+    foreignKey: "userId",
+    as: "user",
+  });
+
+  // User <-> AnalysisTemplate (One-to-Many)
+  User.hasMany(AnalysisTemplate, {
+    foreignKey: "userId",
+    as: "templates",
+    onDelete: "CASCADE",
+  });
+  AnalysisTemplate.belongsTo(User, {
     foreignKey: "userId",
     as: "user",
   });

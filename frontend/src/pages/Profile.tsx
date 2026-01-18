@@ -23,6 +23,7 @@ const Profile: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isResendingVerification, setIsResendingVerification] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -71,12 +72,37 @@ const Profile: React.FC = () => {
     setError(null);
     setSuccess(null);
 
-    // TODO: Implement update profile endpoint
-    // For now, just show a success message
-    setTimeout(() => {
-      setSuccess('Profile updated successfully (feature coming soon)');
+    try {
+      const response = await authApi.updateProfile({
+        name: formData.name,
+        company: formData.company || undefined,
+      });
+      if (response.data.success) {
+        setUser({ ...user, ...formData });
+        setSuccess('Profile updated successfully');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error?.message || 'Failed to update profile');
+    } finally {
       setIsSaving(false);
-    }, 1000);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setIsResendingVerification(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const response = await authApi.resendVerification(user.email);
+      if (response.data.success) {
+        setSuccess('Verification email sent! Please check your inbox.');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error?.message || 'Failed to send verification email');
+    } finally {
+      setIsResendingVerification(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -156,7 +182,29 @@ const Profile: React.FC = () => {
                   className="bg-input/20 text-muted-foreground border-border"
                 />
                 {!user.emailVerified && (
-                  <p className="text-xs text-yellow-500">Email not verified</p>
+                  <div className="space-y-2">
+                    <p className="text-xs text-yellow-500">Email not verified</p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleResendVerification}
+                      disabled={isResendingVerification}
+                      className="w-full text-xs"
+                    >
+                      {isResendingVerification ? (
+                        <>
+                          <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="w-3 h-3 mr-2" />
+                          Resend Verification Email
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 )}
               </div>
 
