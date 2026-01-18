@@ -24,8 +24,38 @@ api.interceptors.request.use(
 
 // Add a response interceptor for centralized error handling
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Extract rate limit headers and store them
+    const remaining = response.headers["x-ratelimit-remaining"];
+    const reset = response.headers["x-ratelimit-reset"];
+    const limit = response.headers["x-ratelimit-limit"];
+    
+    if (remaining !== undefined) {
+      // Store rate limit info for UI feedback
+      localStorage.setItem("rateLimitInfo", JSON.stringify({
+        remaining: parseInt(remaining),
+        reset: reset ? parseInt(reset) : null,
+        limit: limit ? parseInt(limit) : null,
+        timestamp: Date.now(),
+      }));
+    }
+    
+    return response;
+  },
   (error) => {
+    // Handle rate limit errors with detailed info
+    if (error.response?.status === 429) {
+      const rateLimitData = error.response.data?.rateLimit;
+      if (rateLimitData) {
+        localStorage.setItem("rateLimitError", JSON.stringify({
+          remaining: rateLimitData.remaining || 0,
+          reset: rateLimitData.reset,
+          retryAfter: rateLimitData.retryAfter,
+          timestamp: Date.now(),
+        }));
+      }
+    }
+    
     // Return the more detailed error object from the backend if it exists
     if (error.response && error.response.data) {
       return Promise.reject(error.response.data);

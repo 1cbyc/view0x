@@ -28,6 +28,22 @@ export const createRateLimiter = (options: {
     },
     standardHeaders: true,
     legacyHeaders: false,
+    handler: (req: Request, res: Response) => {
+      const remaining = res.getHeader("X-RateLimit-Remaining");
+      const reset = res.getHeader("X-RateLimit-Reset");
+      res.status(429).json({
+        success: false,
+        error: {
+          code: "RATE_LIMIT_EXCEEDED",
+          message: options.message,
+        },
+        rateLimit: {
+          remaining: remaining ? parseInt(remaining as string) : 0,
+          reset: reset ? parseInt(reset as string) : Date.now() + options.windowMs,
+          retryAfter: Math.ceil((reset ? parseInt(reset as string) - Date.now() : options.windowMs) / 1000),
+        },
+      });
+    },
     skipSuccessfulRequests: options.skipSuccessfulRequests || false,
     keyGenerator: options.keyGenerator || ((req: Request) => {
       // Use API key if present, otherwise use IP
