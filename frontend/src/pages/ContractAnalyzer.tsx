@@ -523,8 +523,7 @@ const ContractAnalyzer: React.FC = () => {
           Smart Contract Security Scanner
         </h1>
         <p className="text-base sm:text-lg text-white/60 mt-4 max-w-2xl mx-auto">
-          Paste your Solidity code to get an instant security analysis, powered
-          by Slither. No login required to scan contracts.
+          Paste your Solidity code to get an instant security analysis. No login required to scan contracts.
         </p>
         <p className="text-xs sm:text-sm text-white/40 mt-2">
           <Link 
