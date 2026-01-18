@@ -452,3 +452,35 @@ export const getPublicAnalysis = async (req: Request, res: Response) => {
     },
   });
 };
+
+/**
+ * @description Toggle favorite status for an analysis
+ * @route PATCH /api/analysis/:id/favorite
+ */
+export const toggleFavorite = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const userId = req.user?.userId;
+
+  const analysis = await Analysis.findByPk(id);
+
+  if (!analysis) {
+    throw new NotFoundError("Analysis not found.");
+  }
+
+  if (analysis.userId !== userId) {
+    throw new AuthorizationError("You are not authorized to modify this analysis.");
+  }
+
+  analysis.isFavorite = !analysis.isFavorite;
+  await analysis.save();
+
+  logger.info(`Analysis ${id} favorite status toggled to ${analysis.isFavorite} by user ${userId}`);
+
+  res.json({
+    success: true,
+    data: {
+      id: analysis.id,
+      isFavorite: analysis.isFavorite,
+    },
+  });
+};
