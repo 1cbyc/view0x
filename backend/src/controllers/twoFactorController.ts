@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { User } from "../models/User";
-import { authenticator } from "otplib/otplib";
+import { authenticator } from "otplib";
 import QRCode from "qrcode";
 import {
   AuthenticationError,
