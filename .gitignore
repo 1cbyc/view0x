@@ -129,6 +129,7 @@ docs/
 !CONTRIBUTING.md
 !CODE_OF_CONDUCT.md
 !CHANGELOG.md
+!TESTING.md
 *.sh
 
 # sample-ui-web (reference only, not part of project)
