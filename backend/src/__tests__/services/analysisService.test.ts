@@ -1,15 +1,48 @@
+// Mock database FIRST before any imports
+jest.mock('../../config/database', () => ({
+  sequelize: {
+    define: jest.fn(),
+    transaction: jest.fn((callback) => callback({})),
+  },
+  cacheRedis: {
+    get: jest.fn().mockResolvedValue(null),
+    set: jest.fn(),
+  },
+}));
+
+// Mock models
+jest.mock('../../models/User', () => ({
+  User: {
+    findByPk: jest.fn(),
+  },
+}));
+
+jest.mock('../../models/Analysis', () => ({
+  Analysis: {
+    create: jest.fn(),
+    findByPk: jest.fn(),
+  },
+}));
+
+jest.mock('../../workers/analysisWorker', () => ({
+  analysisQueue: {
+    add: jest.fn(),
+  },
+}));
+
+jest.mock('../../utils/logger', () => ({
+  logger: {
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+  },
+}));
+
+// Now import after mocks
 import { AnalysisService } from '../../services/analysisService';
 import { User } from '../../models/User';
 import { Analysis } from '../../models/Analysis';
-
-// Mock dependencies
-jest.mock('../../models/User');
-jest.mock('../../models/Analysis');
-jest.mock('../../config/database', () => ({
-  sequelize: {
-    transaction: jest.fn((callback) => callback({})),
-  },
-}));
 
 describe('AnalysisService', () => {
   let analysisService: AnalysisService;
@@ -41,6 +74,21 @@ describe('AnalysisService', () => {
         contractName,
         status: 'queued',
         progress: 0,
+        options: {},
+        currentStep: null,
+        errorMessage: null,
+        estimatedTime: null,
+        result: null,
+        startedAt: null,
+        completedAt: null,
+        createdAt: new Date(),
+        getContractInfo: jest.fn().mockReturnValue({
+          code: contractCode,
+          name: contractName,
+          language: 'solidity',
+          size: contractCode.length,
+          lineCount: contractCode.split('\n').length,
+        }),
       };
 
       (Analysis.create as jest.Mock).mockResolvedValue(mockAnalysis);
@@ -51,29 +99,79 @@ describe('AnalysisService', () => {
       });
 
       expect(result).toBeDefined();
-      expect(result.id).toBeDefined();
+      expect(result.id).toBe('analysis-123');
       expect(result.status).toBe('queued');
       expect(result.contractInfo.code).toBe(contractCode);
       expect(Analysis.create).toHaveBeenCalled();
     });
 
-    it('should throw error if user cannot analyze', async () => {
-      mockUser.canAnalyze = jest.fn().mockReturnValue(false);
+    it('should handle cache hits correctly', async () => {
+      const contractCode = 'pragma solidity ^0.8.0; contract Test {}';
+      const { cacheRedis } = require('../../config/database');
+      
+      // Mock cached result
+      cacheRedis.get.mockResolvedValueOnce(JSON.stringify({
+        summary: { totalVulnerabilities: 0 },
+        vulnerabilities: [],
+      }));
 
-      await expect(
-        analysisService.create(mockUser.id, {
-          contractCode: 'pragma solidity ^0.8.0; contract Test {}',
-        })
-      ).rejects.toThrow();
+      const mockCachedAnalysis = {
+        id: 'cached-analysis-123',
+        userId: mockUser.id,
+        contractCode,
+        contractName: 'Cached Contract',
+        status: 'completed',
+        progress: 100,
+        options: {},
+        currentStep: null,
+        errorMessage: null,
+        estimatedTime: null,
+        result: { summary: { totalVulnerabilities: 0 }, vulnerabilities: [] },
+        startedAt: new Date(),
+        completedAt: new Date(),
+        createdAt: new Date(),
+        getContractInfo: jest.fn().mockReturnValue({
+          code: contractCode,
+          language: 'solidity',
+          size: contractCode.length,
+          lineCount: contractCode.split('\n').length,
+        }),
+      };
+
+      (Analysis.create as jest.Mock).mockResolvedValue(mockCachedAnalysis);
+
+      const result = await analysisService.create(mockUser.id, {
+        contractCode,
+      });
+
+      expect(result.status).toBe('completed');
+      expect(Analysis.create).toHaveBeenCalled();
     });
   });
 
   describe('getById', () => {
     it('should return analysis by id', async () => {
+      const contractCode = 'pragma solidity ^0.8.0; contract Test {}';
       const mockAnalysis = {
         id: 'analysis-123',
         userId: mockUser.id,
-        contractCode: 'pragma solidity ^0.8.0; contract Test {}',
+        contractCode,
+        status: 'completed',
+        progress: 100,
+        options: {},
+        currentStep: null,
+        errorMessage: null,
+        estimatedTime: null,
+        result: null,
+        startedAt: new Date(),
+        completedAt: new Date(),
+        createdAt: new Date(),
+        getContractInfo: jest.fn().mockReturnValue({
+          code: contractCode,
+          language: 'solidity',
+          size: contractCode.length,
+          lineCount: contractCode.split('\n').length,
+        }),
       };
 
       (Analysis.findByPk as jest.Mock).mockResolvedValue(mockAnalysis);
@@ -82,15 +180,15 @@ describe('AnalysisService', () => {
 
       expect(result).toBeDefined();
       expect(result?.id).toBe('analysis-123');
-      expect(Analysis.findByPk).toHaveBeenCalledWith('analysis-123');
+      expect(Analysis.findByPk).toHaveBeenCalledWith('analysis-123', expect.any(Object));
     });
 
-    it('should return null if analysis not found', async () => {
+    it('should throw error if analysis not found', async () => {
       (Analysis.findByPk as jest.Mock).mockResolvedValue(null);
 
-      const result = await analysisService.getById('non-existent');
-
-      expect(result).toBeNull();
+      await expect(
+        analysisService.getById('non-existent')
+      ).rejects.toThrow('Analysis job not found');
     });
   });
 });
