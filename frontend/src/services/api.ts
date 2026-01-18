@@ -103,10 +103,16 @@ export const analysisApi = {
     api.post("/analysis/public", data),
 
   /**
-   * Fetches the analysis history for the logged-in user.
+   * Fetches the analysis history for the logged-in user with pagination, filtering, and sorting.
    */
-  getHistory: (page?: number, limit?: number) => 
-    api.get("/analysis", { params: { page, limit } }),
+  getHistory: (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+    sortBy?: string;
+    sortOrder?: "ASC" | "DESC";
+  }) => api.get("/analysis", { params }),
 
   /**
    * Fetches the full details of a specific analysis by its ID.
