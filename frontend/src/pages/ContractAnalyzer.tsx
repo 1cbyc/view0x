@@ -154,6 +154,40 @@ const getSeverityClass = (severity: Vulnerability["impact"]) => {
   }
 };
 
+// Typing animation hook for placeholder
+const useTypingAnimation = (text: string, speed: number = 100) => {
+  const [displayText, setDisplayText] = useState("");
+  const [isTyping, setIsTyping] = useState(true);
+
+  useEffect(() => {
+    if (!text) return;
+    
+    let index = 0;
+    setDisplayText("");
+    setIsTyping(true);
+
+    const timer = setInterval(() => {
+      if (index < text.length) {
+        setDisplayText(text.slice(0, index + 1));
+        index++;
+      } else {
+        setIsTyping(false);
+        clearInterval(timer);
+        // Restart after a delay
+        setTimeout(() => {
+          index = 0;
+          setDisplayText("");
+          setIsTyping(true);
+        }, 3000);
+      }
+    }, speed);
+
+    return () => clearInterval(timer);
+  }, [text, speed]);
+
+  return { displayText, isTyping };
+};
+
 const ContractAnalyzer: React.FC = () => {
   const [contractCode, setContractCode] = useState<string>("");
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
@@ -170,6 +204,13 @@ const ContractAnalyzer: React.FC = () => {
     null,
   );
 
+  // Typing animation for placeholder
+  const placeholderText = "// Paste the Solidity code here...";
+  const { displayText: animatedPlaceholder } = useTypingAnimation(
+    placeholderText,
+    80
+  );
+
   useEffect(() => {
     // Only connect to WebSocket if user is authenticated
     const token = localStorage.getItem("accessToken");
@@ -180,10 +221,65 @@ const ContractAnalyzer: React.FC = () => {
         if (payload.analysisId !== currentAnalysisId) return;
 
         setProgress(payload.progress);
-        setProgressMessage(payload.message || "");
+        setProgressMessage(payload.currentStep || payload.message || "");
 
         if (payload.status === "completed") {
-          setAnalysisResult(payload.result);
+          // Transform backend result format to match frontend format if needed
+          if (payload.result) {
+            // Backend sends result directly, transform if needed
+            const result = payload.result;
+            
+            // Transform vulnerabilities if needed
+            const transformedVulnerabilities: Vulnerability[] = (result.vulnerabilities || []).map((vuln: any) => ({
+              check: vuln.check || vuln.type || "Unknown",
+              description: vuln.description || "",
+              impact: (vuln.impact === "HIGH" || vuln.severity === "HIGH" ? "High" : 
+                      vuln.impact === "MEDIUM" || vuln.severity === "MEDIUM" ? "Medium" : 
+                      vuln.impact === "LOW" || vuln.severity === "LOW" ? "Low" : "Informational") as Vulnerability["impact"],
+              confidence: (vuln.confidence || "High") as Vulnerability["confidence"],
+              elements: vuln.elements || [{
+                type: "function",
+                name: vuln.type || "Unknown",
+                source_mapping: {
+                  lines: vuln.lineNumber ? [vuln.lineNumber] : []
+                }
+              }]
+            }));
+
+            // Transform gas optimizations
+            const gasOptimizations: GasOptimization[] = (result.gasOptimizations || []).map((opt: any) => ({
+              type: opt.type || "unknown",
+              description: opt.description || "",
+              recommendation: opt.recommendation || "",
+              potentialSavings: opt.potentialSavings,
+              lineNumber: opt.location?.line || opt.lineNumber
+            }));
+
+            // Transform code quality issues
+            const codeQuality: CodeQualityIssue[] = (result.codeQuality || []).map((issue: any) => ({
+              type: issue.type || "unknown",
+              description: issue.description || "",
+              recommendation: issue.recommendation || "",
+              severity: (issue.severity || "MEDIUM") as "HIGH" | "MEDIUM" | "LOW",
+              lineNumber: issue.location?.line || issue.lineNumber
+            }));
+
+            setAnalysisResult({
+              id: result.id || currentAnalysisId || `analysis-${Date.now()}`,
+              summary: result.summary || {
+                highSeverity: result.highSeverity || 0,
+                mediumSeverity: result.mediumSeverity || 0,
+                lowSeverity: result.lowSeverity || 0,
+                overallScore: result.overallScore || 50,
+                riskLevel: result.riskLevel || "MEDIUM",
+                gasOptimizations: gasOptimizations.length,
+                codeQualityIssues: codeQuality.length,
+              },
+              vulnerabilities: transformedVulnerabilities,
+              gasOptimizations,
+              codeQuality,
+            });
+          }
           setIsAnalyzing(false);
           setCurrentAnalysisId(null);
         } else if (payload.status === "failed") {
@@ -226,11 +322,23 @@ const ContractAnalyzer: React.FC = () => {
     setIsAnalyzing(true);
     setProgressMessage("Submitting for analysis...");
 
-    // Always use public endpoint - no login required for scanning
-    // Users can login to save their analysis history later
+    // Check if user is logged in
+    const token = localStorage.getItem("accessToken");
+    const isAuthenticated = !!token;
+
     try {
-      setProgressMessage("Analyzing contract...");
-      const response = await analysisApi.createPublicAnalysis({ contractCode });
+      if (isAuthenticated) {
+        // Use authenticated endpoint - saves to account with WebSocket updates
+        setProgressMessage("Creating analysis job...");
+        const response = await analysisApi.createAnalysis({ contractCode });
+        const jobId = response.data.data.jobId;
+        setCurrentAnalysisId(jobId);
+        setProgressMessage("Analysis queued. Waiting for results...");
+        // WebSocket will handle updates via useEffect hook
+      } else {
+        // Use public endpoint - no login required, but results aren't saved
+        setProgressMessage("Analyzing contract...");
+        const response = await analysisApi.createPublicAnalysis({ contractCode });
         const result = response.data.data;
 
         if (result) {
@@ -289,6 +397,7 @@ const ContractAnalyzer: React.FC = () => {
         } else {
           throw new Error("Failed to analyze contract.");
         }
+      }
     } catch (err: any) {
       // Handle errors
       const errorMessage =
@@ -337,7 +446,7 @@ const ContractAnalyzer: React.FC = () => {
             <CardHeader>
               <CardTitle>Analysis Summary</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-3 md:grid-cols-5 gap-4 text-center">
+            <CardContent className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4 text-center">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
                   High Risk
@@ -430,36 +539,37 @@ const ContractAnalyzer: React.FC = () => {
                 <CardTitle>Gas Optimizations ({gasOptimizations.length})</CardTitle>
               </CardHeader>
               <CardContent>
-                <Accordion type="single" collapsible className="w-full">
+                <div className="space-y-3">
                   {gasOptimizations.map((opt, index) => (
-                    <AccordionItem value={`gas-${index}`} key={index}>
-                      <AccordionTrigger>
-                        <div className="flex items-center gap-4">
-                          <Badge variant="outline" className="text-purple-500 border-purple-500">
+                    <div
+                      key={index}
+                      className="p-3 rounded-md border border-border bg-card/50 hover:bg-card/80 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-purple-500 border-purple-500 text-xs">
                             Gas
                           </Badge>
-                          <span>{opt.type}</span>
-                          {opt.potentialSavings && (
-                            <span className="text-xs text-muted-foreground ml-auto">
-                              {opt.potentialSavings}
-                            </span>
-                          )}
+                          <span className="text-sm font-medium">{opt.type}</span>
                         </div>
-                      </AccordionTrigger>
-                      <AccordionContent className="space-y-2">
-                        <p className="text-sm text-muted-foreground">{opt.description}</p>
-                        <p className="text-sm font-medium text-foreground">
-                          Recommendation: {opt.recommendation}
-                        </p>
-                        {opt.lineNumber && (
-                          <p className="text-xs font-mono text-muted-foreground">
-                            Line {opt.lineNumber}
-                          </p>
+                        {opt.potentialSavings && (
+                          <span className="text-xs text-purple-400 font-medium whitespace-nowrap">
+                            {opt.potentialSavings}
+                          </span>
                         )}
-                      </AccordionContent>
-                    </AccordionItem>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">{opt.description}</p>
+                      <p className="text-sm font-medium text-foreground mb-1">
+                        Recommendation: <span className="text-primary">{opt.recommendation}</span>
+                      </p>
+                      {opt.lineNumber && (
+                        <p className="text-xs font-mono text-muted-foreground">
+                          Line {opt.lineNumber}
+                        </p>
+                      )}
+                    </div>
                   ))}
-                </Accordion>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -517,15 +627,15 @@ const ContractAnalyzer: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto py-4 sm:py-8 px-4 sm:px-6">
-      <div className="text-center mb-8 sm:mb-12">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-white">
+    <div className="container mx-auto py-3 sm:py-4 md:py-8 px-3 sm:px-4 md:px-6 max-w-7xl">
+      <div className="text-center mb-4 sm:mb-6 md:mb-12">
+        <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight text-white">
           Smart Contract Security Scanner
         </h1>
-        <p className="text-base sm:text-lg text-white/60 mt-4 max-w-2xl mx-auto">
+        <p className="text-sm sm:text-base md:text-lg text-white/60 mt-2 sm:mt-4 max-w-2xl mx-auto px-2">
           Paste your Solidity code to get an instant security analysis. No login required to scan contracts.
         </p>
-        <p className="text-xs sm:text-sm text-white/40 mt-2">
+        <p className="text-xs sm:text-sm text-white/40 mt-1 sm:mt-2 px-2">
           <Link 
             to="/login" 
             className="text-primary hover:text-primary/80 underline"
@@ -536,32 +646,25 @@ const ContractAnalyzer: React.FC = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Contract Code</CardTitle>
-              <CardDescription>
-                Upload a file or paste your Solidity source code below.
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-8">
+        <div className="space-y-3 sm:space-y-4">
+          <Card className="overflow-hidden">
+            <CardHeader className="pb-3 sm:pb-4">
+              <CardTitle className="text-base sm:text-lg">Contract Code</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Paste your Solidity source code below or upload a file.
               </CardDescription>
             </CardHeader>
-                  <CardContent className="space-y-4">
-                    <FileUpload
-                      onFileSelect={(content, fileName) => {
-                        setContractCode(content);
-                        setError(null);
-                      }}
-                      accept=".sol,.vy,.txt"
-                      maxSize={5 * 1024 * 1024}
-                    />
+                  <CardContent className="space-y-3 sm:space-y-4">
                     <div className="border border-border rounded-md overflow-hidden">
                       <CodeMirror
                         value={contractCode}
-                        height="300px"
+                        height="140px"
+                        className="text-xs sm:text-sm"
                         theme={oneDark}
                         extensions={[javascript({ jsx: false })]}
                         onChange={(value) => setContractCode(value)}
-                        placeholder="// Your Solidity code here..."
+                        placeholder={contractCode ? "" : animatedPlaceholder}
                         basicSetup={{
                           lineNumbers: true,
                           foldGutter: true,
@@ -570,13 +673,21 @@ const ContractAnalyzer: React.FC = () => {
                         }}
                       />
                     </div>
+                    <FileUpload
+                      onFileSelect={(content, fileName) => {
+                        setContractCode(content);
+                        setError(null);
+                      }}
+                      accept=".sol,.vy,.txt"
+                      maxSize={5 * 1024 * 1024}
+                    />
                   </CardContent>
                   <CardFooter className="flex flex-col sm:flex-row justify-between gap-2 sm:gap-0">
               <div className="space-x-2">
                 <Dialog open={showExamplesDialog} onOpenChange={setShowExamplesDialog}>
                   <DialogTrigger asChild>
-                    <Button variant="ghost">
-                      <FileText className="w-4 h-4 mr-2" />
+                    <Button variant="ghost" size="sm" className="text-xs sm:text-sm">
+                      <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                       Load Example
                     </Button>
                   </DialogTrigger>
@@ -754,7 +865,7 @@ const ContractAnalyzer: React.FC = () => {
             </CardFooter>
           </Card>
         </div>
-        <div className="space-y-4">{renderResults()}</div>
+        <div className="space-y-3 sm:space-y-4">{renderResults()}</div>
       </div>
     </div>
   );
