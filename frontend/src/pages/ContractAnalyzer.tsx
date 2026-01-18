@@ -365,12 +365,35 @@ const ContractAnalyzer: React.FC = () => {
       if (userIsAuthenticated) {
         // Use authenticated endpoint - saves to account with WebSocket updates
         setProgressMessage("Creating analysis job...");
-        const response = await analysisApi.createAnalysis({ contractCode });
-        const jobId = response.data.data.jobId;
-        setCurrentAnalysisId(jobId);
-        setProgressMessage("Analysis queued. Waiting for results...");
-        // WebSocket will handle updates via useEffect hook
-      } else {
+        try {
+          const response = await analysisApi.createAnalysis({ contractCode });
+          const jobId = response.data.data.jobId;
+          setCurrentAnalysisId(jobId);
+          setProgressMessage("Analysis queued. Waiting for results...");
+          // WebSocket will handle updates via useEffect hook
+        } catch (authError: any) {
+          // If 401, token is invalid/expired - clear it and use public endpoint
+          const is401 = authError.error?.statusCode === 401 || 
+                       authError.response?.status === 401 ||
+                       (authError.response && authError.response.status === 401);
+          
+          if (is401) {
+            console.warn("Authentication failed (401), falling back to public endpoint");
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("refreshToken");
+            localStorage.removeItem("user");
+            setIsAuthenticated(false);
+            // Continue to public endpoint below - don't return/throw
+          } else {
+            // Re-throw non-401 errors
+            throw authError;
+          }
+        }
+      }
+      
+      // Use public endpoint if not authenticated OR if authentication failed (401)
+      const currentToken = localStorage.getItem("accessToken");
+      if (!userIsAuthenticated || !currentToken) {
         // Use public endpoint - no login required, but results aren't saved
         setProgressMessage("Analyzing contract...");
         const response = await analysisApi.createPublicAnalysis({ contractCode });
