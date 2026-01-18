@@ -53,6 +53,22 @@ interface Vulnerability {
   elements: VulnerabilityElement[];
 }
 
+interface GasOptimization {
+  type: string;
+  description: string;
+  recommendation: string;
+  potentialSavings?: string;
+  lineNumber?: number;
+}
+
+interface CodeQualityIssue {
+  type: string;
+  description: string;
+  recommendation: string;
+  severity: "HIGH" | "MEDIUM" | "LOW";
+  lineNumber?: number;
+}
+
 interface AnalysisResult {
   id: string;
   summary: {
@@ -61,8 +77,12 @@ interface AnalysisResult {
     lowSeverity: number;
     overallScore: number;
     riskLevel: "HIGH" | "MEDIUM" | "LOW";
+    gasOptimizations?: number;
+    codeQualityIssues?: number;
   };
   vulnerabilities: Vulnerability[];
+  gasOptimizations?: GasOptimization[];
+  codeQuality?: CodeQualityIssue[];
 }
 
 const sampleContract = `// SPDX-License-Identifier: MIT
@@ -218,6 +238,24 @@ const ContractAnalyzer: React.FC = () => {
             }]
           }));
 
+          // Transform gas optimizations
+          const gasOptimizations: GasOptimization[] = (result.gasOptimizations || []).map((opt: any) => ({
+            type: opt.type || "unknown",
+            description: opt.description || "",
+            recommendation: opt.recommendation || "",
+            potentialSavings: opt.potentialSavings,
+            lineNumber: opt.location?.line || opt.lineNumber
+          }));
+
+          // Transform code quality issues
+          const codeQuality: CodeQualityIssue[] = (result.codeQuality || []).map((issue: any) => ({
+            type: issue.type || "unknown",
+            description: issue.description || "",
+            recommendation: issue.recommendation || "",
+            severity: (issue.severity || "MEDIUM") as "HIGH" | "MEDIUM" | "LOW",
+            lineNumber: issue.location?.line || issue.lineNumber
+          }));
+
           setAnalysisResult({
             id: `public-${Date.now()}`,
             summary: {
@@ -227,8 +265,12 @@ const ContractAnalyzer: React.FC = () => {
               overallScore: result.summary.totalVulnerabilities > 0 ? 50 : 100,
               riskLevel: result.summary.highSeverity > 0 ? "HIGH" : 
                         result.summary.mediumSeverity > 0 ? "MEDIUM" : "LOW",
+              gasOptimizations: gasOptimizations.length,
+              codeQualityIssues: codeQuality.length,
             },
             vulnerabilities: transformedVulnerabilities,
+            gasOptimizations,
+            codeQuality,
           });
           setIsAnalyzing(false);
         } else {
@@ -275,14 +317,14 @@ const ContractAnalyzer: React.FC = () => {
     }
 
     if (analysisResult) {
-      const { summary, vulnerabilities } = analysisResult;
+      const { summary, vulnerabilities, gasOptimizations, codeQuality } = analysisResult;
       return (
         <div className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Analysis Summary</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-3 gap-4 text-center">
+            <CardContent className="grid grid-cols-3 md:grid-cols-5 gap-4 text-center">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
                   High Risk
@@ -307,6 +349,26 @@ const ContractAnalyzer: React.FC = () => {
                   {summary.lowSeverity}
                 </p>
               </div>
+              {summary.gasOptimizations !== undefined && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Gas Optimizations
+                  </p>
+                  <p className="text-2xl font-bold text-purple-500">
+                    {summary.gasOptimizations}
+                  </p>
+                </div>
+              )}
+              {summary.codeQualityIssues !== undefined && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Code Quality
+                  </p>
+                  <p className="text-2xl font-bold text-orange-500">
+                    {summary.codeQualityIssues}
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
