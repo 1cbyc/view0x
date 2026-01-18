@@ -176,3 +176,38 @@ export const vulnerabilityApi = {
   deleteComment: (commentId: string) =>
     api.delete(`/vulnerabilities/comments/${commentId}`),
 };
+
+// --- Webhook API Endpoints ---
+export const webhookApi = {
+  /**
+   * Creates a new webhook.
+   */
+  createWebhook: (url: string, events: string[], secret?: string) =>
+    api.post("/webhooks", { url, events, secret }),
+
+  /**
+   * Gets all webhooks for the authenticated user.
+   */
+  getWebhooks: () => api.get("/webhooks"),
+
+  /**
+   * Gets a specific webhook by ID.
+   */
+  getWebhookById: (id: string) => api.get(`/webhooks/${id}`),
+
+  /**
+   * Updates an existing webhook.
+   */
+  updateWebhook: (id: string, url: string, events: string[], secret?: string, isActive?: boolean) =>
+    api.put(`/webhooks/${id}`, { url, events, secret, isActive }),
+
+  /**
+   * Deletes a webhook.
+   */
+  deleteWebhook: (id: string) => api.delete(`/webhooks/${id}`),
+
+  /**
+   * Triggers a test webhook.
+   */
+  triggerTestWebhook: (id: string) => api.post(`/webhooks/${id}/test`),
+};
