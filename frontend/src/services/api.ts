@@ -24,8 +24,38 @@ api.interceptors.request.use(
 
 // Add a response interceptor for centralized error handling
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Extract rate limit headers and store them
+    const remaining = response.headers["x-ratelimit-remaining"];
+    const reset = response.headers["x-ratelimit-reset"];
+    const limit = response.headers["x-ratelimit-limit"];
+    
+    if (remaining !== undefined) {
+      // Store rate limit info for UI feedback
+      localStorage.setItem("rateLimitInfo", JSON.stringify({
+        remaining: parseInt(remaining),
+        reset: reset ? parseInt(reset) : null,
+        limit: limit ? parseInt(limit) : null,
+        timestamp: Date.now(),
+      }));
+    }
+    
+    return response;
+  },
   (error) => {
+    // Handle rate limit errors with detailed info
+    if (error.response?.status === 429) {
+      const rateLimitData = error.response.data?.rateLimit;
+      if (rateLimitData) {
+        localStorage.setItem("rateLimitError", JSON.stringify({
+          remaining: rateLimitData.remaining || 0,
+          reset: rateLimitData.reset,
+          retryAfter: rateLimitData.retryAfter,
+          timestamp: Date.now(),
+        }));
+      }
+    }
+    
     // Return the more detailed error object from the backend if it exists
     if (error.response && error.response.data) {
       return Promise.reject(error.response.data);
@@ -73,10 +103,16 @@ export const analysisApi = {
     api.post("/analysis/public", data),
 
   /**
-   * Fetches the analysis history for the logged-in user.
+   * Fetches the analysis history for the logged-in user with pagination, filtering, and sorting.
    */
-  getHistory: (page?: number, limit?: number) => 
-    api.get("/analysis", { params: { page, limit } }),
+  getHistory: (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+    sortBy?: string;
+    sortOrder?: "ASC" | "DESC";
+  }) => api.get("/analysis", { params }),
 
   /**
    * Fetches the full details of a specific analysis by its ID.
@@ -139,6 +175,41 @@ export const vulnerabilityApi = {
    */
   deleteComment: (commentId: string) =>
     api.delete(`/vulnerabilities/comments/${commentId}`),
+};
+
+// --- Webhook API Endpoints ---
+export const webhookApi = {
+  /**
+   * Creates a new webhook.
+   */
+  createWebhook: (url: string, events: string[], secret?: string) =>
+    api.post("/webhooks", { url, events, secret }),
+
+  /**
+   * Gets all webhooks for the authenticated user.
+   */
+  getWebhooks: () => api.get("/webhooks"),
+
+  /**
+   * Gets a specific webhook by ID.
+   */
+  getWebhookById: (id: string) => api.get(`/webhooks/${id}`),
+
+  /**
+   * Updates an existing webhook.
+   */
+  updateWebhook: (id: string, url: string, events: string[], secret?: string, isActive?: boolean) =>
+    api.put(`/webhooks/${id}`, { url, events, secret, isActive }),
+
+  /**
+   * Deletes a webhook.
+   */
+  deleteWebhook: (id: string) => api.delete(`/webhooks/${id}`),
+
+  /**
+   * Triggers a test webhook.
+   */
+  triggerTestWebhook: (id: string) => api.post(`/webhooks/${id}/test`),
 };
 
 // --- Activity Logs API Endpoints ---
