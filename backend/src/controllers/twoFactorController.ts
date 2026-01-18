@@ -25,7 +25,7 @@ export const setup2FA = async (req: Request, res: Response) => {
   const accountName = user.email;
 
   const otpauth = generateURI({
-    accountName,
+    label: accountName,
     issuer: serviceName,
     secret,
   });
