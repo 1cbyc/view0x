@@ -456,6 +456,21 @@ Analysis.init(
         fields: ["expires_at"],
       },
       {
+        fields: ["share_token"],
+        unique: true,
+        where: {
+          share_token: {
+            [Op.ne]: null,
+          },
+        },
+      },
+      {
+        fields: ["is_favorite"],
+      },
+      {
+        fields: ["is_public"],
+      },
+      {
         fields: ["status", "created_at"],
       },
       {
@@ -463,6 +478,12 @@ Analysis.init(
       },
       {
         fields: ["user_id", "status"],
+      },
+      {
+        fields: ["user_id", "is_favorite"],
+      },
+      {
+        fields: ["user_id", "status", "created_at"], // Composite for common queries
       },
     ],
     hooks: {

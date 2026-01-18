@@ -25,4 +25,23 @@ export default defineConfig({
     include: /src\/.*\.[tj]sx?$/,
     exclude: [],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-ui': [
+            '@radix-ui/react-accordion',
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-select',
+          ],
+          'vendor-editor': ['@uiw/react-codemirror', '@codemirror/lang-javascript'],
+          'vendor-utils': ['axios', 'socket.io-client'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000, // Increase warning threshold
+    sourcemap: false, // Disable sourcemaps in production for smaller bundles
+  },
 }); 
