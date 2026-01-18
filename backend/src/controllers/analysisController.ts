@@ -61,11 +61,14 @@ export const publicAnalysis = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     logger.error("Public analysis error:", error);
+    logger.error("Error stack:", error?.stack);
     res.status(500).json({
       success: false,
       error: {
         code: "INTERNAL_SERVER_ERROR",
-        message: "Internal server error",
+        message: process.env.NODE_ENV === 'development' 
+          ? error.message || "Internal server error"
+          : "Internal server error",
       },
     });
   }
