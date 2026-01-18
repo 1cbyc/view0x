@@ -48,6 +48,12 @@ export const authApi = {
   }) => api.post("/auth/register", userData),
 
   getCurrentUser: () => api.get("/auth/me"),
+
+  updateProfile: (userData: { name?: string; company?: string; avatar?: string }) =>
+    api.put("/users/profile", userData),
+
+  resendVerification: (email: string) =>
+    api.post("/auth/resend-verification", { email }),
 };
 
 // --- Analysis API Endpoints ---

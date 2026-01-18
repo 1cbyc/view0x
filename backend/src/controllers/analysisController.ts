@@ -484,3 +484,118 @@ export const toggleFavorite = async (req: Request, res: Response) => {
     },
   });
 };
+
+/**
+ * @description Batch analysis - analyze multiple contracts at once
+ * @route POST /api/analysis/batch
+ */
+export const batchAnalysis = async (req: Request, res: Response) => {
+  const userId = req.user?.userId;
+  const { contracts } = req.body;
+
+  if (!userId) {
+    throw new AuthenticationError("Authentication required");
+  }
+
+  if (!contracts || !Array.isArray(contracts) || contracts.length === 0) {
+    throw new ValidationError("Contracts array is required");
+  }
+
+  if (contracts.length > 10) {
+    throw new ValidationError("Maximum 10 contracts per batch");
+  }
+
+  const user = await User.findByPk(userId);
+  if (!user) {
+    throw new AuthenticationError("User not found");
+  }
+
+  const results = [];
+  for (const contractData of contracts) {
+    if (!contractData.contractCode) {
+      continue;
+    }
+
+    try {
+      const analysisJob = await analysisService.create(userId, contractData);
+      results.push({
+        contractName: contractData.contractName || "Untitled",
+        jobId: analysisJob.id,
+        status: analysisJob.status,
+      });
+    } catch (error) {
+      results.push({
+        contractName: contractData.contractName || "Untitled",
+        error: (error as Error).message,
+      });
+    }
+  }
+
+  await user.incrementUsage();
+
+  logger.info(`Batch analysis created for user ${userId}: ${results.length} jobs`);
+
+  res.status(202).json({
+    success: true,
+    message: `Batch analysis queued: ${results.length} contracts`,
+    data: results,
+  });
+};
+
+/**
+ * @description Compare two analysis results
+ * @route POST /api/analysis/compare
+ */
+export const compareAnalyses = async (req: Request, res: Response) => {
+  const userId = req.user?.userId;
+  const { analysisId1, analysisId2 } = req.body;
+
+  if (!userId) {
+    throw new AuthenticationError("Authentication required");
+  }
+
+  if (!analysisId1 || !analysisId2) {
+    throw new ValidationError("Both analysis IDs are required");
+  }
+
+  const [analysis1, analysis2] = await Promise.all([
+    Analysis.findByPk(analysisId1),
+    Analysis.findByPk(analysisId2),
+  ]);
+
+  if (!analysis1 || !analysis2) {
+    throw new NotFoundError("One or both analyses not found");
+  }
+
+  if (analysis1.userId !== userId || analysis2.userId !== userId) {
+    throw new AuthorizationError("Not authorized to compare these analyses");
+  }
+
+  const result1 = analysis1.result as any;
+  const result2 = analysis2.result as any;
+
+  const comparison = {
+    analysis1: {
+      id: analysis1.id,
+      contractName: analysis1.contractName,
+      summary: result1?.summary,
+      vulnerabilityCount: result1?.vulnerabilities?.length || 0,
+    },
+    analysis2: {
+      id: analysis2.id,
+      contractName: analysis2.contractName,
+      summary: result2?.summary,
+      vulnerabilityCount: result2?.vulnerabilities?.length || 0,
+    },
+    diff: {
+      vulnerabilityDelta: (result1?.vulnerabilities?.length || 0) - (result2?.vulnerabilities?.length || 0),
+      highSeverityDelta: (result1?.summary?.highSeverity || 0) - (result2?.summary?.highSeverity || 0),
+      scoreDelta: (result1?.summary?.overallScore || 0) - (result2?.summary?.overallScore || 0),
+    },
+  };
+
+  res.json({
+    success: true,
+    data: comparison,
+  });
+};

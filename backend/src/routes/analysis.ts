@@ -14,6 +14,8 @@ import {
   getPublicAnalysis,
   revokeShareToken,
   toggleFavorite,
+  batchAnalysis,
+  compareAnalyses,
 } from "../controllers/analysisController";
 import { validateCreateAnalysis } from "../middleware/validation";
 
@@ -53,6 +55,11 @@ router.get("/public/:token", asyncHandler(getPublicAnalysis)); // No auth requir
 
 // Bookmark/favorite analysis
 router.patch("/:id/favorite", auth, asyncHandler(toggleFavorite));
+// Batch analysis
+router.post("/batch", auth, asyncHandler(batchAnalysis));
+
+// Compare analyses
+router.post("/compare", auth, asyncHandler(compareAnalyses));
 
 // Health check for analysis service
 router.get("/health/check", (req, res) => {
