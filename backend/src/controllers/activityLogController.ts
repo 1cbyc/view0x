@@ -15,8 +15,16 @@ export const getActivityLogs = async (req: Request, res: Response) => {
     throw new AuthenticationError("Authentication required to view activity logs.");
   }
 
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 20;
+  // Validate and clamp page/limit to safe ranges
+  let page = parseInt(req.query.page as string) || 1;
+  let limit = parseInt(req.query.limit as string) || 20;
+  
+  // Clamp page to valid range (minimum 1)
+  page = Math.max(1, Math.floor(page));
+  
+  // Clamp limit to valid range (1-100)
+  limit = Math.max(1, Math.min(100, Math.floor(limit)));
+  
   const offset = (page - 1) * limit;
   const search = req.query.search as string | undefined;
   const actionFilter = req.query.action as string | undefined;
