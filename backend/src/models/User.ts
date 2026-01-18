@@ -61,6 +61,10 @@ export class User extends Model<
 
   generateEmailVerificationToken(): string {
     this.emailVerificationToken = uuidv4();
+    // Set expiration to 24 hours from now
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 24);
+    this.emailVerificationExpires = expiresAt;
     return this.emailVerificationToken;
   }
 
@@ -125,8 +129,10 @@ export class User extends Model<
       resetPasswordToken,
       resetPasswordExpires,
       emailVerificationToken,
+      emailVerificationExpires,
       refreshToken,
       refreshTokenExpires,
+      twoFactorSecret,
       ...safeUser
     } = this.toJSON();
 
@@ -170,7 +176,12 @@ export class User extends Model<
     token: string,
   ): Promise<User | null> {
     return this.findOne({
-      where: { emailVerificationToken: token },
+      where: {
+        emailVerificationToken: token,
+        emailVerificationExpires: {
+          [Op.gt]: new Date(),
+        },
+      },
     });
   }
 
@@ -324,6 +335,9 @@ User.init(
     emailVerificationToken: {
       type: DataTypes.UUID,
     },
+    emailVerificationExpires: {
+      type: DataTypes.DATE,
+    },
     twoFactorSecret: {
       type: DataTypes.STRING,
     },
@@ -413,8 +427,10 @@ User.init(
             "resetPasswordToken",
             "resetPasswordExpires",
             "emailVerificationToken",
+            "emailVerificationExpires",
             "refreshToken",
             "refreshTokenExpires",
+            "twoFactorSecret",
           ],
         },
       },
