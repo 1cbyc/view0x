@@ -9,6 +9,8 @@ import {
   ShieldAlert,
   FileText,
   ChevronRight,
+  Search,
+  Filter,
 } from "lucide-react";
 
 // UI Components

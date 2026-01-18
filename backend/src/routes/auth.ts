@@ -7,6 +7,8 @@ import {
   getCurrentUser,
   requestPasswordReset,
   resetPassword,
+  generateApiKey,
+  revokeApiKey,
 } from "../controllers/auth";
 import { auth, refreshTokenAuth } from "../middleware/auth";
 import { asyncHandler } from "../middleware/errorHandler";
@@ -52,6 +54,10 @@ router.post("/logout", auth, asyncHandler(logout));
 
 // Get the current authenticated user's profile
 router.get("/me", auth, asyncHandler(getCurrentUser));
+
+// API key management
+router.post("/api-key", auth, asyncHandler(generateApiKey));
+router.delete("/api-key", auth, asyncHandler(revokeApiKey));
 
 // Health check for auth service
 router.get("/health", (req, res) => {
