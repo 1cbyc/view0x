@@ -5,6 +5,8 @@ import morgan from "morgan";
 import compression from "compression";
 import { createServer } from "http";
 import { Server as SocketIOServer } from "socket.io";
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "./config/swagger";
 
 // Configuration and utilities
 import { env } from "./config/environment";
@@ -107,7 +109,25 @@ app.get("/health", async (req, res) => {
   }
 });
 
-// API routes
+// API Documentation
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: ".swagger-ui .topbar { display: none }",
+  customSiteTitle: "view0x API Documentation",
+}));
+app.get("/api-docs.json", (req, res) => {
+  res.setHeader("Content-Type", "application/json");
+  res.send(swaggerSpec);
+});
+
+// API routes with versioning
+const API_VERSION = env.API_VERSION || "v1";
+app.use(`/api/${API_VERSION}/auth`, authRoutes);
+app.use(`/api/${API_VERSION}/analysis`, analysisRoutes);
+app.use(`/api/${API_VERSION}/vulnerabilities`, vulnerabilityRoutes);
+app.use(`/api/${API_VERSION}/templates`, templateRoutes);
+app.use(`/api/${API_VERSION}/webhooks`, webhookRoutes);
+
+// Legacy routes (backward compatibility)
 app.use("/api/auth", authRoutes);
 app.use("/api/analysis", analysisRoutes);
 app.use("/api/vulnerabilities", vulnerabilityRoutes);

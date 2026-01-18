@@ -174,18 +174,44 @@ export const getAnalysisStatus = async (req: Request, res: Response) => {
 };
 
 /**
- * @description Get a paginated list of the user's analysis history.
+ * @description Get a paginated list of the user's analysis history with filtering and sorting.
  * @route GET /api/analysis
+ * @query {number} page - Page number (default: 1)
+ * @query {number} limit - Items per page (default: 10, max: 100)
+ * @query {string} search - Search term for contract name
+ * @query {string} status - Filter by status (queued, processing, completed, failed)
+ * @query {string} sortBy - Sort field (createdAt, contractName, status) (default: createdAt)
+ * @query {string} sortOrder - Sort order (ASC, DESC) (default: DESC)
  */
 export const getUserAnalyses = async (req: Request, res: Response) => {
   const userId = req.user?.userId;
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
+  const page = Math.max(1, parseInt(req.query.page as string) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 10));
   const offset = (page - 1) * limit;
+  const search = req.query.search as string | undefined;
+  const status = req.query.status as string | undefined;
+  const sortBy = (req.query.sortBy as string) || "createdAt";
+  const sortOrder = (req.query.sortOrder as string)?.toUpperCase() === "ASC" ? "ASC" : "DESC";
+
+  // Build where clause
+  const where: any = { userId };
+  if (status && ["queued", "processing", "completed", "failed"].includes(status)) {
+    where.status = status;
+  }
+  if (search) {
+    where.contractName = {
+      [require("sequelize").Op.iLike]: `%${search}%`,
+    };
+  }
+
+  // Build order clause
+  const validSortFields = ["createdAt", "contractName", "status"];
+  const orderField = validSortFields.includes(sortBy) ? sortBy : "createdAt";
+  const order: [string, "ASC" | "DESC"] = [[orderField, sortOrder]];
 
   const { count, rows } = await Analysis.findAndCountAll({
-    where: { userId },
-    order: [["createdAt", "DESC"]],
+    where,
+    order,
     limit,
     offset,
   });
@@ -201,6 +227,14 @@ export const getUserAnalyses = async (req: Request, res: Response) => {
         totalPages: Math.ceil(count / limit),
         hasNext: page * limit < count,
         hasPrev: page > 1,
+      },
+      filters: {
+        search: search || null,
+        status: status || null,
+      },
+      sort: {
+        by: orderField,
+        order: sortOrder,
       },
     },
   });
