@@ -235,63 +235,11 @@ const ContractAnalyzer: React.FC = () => {
           throw new Error("Failed to analyze contract.");
         }
     } catch (err: any) {
-        // Token expired or invalid, try public endpoint instead
-        try {
-          setProgressMessage("Analyzing contract (public mode)...");
-          const response = await analysisApi.createPublicAnalysis({ contractCode });
-          const result = response.data.data;
-
-          if (result) {
-            const transformedVulnerabilities: Vulnerability[] = (result.vulnerabilities || []).map((vuln: any) => ({
-              check: vuln.type || "Unknown",
-              description: vuln.description || "",
-              impact: (vuln.severity === "HIGH" ? "High" : 
-                      vuln.severity === "MEDIUM" ? "Medium" : 
-                      vuln.severity === "LOW" ? "Low" : "Informational") as Vulnerability["impact"],
-              confidence: "High" as Vulnerability["confidence"],
-              elements: [{
-                type: "function",
-                name: vuln.type || "Unknown",
-                source_mapping: {
-                  lines: vuln.lineNumber ? [vuln.lineNumber] : []
-                }
-              }]
-            }));
-
-            setAnalysisResult({
-              id: `public-${Date.now()}`,
-              summary: {
-                highSeverity: result.summary.highSeverity || 0,
-                mediumSeverity: result.summary.mediumSeverity || 0,
-                lowSeverity: result.summary.lowSeverity || 0,
-                overallScore: result.summary.totalVulnerabilities > 0 ? 50 : 100,
-                riskLevel: result.summary.highSeverity > 0 ? "HIGH" : 
-                          result.summary.mediumSeverity > 0 ? "MEDIUM" : "LOW",
-              },
-              vulnerabilities: transformedVulnerabilities,
-            });
-            setIsAnalyzing(false);
-            // Clear invalid token
-            localStorage.removeItem("accessToken");
-            return;
-          }
-        } catch (publicErr: any) {
-          // If public endpoint also fails, show error
-          const errorMessage =
-            publicErr.response?.data?.error?.message ||
-            publicErr.message ||
-            "Failed to analyze contract. Please try again.";
-          setError(errorMessage);
-          setIsAnalyzing(false);
-          return;
-        }
-      }
-      
-      // Other errors
+      // Handle errors
       const errorMessage =
         err.response?.data?.error?.message ||
         err.message ||
-        "Failed to submit analysis.";
+        "Failed to analyze contract. Please try again.";
       setError(errorMessage);
       setIsAnalyzing(false);
     }
