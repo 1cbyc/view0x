@@ -34,5 +34,7 @@ COPY . .
 EXPOSE 8000
 
 # Define the command to run the application
-# Use Gunicorn as a production-ready web server with Uvicorn workers
-CMD ["gunicorn", "main:app", "--workers", "4", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000"]
+# Railway sets PORT dynamically - use shell form to expand environment variable
+# Reduced workers to 1 for Railway (better resource usage)
+# Default to 8000 if PORT is not set
+CMD ["sh", "-c", "gunicorn main:app --workers 1 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000}"]
