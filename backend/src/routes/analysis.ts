@@ -13,6 +13,7 @@ import {
   generateShareToken,
   getPublicAnalysis,
   revokeShareToken,
+  toggleFavorite,
 } from "../controllers/analysisController";
 import { validateCreateAnalysis } from "../middleware/validation";
 
@@ -49,6 +50,9 @@ router.post("/:id/report", auth, asyncHandler(generateReport));
 router.post("/:id/share", auth, asyncHandler(generateShareToken));
 router.delete("/:id/share", auth, asyncHandler(revokeShareToken));
 router.get("/public/:token", asyncHandler(getPublicAnalysis)); // No auth required
+
+// Bookmark/favorite analysis
+router.patch("/:id/favorite", auth, asyncHandler(toggleFavorite));
 
 // Health check for analysis service
 router.get("/health/check", (req, res) => {

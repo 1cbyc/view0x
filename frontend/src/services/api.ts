@@ -100,4 +100,10 @@ export const analysisApi = {
    */
   getPublicAnalysis: (token: string) =>
     api.get(`/analysis/public/${token}`),
+
+  /**
+   * Toggles favorite status for an analysis.
+   */
+  toggleFavorite: (analysisId: string) =>
+    api.patch(`/analysis/${analysisId}/favorite`),
 };
