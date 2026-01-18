@@ -217,6 +217,16 @@ const ContractAnalyzer: React.FC = () => {
     
     if (token && currentAnalysisId) {
       socketService.connect();
+      
+      // Set timeout for WebSocket updates (5 minutes max)
+      const timeoutId = setTimeout(() => {
+        if (isAnalyzing) {
+          setError("Analysis is taking longer than expected. Please try again or check your backend logs.");
+          setIsAnalyzing(false);
+          setCurrentAnalysisId(null);
+        }
+      }, 5 * 60 * 1000); // 5 minutes
+      
       const handleUpdate = (payload: AnalysisUpdatePayload) => {
         if (payload.analysisId !== currentAnalysisId) return;
 
@@ -224,6 +234,8 @@ const ContractAnalyzer: React.FC = () => {
         setProgressMessage(payload.currentStep || payload.message || "");
 
         if (payload.status === "completed") {
+          // Clear timeout on completion
+          clearTimeout(timeoutId);
           // Transform backend result format to match frontend format if needed
           if (payload.result) {
             // Backend sends result directly, transform if needed
@@ -292,6 +304,7 @@ const ContractAnalyzer: React.FC = () => {
       socketService.subscribeToAnalysis(currentAnalysisId, handleUpdate);
 
       return () => {
+        clearTimeout(timeoutId);
         socketService.unsubscribeFromAnalysis(currentAnalysisId);
       };
     } else {
