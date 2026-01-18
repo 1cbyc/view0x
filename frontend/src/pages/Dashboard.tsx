@@ -48,7 +48,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DashboardSkeleton } from "@/components/DashboardSkeleton";
-import { ThemeToggle } from "@/components/ThemeToggle";
 
 // This type should match the summary object from the backend Analysis model
 interface AnalysisSummary {
@@ -386,7 +385,6 @@ const Dashboard: React.FC = () => {
       <div className="container mx-auto py-8 space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold text-white">Analysis History</h1>
-          <ThemeToggle />
         </div>
         <DashboardSkeleton />
       </div>
@@ -412,7 +410,6 @@ const Dashboard: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <ThemeToggle />
           <Button 
             asChild 
             className="bg-white text-black hover:bg-gray-200 flex-1 sm:flex-initial text-sm sm:text-base"
