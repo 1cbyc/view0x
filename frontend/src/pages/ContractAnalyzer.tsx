@@ -482,25 +482,25 @@ const ContractAnalyzer: React.FC = () => {
             <Alert className="bg-primary/10 border-primary/20">
               <Save className="h-4 w-4 text-primary" />
               <AlertTitle className="text-primary">Save Your Analysis</AlertTitle>
-              <AlertDescription className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-2">
-                <span className="text-sm text-muted-foreground">
+              <AlertDescription className="flex flex-col gap-3 mt-2">
+                <span className="text-xs sm:text-sm text-muted-foreground">
                   Sign up or log in to save this analysis to your account and access it anytime.
                 </span>
-                <div className="flex gap-2 shrink-0">
+                <div className="flex gap-2 w-full sm:w-auto">
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={() => navigate("/register")}
-                    className="text-xs sm:text-sm"
+                    className="text-xs sm:text-sm flex-1 sm:flex-initial"
                   >
-                    <LogIn className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                    <LogIn className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                     Sign Up
                   </Button>
                   <Button 
                     variant="default" 
                     size="sm"
                     onClick={() => navigate("/login")}
-                    className="text-xs sm:text-sm"
+                    className="text-xs sm:text-sm flex-1 sm:flex-initial"
                   >
                     Log In
                   </Button>
@@ -511,14 +511,14 @@ const ContractAnalyzer: React.FC = () => {
           
           <Card>
             <CardHeader>
-              <CardTitle>Analysis Summary</CardTitle>
+                  <CardTitle className="text-base sm:text-lg">Analysis Summary</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4 text-center">
+            <CardContent className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 sm:gap-3 md:gap-4 text-center px-2 sm:px-4">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
                   High Risk
                 </p>
-                <p className="text-2xl font-bold text-destructive">
+                <p className="text-xl sm:text-2xl font-bold text-destructive">
                   {summary.highSeverity}
                 </p>
               </div>
@@ -526,7 +526,7 @@ const ContractAnalyzer: React.FC = () => {
                 <p className="text-sm font-medium text-muted-foreground">
                   Medium Risk
                 </p>
-                <p className="text-2xl font-bold text-yellow-500">
+                <p className="text-xl sm:text-2xl font-bold text-yellow-500">
                   {summary.mediumSeverity}
                 </p>
               </div>
@@ -534,7 +534,7 @@ const ContractAnalyzer: React.FC = () => {
                 <p className="text-sm font-medium text-muted-foreground">
                   Low Risk
                 </p>
-                <p className="text-2xl font-bold text-blue-500">
+                <p className="text-xl sm:text-2xl font-bold text-blue-500">
                   {summary.lowSeverity}
                 </p>
               </div>
@@ -543,7 +543,7 @@ const ContractAnalyzer: React.FC = () => {
                   <p className="text-sm font-medium text-muted-foreground">
                     Gas Optimizations
                   </p>
-                  <p className="text-2xl font-bold text-purple-500">
+                  <p className="text-xl sm:text-2xl font-bold text-purple-500">
                     {summary.gasOptimizations}
                   </p>
                 </div>
@@ -553,7 +553,7 @@ const ContractAnalyzer: React.FC = () => {
                   <p className="text-sm font-medium text-muted-foreground">
                     Code Quality
                   </p>
-                  <p className="text-2xl font-bold text-orange-500">
+                  <p className="text-xl sm:text-2xl font-bold text-orange-500">
                     {summary.codeQualityIssues}
                   </p>
                 </div>
@@ -565,12 +565,12 @@ const ContractAnalyzer: React.FC = () => {
             <Accordion type="single" collapsible className="w-full">
               {vulnerabilities.map((vuln, index) => (
                 <AccordionItem value={`item-${index}`} key={index}>
-                  <AccordionTrigger>
-                    <div className="flex items-center gap-4">
-                      <Badge variant={getSeverityClass(vuln.impact)}>
+                  <AccordionTrigger className="text-left py-3 sm:py-4">
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                      <Badge variant={getSeverityClass(vuln.impact)} className="text-xs flex-shrink-0">
                         {vuln.impact}
                       </Badge>
-                      <span>{vuln.check}</span>
+                      <span className="text-sm sm:text-base truncate">{vuln.check}</span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="space-y-2">
@@ -651,14 +651,15 @@ const ContractAnalyzer: React.FC = () => {
                   {codeQuality.map((issue, index) => (
                     <AccordionItem value={`quality-${index}`} key={index}>
                       <AccordionTrigger>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                           <Badge 
                             variant={issue.severity === "HIGH" ? "destructive" : 
                                     issue.severity === "MEDIUM" ? "secondary" : "outline"}
+                            className="text-xs flex-shrink-0"
                           >
                             {issue.severity}
                           </Badge>
-                          <span>{issue.type}</span>
+                          <span className="text-sm sm:text-base truncate">{issue.type}</span>
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="space-y-2">
@@ -696,7 +697,7 @@ const ContractAnalyzer: React.FC = () => {
   return (
     <div className="container mx-auto py-3 sm:py-4 md:py-8 px-3 sm:px-4 md:px-6 max-w-7xl">
       <div className="text-center mb-4 sm:mb-6 md:mb-12">
-        <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight text-white">
+        <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold tracking-tight text-white leading-tight px-1">
           Smart Contract Security Scanner
         </h1>
         <p className="text-sm sm:text-base md:text-lg text-white/60 mt-2 sm:mt-4 max-w-2xl mx-auto px-2">
@@ -726,7 +727,7 @@ const ContractAnalyzer: React.FC = () => {
                     <div className="border border-border rounded-md overflow-hidden">
                       <CodeMirror
                         value={contractCode}
-                        height="140px"
+                        height="180px"
                         className="text-xs sm:text-sm"
                         theme={oneDark}
                         extensions={[javascript({ jsx: false })]}
@@ -749,8 +750,8 @@ const ContractAnalyzer: React.FC = () => {
                       maxSize={5 * 1024 * 1024}
                     />
                   </CardContent>
-                  <CardFooter className="flex flex-col sm:flex-row justify-between gap-2 sm:gap-0">
-              <div className="space-x-2">
+                  <CardFooter className="flex flex-col sm:flex-row justify-between gap-2 pt-3 sm:pt-4">
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                 <Dialog open={showExamplesDialog} onOpenChange={setShowExamplesDialog}>
                   <DialogTrigger asChild>
                     <Button variant="ghost" size="sm" className="text-xs sm:text-sm">
@@ -758,7 +759,7 @@ const ContractAnalyzer: React.FC = () => {
                       Load Example
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
+                    <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[90vh] sm:max-h-[85vh] flex flex-col m-2 sm:m-4">
                     <DialogHeader>
                       <DialogTitle>Contract Examples Library</DialogTitle>
                       <DialogDescription>

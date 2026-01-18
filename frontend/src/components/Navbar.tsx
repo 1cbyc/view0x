@@ -45,16 +45,16 @@ const Navbar: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-black/60">
-      <nav className="container flex h-14 max-w-screen-2xl items-center px-4 sm:px-6">
-        <div className="mr-4 flex flex-1 sm:flex-initial">
+      <nav className="container flex h-14 max-w-screen-2xl items-center justify-between px-3 sm:px-4 md:px-6 gap-2">
+        <div className="flex items-center min-w-0 flex-shrink">
           <Link 
             to="/" 
-            className="mr-4 sm:mr-6 flex items-center space-x-2"
+            className="flex items-center space-x-1.5 sm:space-x-2 flex-shrink-0"
           >
-            <ShieldCheck className="h-5 w-5 sm:h-6 sm:w-6 text-accent" />
-            <span className="font-bold text-white text-base sm:text-lg">view0x</span>
+            <ShieldCheck className="h-5 w-5 sm:h-6 sm:w-6 text-accent flex-shrink-0" />
+            <span className="font-bold text-white text-sm sm:text-base md:text-lg truncate">view0x</span>
           </Link>
-          <div className="hidden md:flex items-center space-x-6 text-sm font-medium">
+          <div className="hidden md:flex items-center space-x-6 text-sm font-medium ml-6">
             <Link
               to="/analyze"
               className="transition-colors hover:text-white text-white/60"
@@ -64,7 +64,7 @@ const Navbar: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex flex-1 items-center justify-end space-x-1 sm:space-x-2">
+        <div className="flex flex-1 items-center justify-end space-x-2 sm:space-x-2">
           <ThemeToggle />
           {user ? (
             <div className="flex items-center space-x-2 sm:space-x-4">
@@ -98,18 +98,16 @@ const Navbar: React.FC = () => {
               <Link to="/login">
                 <Button 
                   variant="ghost" 
-                  className="text-white/60 hover:text-white text-xs sm:text-sm px-2 sm:px-4"
+                  className="text-white/60 hover:text-white text-xs sm:text-sm px-3 sm:px-4"
                 >
-                  <span className="hidden sm:inline">Sign In</span>
-                  <span className="sm:hidden">In</span>
+                  Sign In
                 </Button>
               </Link>
               <Link to="/register">
                 <Button 
-                  className="bg-white text-black hover:bg-gray-200 text-xs sm:text-sm px-2 sm:px-4"
+                  className="bg-white text-black hover:bg-gray-200 text-xs sm:text-sm px-3 sm:px-4"
                 >
-                  <span className="hidden sm:inline">Sign Up</span>
-                  <span className="sm:hidden">Up</span>
+                  Sign Up
                 </Button>
               </Link>
             </>
