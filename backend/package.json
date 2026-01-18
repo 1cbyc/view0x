@@ -47,6 +47,7 @@
     "sequelize": "^6.31.1",
     "sequelize-cli": "^6.6.3",
     "socket.io": "^4.8.1",
+    "solc": "^0.8.24",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "typescript": "^5.0.3",
