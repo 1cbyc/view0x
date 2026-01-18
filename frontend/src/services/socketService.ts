@@ -16,6 +16,10 @@ const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:3001";
 
 class SocketService {
   private socket: Socket | null = null;
+  
+  get socketInstance() {
+    return this.socket;
+  }
 
   connect() {
     if (this.socket && this.socket.connected) {
