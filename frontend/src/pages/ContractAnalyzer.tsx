@@ -10,6 +10,7 @@ import {
 import CodeMirror from "@uiw/react-codemirror";
 import { javascript } from "@codemirror/lang-javascript";
 import { oneDark } from "@codemirror/theme-one-dark";
+import { FileUpload } from "@/components/FileUpload";
 
 // UI Components from the new theme
 import { Button } from "@/components/ui/button";
