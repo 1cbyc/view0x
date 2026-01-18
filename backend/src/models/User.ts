@@ -324,6 +324,14 @@ User.init(
     emailVerificationToken: {
       type: DataTypes.UUID,
     },
+    twoFactorSecret: {
+      type: DataTypes.STRING,
+    },
+    twoFactorEnabled: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
     refreshToken: {
       type: DataTypes.TEXT,
     },
