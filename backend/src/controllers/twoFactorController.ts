@@ -97,22 +97,34 @@ export const disable2FA = async (req: Request, res: Response) => {
     throw new AuthenticationError("Authentication required");
   }
 
+  if (!password) {
+    throw new ValidationError("Password is required to disable 2FA");
+  }
+
   const user = await User.findByPk(userId);
   if (!user) {
     throw new AuthenticationError("User not found");
   }
 
-  if (password) {
-    const isValidPassword = await user.checkPassword(password);
-    if (!isValidPassword) {
-      return res.status(401).json({
-        success: false,
-        error: {
-          code: "UNAUTHORIZED",
-          message: "Invalid password",
-        },
-      });
-    }
+  if (!user.twoFactorEnabled) {
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: "2FA_NOT_ENABLED",
+        message: "Two-factor authentication is not enabled",
+      },
+    });
+  }
+
+  const isValidPassword = await user.checkPassword(password);
+  if (!isValidPassword) {
+    return res.status(401).json({
+      success: false,
+      error: {
+        code: "UNAUTHORIZED",
+        message: "Invalid password",
+      },
+    });
   }
 
   user.twoFactorEnabled = false;
