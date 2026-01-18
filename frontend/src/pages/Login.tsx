@@ -46,18 +46,39 @@ const Login: React.FC = () => {
     try {
       const response = await authApi.login(formData);
 
-      // In a full implementation, this logic would be in an AuthContext
-      const { tokens, user } = response.data.data;
-      localStorage.setItem('accessToken', tokens.accessToken);
-      localStorage.setItem('refreshToken', tokens.refreshToken);
-      localStorage.setItem('user', JSON.stringify(user));
+      // Check if response is successful
+      if (response.data && response.data.success && response.data.data) {
+        // In a full implementation, this logic would be in an AuthContext
+        const { tokens, user } = response.data.data;
+        localStorage.setItem('accessToken', tokens.accessToken);
+        localStorage.setItem('refreshToken', tokens.refreshToken);
+        localStorage.setItem('user', JSON.stringify(user));
 
-      // Redirect to the main analyzer page on successful login
-      // A full implementation would also update a global auth state
-      navigate('/');
+        // Trigger storage event so Navbar can update
+        window.dispatchEvent(new Event('storage'));
+
+        // Redirect to the main analyzer page on successful login
+        // A full implementation would also update a global auth state
+        navigate('/', { replace: true });
+      } else {
+        throw new Error('Invalid response from server');
+      }
     } catch (err: any) {
-      const errorMessage = err.response?.data?.error?.message || err.message || 'Login failed. Please check your credentials.';
+      // Handle error - check both axios error format and backend error format
+      let errorMessage = 'Login failed. Please check your credentials.';
+      
+      if (err.error?.message) {
+        // Backend error format: { success: false, error: { message: ... } }
+        errorMessage = err.error.message;
+      } else if (err.response?.data?.error?.message) {
+        // Axios error with backend format
+        errorMessage = err.response.data.error.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
       setError(errorMessage);
+      console.error('Login error:', err);
     } finally {
       setIsLoading(false);
     }
