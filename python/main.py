@@ -27,6 +27,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from analyzers.slither_analyzer import SlitherAnalyzer
 from analyzers.mythril_analyzer import mythril_analyzer
 from analyzers.semgrep_analyzer import semgrep_analyzer
+from analyzers.gas_optimizer import GasOptimizer
+from analyzers.code_quality import CodeQualityAnalyzer
 
 # Configure logging
 logging.basicConfig(
@@ -254,7 +256,27 @@ async def process_analysis(
         if not result:
             raise Exception("Analysis returned no result")
 
-        await update_job_status(job_id, "processing", 80, "Processing results")
+        await update_job_status(job_id, "processing", 70, "Running gas optimization analysis")
+        
+        # Run gas optimization analysis
+        gas_optimizer = GasOptimizer()
+        gas_optimizations = await loop.run_in_executor(
+            None,
+            gas_optimizer.analyze,
+            contract_code
+        )
+
+        await update_job_status(job_id, "processing", 80, "Running code quality analysis")
+        
+        # Run code quality analysis
+        code_quality_analyzer = CodeQualityAnalyzer()
+        code_quality_issues = await loop.run_in_executor(
+            None,
+            code_quality_analyzer.analyze,
+            contract_code
+        )
+
+        await update_job_status(job_id, "processing", 85, "Processing results")
 
         # Format results for our system
         analysis_result = {
@@ -263,17 +285,17 @@ async def process_analysis(
                 "highSeverity": result["summary"]["highSeverity"],
                 "mediumSeverity": result["summary"]["mediumSeverity"],
                 "lowSeverity": result["summary"]["lowSeverity"],
-                "gasOptimizations": 0,  # TODO: Add gas optimization analysis
-                "codeQualityIssues": 0,  # TODO: Add code quality analysis
+                "gasOptimizations": len(gas_optimizations),
+                "codeQualityIssues": len(code_quality_issues),
                 "overallScore": calculate_security_score(result["summary"]),
                 "riskLevel": determine_risk_level(result["summary"])
             },
             "vulnerabilities": result["vulnerabilities"],
-            "gasOptimizations": [],  # TODO: Implement
-            "codeQuality": [],  # TODO: Implement
+            "gasOptimizations": gas_optimizations,
+            "codeQuality": code_quality_issues,
             "metadata": {
                 "analysisTime": result["metadata"]["processingTime"],
-                "toolsUsed": ["slither"],
+                "toolsUsed": [engine, "gas-optimizer", "code-quality"],
                 "contractStats": result["metadata"]["contractStats"],
                 "timestamp": time.time(),
                 "version": "1.0.0",
