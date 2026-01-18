@@ -30,11 +30,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application code into the container
 COPY . .
 
+# Make startup script executable
+RUN chmod +x start.sh
+
 # Expose the port the app runs on
 EXPOSE 8000
 
 # Define the command to run the application
-# Railway sets PORT dynamically - use shell form to expand environment variable
-# Reduced workers to 1 for Railway (better resource usage)
-# Default to 8000 if PORT is not set
-CMD ["sh", "-c", "gunicorn main:app --workers 1 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000}"]
+# Use startup script for better error handling
+CMD ["./start.sh"]
