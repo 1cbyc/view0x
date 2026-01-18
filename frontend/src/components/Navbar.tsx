@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ShieldCheck } from "lucide-react";
 import { Button } from "./ui/button";
+import { ThemeToggle } from "./ThemeToggle";
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
@@ -61,6 +62,7 @@ const Navbar: React.FC = () => {
         </div>
 
         <div className="flex flex-1 items-center justify-end space-x-2">
+          <ThemeToggle />
           {user ? (
             <div className="flex items-center space-x-4">
               <Link to="/dashboard">
