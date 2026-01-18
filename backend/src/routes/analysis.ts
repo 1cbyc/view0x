@@ -45,6 +45,11 @@ router.delete("/:id", auth, asyncHandler(deleteAnalysis));
 // Generate report
 router.post("/:id/report", auth, asyncHandler(generateReport));
 
+// Share analysis (public links)
+router.post("/:id/share", auth, asyncHandler(generateShareToken));
+router.delete("/:id/share", auth, asyncHandler(revokeShareToken));
+router.get("/public/:token", asyncHandler(getPublicAnalysis)); // No auth required
+
 // Health check for analysis service
 router.get("/health/check", (req, res) => {
   res.json({
