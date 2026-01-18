@@ -107,3 +107,30 @@ export const analysisApi = {
   toggleFavorite: (analysisId: string) =>
     api.patch(`/analysis/${analysisId}/favorite`),
 };
+
+// --- Vulnerability Comments API Endpoints ---
+export const vulnerabilityApi = {
+  /**
+   * Creates a comment on a vulnerability.
+   */
+  createComment: (vulnerabilityId: string, data: { comment: string; lineNumber?: number }) =>
+    api.post(`/vulnerabilities/${vulnerabilityId}/comments`, data),
+
+  /**
+   * Gets all comments for a vulnerability.
+   */
+  getComments: (vulnerabilityId: string) =>
+    api.get(`/vulnerabilities/${vulnerabilityId}/comments`),
+
+  /**
+   * Updates a comment.
+   */
+  updateComment: (commentId: string, data: { comment: string }) =>
+    api.put(`/vulnerabilities/comments/${commentId}`, data),
+
+  /**
+   * Deletes a comment.
+   */
+  deleteComment: (commentId: string) =>
+    api.delete(`/vulnerabilities/comments/${commentId}`),
+};
