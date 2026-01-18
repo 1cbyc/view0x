@@ -295,6 +295,7 @@ const ContractAnalyzer: React.FC = () => {
           setIsAnalyzing(false);
           setCurrentAnalysisId(null);
         } else if (payload.status === "failed") {
+          clearTimeout(timeoutId);
           setError(payload.error || "An unknown error occurred during analysis.");
           setIsAnalyzing(false);
           setCurrentAnalysisId(null);
