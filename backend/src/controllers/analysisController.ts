@@ -391,7 +391,7 @@ export const revokeShareToken = async (req: Request, res: Response) => {
     throw new AuthorizationError("You are not authorized to revoke sharing for this analysis.");
   }
 
-  analysis.shareToken = null;
+  (analysis.shareToken as any) = null;
   analysis.isPublic = false;
   await analysis.save();
 
