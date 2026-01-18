@@ -24,8 +24,27 @@ view0x/
 ├── backend/           # Express.js API server
 ├── frontend/          # React application
 ├── docs/             # Documentation
+├── python/            # Python analysis worker (Slither)
 └── docker-compose.yml # Container orchestration
 ```
+
+
+view0x is a cloud-native SaaS platform for automated smart contract security analysis, providing developers with comprehensive vulnerability detection, gas optimization suggestions, and code quality assessments.
+
+## Screenshots
+
+![Contract Analyzer](screenshots/screenshot-2026-01-18-at-1.13.07-am.png)
+
+![Login Page](screenshots/screenshot-2026-01-18-at-1.13.28-am.png)
+
+## Features
+
+- **Automated Security Scanning** - Detect vulnerabilities in Solidity smart contracts
+- **Real-time Analysis** - Get instant results with WebSocket updates
+- **Modern UI** - Beautiful dark theme interface
+- **Public & Authenticated** - Scan contracts without login, save history with account
+- **Detailed Reports** - Comprehensive vulnerability analysis with severity levels
+- **Fast & Scalable** - Built for performance and reliability
 
 ## How to Run
 
@@ -127,27 +146,36 @@ Key environment variables needed for the backend (in `backend/.env`):
 - `PYTHON_API_URL` - URL for Python analysis worker
 - `PORT` - Backend server port (default: 3001)
 
----
+## Deployment
 
 i just realized i hardcoded it to localhost:3001/api/analysis/public. that is why when i shut down my pc it does not scan. anyways, in api.ts i have fixed it to take from render where i updated the api.
 
-```tsx
-import { contractApi } from '../services/api';
-```
+### Production
+
+- **Frontend**: Deployed on [Cloudflare Pages](https://pages.cloudflare.com) at `view0x.com`
+- **Backend**: Deployed on [Railway](https://railway.app) at `api.view0x.com`
+- **Database**: PostgreSQL on Railway
+- **Cache**: Redis on Railway
+
+See [CLOUDFLARE.md](CLOUDFLARE.md) and [RAILWAY.md](RAILWAY.md) for detailed deployment instructions.
+
+## Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 okay, in the end, i simply setup a wrangler for cloudflare workers to get it running well.
 
-```bash
-# wanted to know the list of what's here in the frontend
-cd frontend; Get-ChildItem dist
-# trying to get list of deployed pages:
-npx wrangler pages deploy dist --project-name view0x-frontend
-# tried to get the list of urls o
-npx wrangler pages domain list --project-name view0x-frontend
-# then i did this
-npx wrangler pages deploy dist --project-name view0x
-```
+## License
+
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
 okay, this is the end of it. i would use AI to write commit messages. i cant be explaining myself again. this stuff giving me brain rot, i cant even think clearly about full definition to give per fix i make. 
 
+
 it's 2026, and i have decided to rename, thank you!
+
+## Links
+
+- **Website**: https://view0x.com
+- **API**: https://api.view0x.com
+- **GitHub**: https://github.com/1cbyc/view0x
