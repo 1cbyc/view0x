@@ -25,6 +25,9 @@ const Navbar: React.FC = () => {
     };
 
     checkAuthState();
+    
+    // Listen for storage events (from other tabs) and custom events (from same tab)
+    window.addEventListener("storage", checkAuthState);
     window.addEventListener("storage", checkAuthState);
 
     return () => {
