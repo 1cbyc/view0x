@@ -7,6 +7,9 @@ import {
   ShieldAlert,
   FileText,
 } from "lucide-react";
+import CodeMirror from "@uiw/react-codemirror";
+import { javascript } from "@codemirror/lang-javascript";
+import { oneDark } from "@codemirror/theme-one-dark";
 
 // UI Components from the new theme
 import { Button } from "@/components/ui/button";
@@ -18,7 +21,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -453,12 +455,22 @@ const ContractAnalyzer: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Textarea
-                value={contractCode}
-                onChange={(e) => setContractCode(e.target.value)}
-                placeholder="// Your Solidity code here..."
-                className="w-full h-96 font-mono text-sm"
-              />
+              <div className="border border-border rounded-md overflow-hidden">
+                <CodeMirror
+                  value={contractCode}
+                  height="384px"
+                  theme={oneDark}
+                  extensions={[javascript({ jsx: false })]}
+                  onChange={(value) => setContractCode(value)}
+                  placeholder="// Your Solidity code here..."
+                  basicSetup={{
+                    lineNumbers: true,
+                    foldGutter: true,
+                    dropCursor: false,
+                    allowMultipleSelections: false,
+                  }}
+                />
+              </div>
             </CardContent>
             <CardFooter className="flex justify-between">
               <div className="space-x-2">
