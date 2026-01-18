@@ -426,6 +426,100 @@ export const getCurrentUser = async (req: Request, res: Response) => {
   }
 };
 
+// Generate API key
+export const generateApiKey = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.userId;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: "UNAUTHORIZED",
+          message: "Not authenticated",
+        },
+      });
+    }
+
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: "NOT_FOUND",
+          message: "User not found",
+        },
+      });
+    }
+
+    const apiKey = user.generateApiKey();
+    await user.save();
+
+    logger.info(`API key generated for user: ${user.email}`);
+
+    res.json({
+      success: true,
+      data: {
+        apiKey,
+      },
+    });
+  } catch (error) {
+    logger.error("Generate API key error:", error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Internal server error",
+      },
+    });
+  }
+};
+
+// Revoke API key
+export const revokeApiKey = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.userId;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: "UNAUTHORIZED",
+          message: "Not authenticated",
+        },
+      });
+    }
+
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: "NOT_FOUND",
+          message: "User not found",
+        },
+      });
+    }
+
+    user.apiKey = null as any;
+    await user.save();
+
+    logger.info(`API key revoked for user: ${user.email}`);
+
+    res.json({
+      success: true,
+      message: "API key revoked successfully",
+    });
+  } catch (error) {
+    logger.error("Revoke API key error:", error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Internal server error",
+      },
+    });
+  }
+};
+
 // Logout controller
 export const logout = async (req: Request, res: Response) => {
   try {
