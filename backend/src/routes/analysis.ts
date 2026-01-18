@@ -10,6 +10,9 @@ import {
   deleteAnalysis,
   generateReport,
   publicAnalysis,
+  generateShareToken,
+  getPublicAnalysis,
+  revokeShareToken,
 } from "../controllers/analysisController";
 import { validateCreateAnalysis } from "../middleware/validation";
 

@@ -82,4 +82,22 @@ export const analysisApi = {
    */
   generateReport: (analysisId: string, options: { format: string; includeCode?: boolean; includeRecommendations?: boolean; includeMetadata?: boolean }) => 
     api.post(`/analysis/${analysisId}/report`, options, { responseType: 'blob' }),
+
+  /**
+   * Generates a share token for an analysis (creates public link).
+   */
+  generateShareToken: (analysisId: string) =>
+    api.post(`/analysis/${analysisId}/share`),
+
+  /**
+   * Revokes the share token for an analysis.
+   */
+  revokeShareToken: (analysisId: string) =>
+    api.delete(`/analysis/${analysisId}/share`),
+
+  /**
+   * Gets a public analysis by share token (no auth required).
+   */
+  getPublicAnalysis: (token: string) =>
+    api.get(`/analysis/public/${token}`),
 };

@@ -32,6 +32,8 @@ export class Analysis extends Model<
   declare startedAt: CreationOptional<Date>;
   declare completedAt: CreationOptional<Date>;
   declare expiresAt: CreationOptional<Date>;
+  declare shareToken: CreationOptional<string>;
+  declare isPublic: CreationOptional<boolean>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
