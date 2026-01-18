@@ -16,6 +16,7 @@ describe('Button Component', () => {
   it('should apply variant classes', () => {
     const { container } = render(<Button variant="destructive">Delete</Button>);
     const button = container.querySelector('button');
-    expect(button).toHaveClass('destructive');
+    // Check for destructive styling classes instead of exact class name
+    expect(button?.className).toContain('bg-destructive');
   });
 });
