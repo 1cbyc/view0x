@@ -18,8 +18,10 @@ view0x/
 ## Screenshots
 
 ![Contract Analyzer](screenshots/screenshot-2026-01-18-at-1.13.07-am.png)
+*Smart contract analysis interface with Solidity syntax highlighting*
 
 ![Login Page](screenshots/screenshot-2026-01-18-at-1.13.28-am.png)
+*User authentication interface*
 
 ## Features
 
