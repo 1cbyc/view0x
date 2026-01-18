@@ -282,17 +282,20 @@ export const generateReport = async (req: Request, res: Response) => {
     const report = await ReportGenerator.generate(analysis, options);
 
     // Set appropriate headers
-    const contentType = {
+    const contentTypes: Record<string, string> = {
       json: "application/json",
       markdown: "text/markdown",
       pdf: "application/pdf",
-    }[format];
+    };
 
-    const extension = {
+    const extensions: Record<string, string> = {
       json: "json",
       markdown: "md",
       pdf: "pdf",
-    }[format];
+    };
+
+    const contentType = contentTypes[format];
+    const extension = extensions[format];
 
     const filename = `analysis-${id}.${extension}`;
 
