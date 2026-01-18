@@ -11,6 +11,7 @@ import CodeMirror from "@uiw/react-codemirror";
 import { javascript } from "@codemirror/lang-javascript";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { FileUpload } from "@/components/FileUpload";
+import { contractExamples, ContractExample } from "@/data/contractExamples";
 
 // UI Components from the new theme
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,14 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 // Services and Types
 import { analysisApi } from "@/services/api";
@@ -146,6 +155,7 @@ const getSeverityClass = (severity: Vulnerability["impact"]) => {
 const ContractAnalyzer: React.FC = () => {
   const [contractCode, setContractCode] = useState<string>("");
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
+  const [showExamplesDialog, setShowExamplesDialog] = useState<boolean>(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(
     null,
   );
