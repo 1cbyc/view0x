@@ -19,6 +19,7 @@ import { onAnalysisUpdate, AnalysisUpdatePayload } from "./events/appEvents";
 import { errorHandler } from "./middleware/errorHandler";
 import { rateLimiter } from "./middleware/rateLimit";
 import { requestLogger } from "./middleware/logging";
+import { csrfProtection } from "./middleware/csrf";
 
 // Routes
 import authRoutes from "./routes/auth";
@@ -54,9 +55,24 @@ app.use(
         scriptSrc: ["'self'"],
         imgSrc: ["'self'", "data:", "https:"],
         connectSrc: ["'self'", ...env.CORS_ORIGINS, "wss:", "ws:"],
+        fontSrc: ["'self'", "https:", "data:"],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'"],
+        frameSrc: ["'none'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+        upgradeInsecureRequests: env.NODE_ENV === "production" ? [] : null,
       },
     },
     crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: "same-origin" },
+    crossOriginOpenerPolicy: { policy: "same-origin" },
+    referrerPolicy: { policy: "no-referrer" },
+    strictTransportSecurity: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true,
+    },
   }),
 );
 
@@ -84,6 +100,11 @@ app.use(requestLogger);
 
 // Rate limiting
 app.use(rateLimiter);
+
+// CSRF protection (after rate limiting, before routes)
+app.use(csrfProtection);
+
+// Caching middleware for public endpoints (applied per-route in route files)
 
 // Health check endpoint (before other routes)
 app.get("/health", async (req, res) => {

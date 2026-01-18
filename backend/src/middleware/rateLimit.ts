@@ -29,8 +29,9 @@ export const createRateLimiter = (options: {
     standardHeaders: true,
     legacyHeaders: false,
     handler: (req: Request, res: Response) => {
-      const remaining = res.getHeader("X-RateLimit-Remaining");
-      const reset = res.getHeader("X-RateLimit-Reset");
+      // Use standard RateLimit-* headers (not X-RateLimit-*) since legacyHeaders is false
+      const remaining = res.getHeader("RateLimit-Remaining");
+      const reset = res.getHeader("RateLimit-Reset");
       res.status(429).json({
         success: false,
         error: {

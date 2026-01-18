@@ -30,10 +30,14 @@ export const useRateLimit = () => {
             setRateLimitInfo(info);
           } else {
             localStorage.removeItem("rateLimitInfo");
+            setRateLimitInfo(null); // Clear in-memory state when stored value is expired
           }
         } catch (e) {
           localStorage.removeItem("rateLimitInfo");
+          setRateLimitInfo(null); // Clear in-memory state when stored value is invalid
         }
+      } else {
+        setRateLimitInfo(null); // Clear in-memory state when localStorage is empty
       }
 
       // Check for rate limit errors
@@ -46,11 +50,14 @@ export const useRateLimit = () => {
             setRateLimitError(error);
           } else {
             localStorage.removeItem("rateLimitError");
-            setRateLimitError(null);
+            setRateLimitError(null); // Clear in-memory state when localStorage is cleared
           }
         } catch (e) {
           localStorage.removeItem("rateLimitError");
+          setRateLimitError(null); // Clear in-memory state when stored value is invalid
         }
+      } else {
+        setRateLimitError(null); // Clear in-memory state when localStorage is empty
       }
     };
 
