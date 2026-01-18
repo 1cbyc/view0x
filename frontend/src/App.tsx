@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 // Page Components
@@ -15,8 +15,23 @@ import Webhooks from "./pages/Webhooks";
 // Layout Components
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import { CommandPalette } from "./components/CommandPalette";
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 
 const App: React.FC = () => {
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+
+  // Global keyboard shortcuts
+  useKeyboardShortcuts([
+    {
+      key: "k",
+      ctrl: true,
+      meta: true,
+      action: () => setCommandPaletteOpen(true),
+      description: "Open command palette",
+    },
+  ]);
+
   return (
     <Router>
       <div className="min-h-screen bg-black text-white selection:bg-accent/30 flex flex-col">
@@ -41,6 +56,10 @@ const App: React.FC = () => {
           </Routes>
         </main>
         <Footer />
+        <CommandPalette
+          open={commandPaletteOpen}
+          onOpenChange={setCommandPaletteOpen}
+        />
       </div>
     </Router>
   );
