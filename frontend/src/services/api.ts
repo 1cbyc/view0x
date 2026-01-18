@@ -69,7 +69,8 @@ export const analysisApi = {
   /**
    * Fetches the analysis history for the logged-in user.
    */
-  getHistory: () => api.get("/analysis"),
+  getHistory: (page?: number, limit?: number) => 
+    api.get("/analysis", { params: { page, limit } }),
 
   /**
    * Fetches the full details of a specific analysis by its ID.
