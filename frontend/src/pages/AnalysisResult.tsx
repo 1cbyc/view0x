@@ -181,7 +181,7 @@ const AnalysisResultPage: React.FC = () => {
     return null;
   }
 
-  const { contractInfo, result, status, createdAt, id } = analysis;
+  const { contractInfo, result, status, createdAt } = analysis;
 
   const handleExportReport = async (format: 'json' | 'markdown' | 'pdf') => {
     try {
