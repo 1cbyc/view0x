@@ -120,7 +120,7 @@ backend/uploads/
 CopilotIndices/
 
 # personal
-docs/
+docs/*.md
 
 # Markdown files (but keep important docs)
 *.md
@@ -130,10 +130,7 @@ docs/
 !CODE_OF_CONDUCT.md
 !CHANGELOG.md
 !TESTING.md
-!TEST_REPORT.md
-!ISSUE_COMPLETION_STATUS.md
 !TEST_EXECUTION_GUIDE.md
-!TODO.md
 
 # Shell scripts (but keep test scripts)
 *.sh
