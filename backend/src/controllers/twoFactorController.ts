@@ -24,7 +24,11 @@ export const setup2FA = async (req: Request, res: Response) => {
   const serviceName = "view0x";
   const accountName = user.email;
 
-  const otpauth = generateURI(accountName, serviceName, secret);
+  const otpauth = generateURI({
+    accountName,
+    issuer: serviceName,
+    secret,
+  });
 
   const qrCodeUrl = await QRCode.toDataURL(otpauth);
 
@@ -59,7 +63,10 @@ export const verify2FA = async (req: Request, res: Response) => {
     throw new AuthenticationError("2FA not set up");
   }
 
-  const isValid = verify(token, user.twoFactorSecret);
+  const isValid = verify({
+    token,
+    secret: user.twoFactorSecret,
+  });
 
   if (!isValid) {
     return res.status(400).json({
