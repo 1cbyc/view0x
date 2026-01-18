@@ -36,9 +36,24 @@ const Register: React.FC = () => {
     }
 
     try {
-      await authApi.register(formData);
-      // Redirect to login page with a success message
-      navigate('/login', { state: { message: 'Registration successful! Please log in.' } });
+      const response = await authApi.register(formData);
+      
+      // If registration returns tokens (auto-login), save them and redirect to dashboard
+      if (response.data && response.data.success && response.data.data?.tokens) {
+        const { tokens, user } = response.data.data;
+        localStorage.setItem('accessToken', tokens.accessToken);
+        localStorage.setItem('refreshToken', tokens.refreshToken);
+        localStorage.setItem('user', JSON.stringify(user));
+        
+        // Trigger storage event so Navbar can update
+        window.dispatchEvent(new Event('storage'));
+        
+        // Redirect to dashboard
+        navigate('/dashboard', { replace: true });
+      } else {
+        // Otherwise redirect to login page with a success message
+        navigate('/login', { state: { message: 'Registration successful! Please log in.' } });
+      }
     } catch (err: any) {
       const errorMessage = err.response?.data?.error?.message || err.message || 'Registration failed. Please try again.';
       setError(errorMessage);

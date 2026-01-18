@@ -10,6 +10,8 @@ import {
 import CodeMirror from "@uiw/react-codemirror";
 import { javascript } from "@codemirror/lang-javascript";
 import { oneDark } from "@codemirror/theme-one-dark";
+import { FileUpload } from "@/components/FileUpload";
+import { contractExamples, ContractExample } from "@/data/contractExamples";
 
 // UI Components from the new theme
 import { Button } from "@/components/ui/button";
@@ -30,6 +32,14 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 // Services and Types
 import { analysisApi } from "@/services/api";
@@ -145,6 +155,7 @@ const getSeverityClass = (severity: Vulnerability["impact"]) => {
 const ContractAnalyzer: React.FC = () => {
   const [contractCode, setContractCode] = useState<string>("");
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
+  const [showExamplesDialog, setShowExamplesDialog] = useState<boolean>(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(
     null,
   );
@@ -527,10 +538,18 @@ const ContractAnalyzer: React.FC = () => {
             <CardHeader>
               <CardTitle>Contract Code</CardTitle>
               <CardDescription>
-                Paste your Solidity source code below.
+                Upload a file or paste your Solidity source code below.
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
+              <FileUpload
+                onFileSelect={(content, fileName) => {
+                  setContractCode(content);
+                  setError(null);
+                }}
+                accept=".sol,.vy,.txt"
+                maxSize={5 * 1024 * 1024}
+              />
               <div className="border border-border rounded-md overflow-hidden">
                 <CodeMirror
                   value={contractCode}
@@ -550,15 +569,54 @@ const ContractAnalyzer: React.FC = () => {
             </CardContent>
             <CardFooter className="flex justify-between">
               <div className="space-x-2">
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    resetState();
-                    setContractCode(sampleContract);
-                  }}
-                >
-                  Load Sample
-                </Button>
+                <Dialog open={showExamplesDialog} onOpenChange={setShowExamplesDialog}>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost">
+                      <FileText className="w-4 h-4 mr-2" />
+                      Load Example
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Contract Examples Library</DialogTitle>
+                      <DialogDescription>
+                        Select an example contract to load and analyze. These examples demonstrate various patterns and vulnerabilities.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid grid-cols-1 gap-3 mt-4">
+                      {contractExamples.map((example) => (
+                        <Card
+                          key={example.id}
+                          className="cursor-pointer hover:bg-white/5 transition-colors"
+                          onClick={() => {
+                            resetState();
+                            setContractCode(example.code);
+                            setShowExamplesDialog(false);
+                          }}
+                        >
+                          <CardHeader>
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <CardTitle className="text-lg">{example.name}</CardTitle>
+                                <CardDescription className="mt-1">{example.description}</CardDescription>
+                              </div>
+                              <Badge variant="outline">{example.difficulty}</Badge>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="flex flex-wrap gap-2">
+                              {example.tags.map((tag) => (
+                                <Badge key={tag} variant="secondary" className="text-xs">
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </DialogContent>
+                </Dialog>
                 <Button
                   variant="ghost"
                   onClick={() => {

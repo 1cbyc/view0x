@@ -32,6 +32,9 @@ export class Analysis extends Model<
   declare startedAt: CreationOptional<Date>;
   declare completedAt: CreationOptional<Date>;
   declare expiresAt: CreationOptional<Date>;
+  declare shareToken: CreationOptional<string>;
+  declare isPublic: CreationOptional<boolean>;
+  declare isFavorite: CreationOptional<boolean>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
@@ -405,6 +408,24 @@ Analysis.init(
       type: DataTypes.DATE,
       allowNull: false,
       defaultValue: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+    },
+    shareToken: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      unique: true,
+      validate: {
+        len: [0, 255],
+      },
+    },
+    isPublic: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    isFavorite: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
     },
     createdAt: {
       type: DataTypes.DATE,

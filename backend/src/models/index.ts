@@ -2,6 +2,7 @@ import { sequelize } from "../config/database";
 import { User } from "./User";
 import { Analysis } from "./Analysis";
 import { Vulnerability } from "./Vulnerability";
+import { VulnerabilityComment } from "./VulnerabilityComment";
 import { logger } from "../utils/logger";
 
 // 1. Initialize all models
@@ -9,6 +10,7 @@ const models = {
   User,
   Analysis,
   Vulnerability,
+  VulnerabilityComment,
 };
 
 // 2. Define associations (relationships) between models
@@ -36,6 +38,28 @@ function defineAssociations() {
   Vulnerability.belongsTo(Analysis, {
     foreignKey: "analysisId",
     as: "analysis",
+  });
+
+  // Vulnerability <-> VulnerabilityComment (One-to-Many)
+  Vulnerability.hasMany(VulnerabilityComment, {
+    foreignKey: "vulnerabilityId",
+    as: "comments",
+    onDelete: "CASCADE",
+  });
+  VulnerabilityComment.belongsTo(Vulnerability, {
+    foreignKey: "vulnerabilityId",
+    as: "vulnerability",
+  });
+
+  // User <-> VulnerabilityComment (One-to-Many)
+  User.hasMany(VulnerabilityComment, {
+    foreignKey: "userId",
+    as: "comments",
+    onDelete: "CASCADE",
+  });
+  VulnerabilityComment.belongsTo(User, {
+    foreignKey: "userId",
+    as: "user",
   });
 
   logger.info("[MODELS] Model associations defined successfully.");
