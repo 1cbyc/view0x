@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { analysisApi } from "@/services/api";
+import { socketService, AnalysisUpdatePayload } from "@/services/socketService";
 import {
   Loader2,
   AlertTriangle,
@@ -84,6 +85,7 @@ const Dashboard: React.FC = () => {
   const [analyses, setAnalyses] = useState<AnalysisSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
   
   // Filter and sort state
   const [searchTerm, setSearchTerm] = useState("");
@@ -112,6 +114,7 @@ const Dashboard: React.FC = () => {
             // Use cache if less than 30 seconds old
             if (now.getTime() - cacheTime.getTime() < 30000) {
               setAnalyses(cachedData.data || []);
+              setIsLoading(false); // Clear loading state to show cached data
             }
           } catch (e) {
             // Ignore cache parse errors
@@ -144,6 +147,46 @@ const Dashboard: React.FC = () => {
     };
 
     fetchHistory();
+
+    // Connect to WebSocket for real-time updates
+    if (token) {
+      socketService.connect();
+      setIsConnected(true);
+
+      // Listen for analysis updates
+      const handleAnalysisUpdate = (payload: AnalysisUpdatePayload) => {
+        setAnalyses((prev) => {
+          const updated = prev.map((analysis) => {
+            if (analysis.id === payload.analysisId) {
+              return {
+                ...analysis,
+                status: payload.status,
+                ...(payload.status === "completed" && payload.result
+                  ? {
+                      summary: {
+                        highSeverity:
+                          payload.result.summary?.highSeverity || 0,
+                        mediumSeverity:
+                          payload.result.summary?.mediumSeverity || 0,
+                        lowSeverity: payload.result.summary?.lowSeverity || 0,
+                      },
+                    }
+                  : {}),
+              };
+            }
+            return analysis;
+          });
+          return updated;
+        });
+      };
+
+      // Subscribe to all user analyses for real-time updates
+      socketService.socketInstance?.on("analysis:update", handleAnalysisUpdate);
+
+      return () => {
+        socketService.socketInstance?.off("analysis:update", handleAnalysisUpdate);
+      };
+    }
   }, [navigate]);
 
   // Filtered and sorted analyses
@@ -233,6 +276,20 @@ const Dashboard: React.FC = () => {
     };
   }, [analyses]);
 
+  // Sanitize CSV cell to prevent CSV injection
+  const sanitizeCSVCell = (cell: any): string => {
+    const str = String(cell);
+    // Escape cells that start with formula characters to prevent CSV injection
+    if (/^[=+\-@]/.test(str)) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    // Escape cells containing commas, quotes, or newlines
+    if (/[,"\n]/.test(str)) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
+
   // Export functions
   const exportToCSV = () => {
     const headers = ["Contract Name", "Status", "High", "Medium", "Low", "Created At"];
@@ -247,7 +304,7 @@ const Dashboard: React.FC = () => {
 
     const csvContent = [
       headers.join(","),
-      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+      ...rows.map((row) => row.map((cell) => sanitizeCSVCell(cell)).join(",")),
     ].join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv" });
@@ -340,9 +397,18 @@ const Dashboard: React.FC = () => {
     <div className="container mx-auto py-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Analysis Dashboard</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-white">Analysis Dashboard</h1>
+            {isConnected && (
+              <Badge variant="outline" className="text-green-500 border-green-500">
+                <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse" />
+                Live
+              </Badge>
+            )}
+          </div>
           <p className="text-sm text-white/60 mt-1">
             View and manage your smart contract analyses
+            {isConnected && " • Real-time updates enabled"}
           </p>
         </div>
         <div className="flex items-center gap-2">
