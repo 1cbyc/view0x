@@ -394,11 +394,11 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto py-8 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto py-4 sm:py-8 space-y-4 sm:space-y-6 px-4 sm:px-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-white">Analysis Dashboard</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white">Analysis Dashboard</h1>
             {isConnected && (
               <Badge variant="outline" className="text-green-500 border-green-500">
                 <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse" />
@@ -406,17 +406,21 @@ const Dashboard: React.FC = () => {
               </Badge>
             )}
           </div>
-          <p className="text-sm text-white/60 mt-1">
+          <p className="text-xs sm:text-sm text-white/60 mt-1">
             View and manage your smart contract analyses
             {isConnected && " • Real-time updates enabled"}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <ThemeToggle />
-          <Button asChild className="bg-white text-black hover:bg-gray-200">
+          <Button 
+            asChild 
+            className="bg-white text-black hover:bg-gray-200 flex-1 sm:flex-initial text-sm sm:text-base"
+          >
             <Link to="/analyze">
               <ShieldAlert className="w-4 h-4 mr-2" />
-              New Analysis
+              <span className="hidden sm:inline">New Analysis</span>
+              <span className="sm:hidden">New</span>
             </Link>
           </Button>
         </div>
@@ -624,7 +628,8 @@ const Dashboard: React.FC = () => {
                       className="h-8 -ml-3"
                       onClick={() => handleSort("contractName")}
                     >
-                      Contract
+                      <span className="hidden sm:inline">Contract</span>
+                      <span className="sm:hidden">Name</span>
                       {sortField === "contractName" && (
                         <ArrowUpDown className="w-3 h-3 ml-1" />
                       )}
@@ -648,7 +653,8 @@ const Dashboard: React.FC = () => {
                       className="h-8 -ml-3"
                       onClick={() => handleSort("highSeverity")}
                     >
-                      Vulnerabilities
+                      <span className="hidden sm:inline">Vulnerabilities</span>
+                      <span className="sm:hidden">Vulns</span>
                       {sortField === "highSeverity" && (
                         <ArrowUpDown className="w-3 h-3 ml-1" />
                       )}
@@ -666,7 +672,7 @@ const Dashboard: React.FC = () => {
                     </Button>
                   </TableHead>
                   <TableHead>
-                    <span className="sr-only">Actions</span>
+                    <span>Actions</span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -679,26 +685,37 @@ const Dashboard: React.FC = () => {
                     <TableCell>{getStatusIndicator(analysis.status)}</TableCell>
                     <TableCell>
                       {analysis.status === "completed" && analysis.summary ? (
-                        <div className="flex items-center space-x-3 text-sm">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-3 text-xs sm:text-sm">
                           <span className="text-destructive font-bold">
-                            {analysis.summary.highSeverity} High
+                            <span className="hidden sm:inline">{analysis.summary.highSeverity} High</span>
+                            <span className="sm:hidden">{analysis.summary.highSeverity}H</span>
                           </span>
                           <span className="text-yellow-500 font-bold">
-                            {analysis.summary.mediumSeverity} Med
+                            <span className="hidden sm:inline">{analysis.summary.mediumSeverity} Med</span>
+                            <span className="sm:hidden">{analysis.summary.mediumSeverity}M</span>
                           </span>
                           <span className="text-blue-500 font-bold">
-                            {analysis.summary.lowSeverity} Low
+                            <span className="hidden sm:inline">{analysis.summary.lowSeverity} Low</span>
+                            <span className="sm:hidden">{analysis.summary.lowSeverity}L</span>
                           </span>
                         </div>
                       ) : (
                         <span className="text-sm text-muted-foreground">-</span>
                       )}
                     </TableCell>
-                    <TableCell>{formatDate(analysis.createdAt)}</TableCell>
+                    <TableCell>
+                      <span className="text-xs sm:text-sm">{formatDate(analysis.createdAt)}</span>
+                    </TableCell>
                     <TableCell className="text-right">
-                      <Button asChild variant="ghost" size="sm">
+                      <Button 
+                        asChild 
+                        variant="ghost" 
+                        size="sm"
+                        className="text-xs sm:text-sm"
+                      >
                         <Link to={`/analysis/${analysis.id}`}>
-                          View Details
+                          <span className="hidden sm:inline">View Details</span>
+                          <span className="sm:hidden">View</span>
                           <ChevronRight className="w-4 h-4 ml-1" />
                         </Link>
                       </Button>
