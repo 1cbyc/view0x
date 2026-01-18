@@ -93,7 +93,7 @@ export const analysisApi = {
    * This endpoint initiates the background job and returns the analysis ID.
    */
   createAnalysis: (data: { contractCode: string; options?: any }) =>
-    api.post("/analysis", data),
+    api.post("/analysis", data, { timeout: 10000 }), // 10 second timeout for job creation
 
   /**
    * Public analysis endpoint (no authentication required).
