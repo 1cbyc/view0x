@@ -84,6 +84,7 @@ const Dashboard: React.FC = () => {
   const [analyses, setAnalyses] = useState<AnalysisSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
   
   // Filter and sort state
   const [searchTerm, setSearchTerm] = useState("");
@@ -112,6 +113,7 @@ const Dashboard: React.FC = () => {
             // Use cache if less than 30 seconds old
             if (now.getTime() - cacheTime.getTime() < 30000) {
               setAnalyses(cachedData.data || []);
+              setIsLoading(false); // Clear loading state to show cached data
             }
           } catch (e) {
             // Ignore cache parse errors
@@ -144,6 +146,46 @@ const Dashboard: React.FC = () => {
     };
 
     fetchHistory();
+
+    // Connect to WebSocket for real-time updates
+    if (token) {
+      socketService.connect();
+      setIsConnected(true);
+
+      // Listen for analysis updates
+      const handleAnalysisUpdate = (payload: AnalysisUpdatePayload) => {
+        setAnalyses((prev) => {
+          const updated = prev.map((analysis) => {
+            if (analysis.id === payload.analysisId) {
+              return {
+                ...analysis,
+                status: payload.status,
+                ...(payload.status === "completed" && payload.result
+                  ? {
+                      summary: {
+                        highSeverity:
+                          payload.result.summary?.highSeverity || 0,
+                        mediumSeverity:
+                          payload.result.summary?.mediumSeverity || 0,
+                        lowSeverity: payload.result.summary?.lowSeverity || 0,
+                      },
+                    }
+                  : {}),
+              };
+            }
+            return analysis;
+          });
+          return updated;
+        });
+      };
+
+      // Subscribe to all user analyses for real-time updates
+      socketService.socketInstance?.on("analysis:update", handleAnalysisUpdate);
+
+      return () => {
+        socketService.socketInstance?.off("analysis:update", handleAnalysisUpdate);
+      };
+    }
   }, [navigate]);
 
   // Filtered and sorted analyses
