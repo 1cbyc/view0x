@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { analysisApi } from "@/services/api";
-import { Loader2, AlertTriangle, ArrowLeft, ShieldCheck } from "lucide-react";
+import { Loader2, AlertTriangle, ArrowLeft, ShieldCheck, Download } from "lucide-react";
 
 // UI Components
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

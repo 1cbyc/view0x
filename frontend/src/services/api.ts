@@ -75,4 +75,10 @@ export const analysisApi = {
    * Fetches the full details of a specific analysis by its ID.
    */
   getAnalysis: (analysisId: string) => api.get(`/analysis/${analysisId}`),
+
+  /**
+   * Generates a report for an analysis in the specified format.
+   */
+  generateReport: (analysisId: string, options: { format: string; includeCode?: boolean; includeRecommendations?: boolean; includeMetadata?: boolean }) => 
+    api.post(`/analysis/${analysisId}/report`, options, { responseType: 'blob' }),
 };

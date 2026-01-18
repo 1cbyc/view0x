@@ -10,6 +10,7 @@ import {
 } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";
 import { SimpleScanner } from "../services/simpleScanner";
+import { ReportGenerator, ReportOptions } from "../services/reportGenerator";
 
 /**
  * @description Public analysis endpoint (no authentication required) - synchronous response
@@ -231,15 +232,91 @@ export const deleteAnalysis = async (req: Request, res: Response) => {
 };
 
 /**
- * @description Generate a report for an analysis. (Not Implemented)
+ * @description Generate a report for an analysis.
  * @route POST /api/analysis/:id/report
  */
 export const generateReport = async (req: Request, res: Response) => {
-  res.status(501).json({
-    success: false,
-    error: {
-      code: "NOT_IMPLEMENTED",
-      message: "Report generation is not yet implemented.",
-    },
-  });
+  const { id } = req.params;
+  const userId = req.user?.userId;
+  const { format = "json", includeCode = false, includeRecommendations = true, includeMetadata = true } = req.body;
+
+  // Validate format
+  if (!["json", "markdown", "pdf"].includes(format)) {
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Invalid format. Supported formats: json, markdown, pdf",
+      },
+    });
+  }
+
+  const analysis = await Analysis.findByPk(id);
+
+  if (!analysis) {
+    throw new NotFoundError("Analysis not found.");
+  }
+
+  if (analysis.userId !== userId) {
+    throw new AuthorizationError("You are not authorized to generate a report for this analysis.");
+  }
+
+  if (analysis.status !== "completed") {
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: "BAD_REQUEST",
+        message: "Analysis is not yet completed. Cannot generate report.",
+      },
+    });
+  }
+
+  try {
+    const options: ReportOptions = {
+      format,
+      includeCode,
+      includeRecommendations,
+      includeMetadata,
+    };
+
+    const report = await ReportGenerator.generate(analysis, options);
+
+    // Set appropriate headers
+    const contentType = {
+      json: "application/json",
+      markdown: "text/markdown",
+      pdf: "application/pdf",
+    }[format];
+
+    const extension = {
+      json: "json",
+      markdown: "md",
+      pdf: "pdf",
+    }[format];
+
+    const filename = `analysis-${id}.${extension}`;
+
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+
+    if (format === "json") {
+      res.send(report as string);
+    } else if (format === "markdown") {
+      res.send(report as string);
+    } else {
+      // PDF
+      res.send(report as Buffer);
+    }
+
+    logger.info(`Report generated: ${format} for analysis ${id} by user ${userId}`);
+  } catch (error: any) {
+    logger.error("Report generation error:", error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to generate report.",
+      },
+    });
+  }
 };

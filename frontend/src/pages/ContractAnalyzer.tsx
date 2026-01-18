@@ -528,10 +528,18 @@ const ContractAnalyzer: React.FC = () => {
             <CardHeader>
               <CardTitle>Contract Code</CardTitle>
               <CardDescription>
-                Paste your Solidity source code below.
+                Upload a file or paste your Solidity source code below.
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
+              <FileUpload
+                onFileSelect={(content, fileName) => {
+                  setContractCode(content);
+                  setError(null);
+                }}
+                accept=".sol,.vy,.txt"
+                maxSize={5 * 1024 * 1024}
+              />
               <div className="border border-border rounded-md overflow-hidden">
                 <CodeMirror
                   value={contractCode}
