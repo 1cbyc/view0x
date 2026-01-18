@@ -20,10 +20,28 @@ export interface Suggestion {
   recommendation: string;
 }
 
+export interface GasOptimization {
+  type: string;
+  description: string;
+  lineNumber?: number;
+  recommendation: string;
+  potentialSavings?: string;
+}
+
+export interface CodeQualityIssue {
+  type: string;
+  description: string;
+  lineNumber?: number;
+  recommendation: string;
+  severity: 'HIGH' | 'MEDIUM' | 'LOW';
+}
+
 export interface VulnerabilityReport {
   vulnerabilities: Vulnerability[];
   warnings: Warning[];
   suggestions: Suggestion[];
+  gasOptimizations?: GasOptimization[];
+  codeQuality?: CodeQualityIssue[];
 }
 
 export class SimpleScanner {
@@ -31,6 +49,8 @@ export class SimpleScanner {
     const vulnerabilities: Vulnerability[] = [];
     const warnings: Warning[] = [];
     const suggestions: Suggestion[] = [];
+    const gasOptimizations: GasOptimization[] = [];
+    const codeQuality: CodeQualityIssue[] = [];
 
     const lines = contractCode.split('\n');
 
@@ -112,14 +132,60 @@ export class SimpleScanner {
         }
       }
 
-      // Check for gas optimizations
+      // Gas optimization checks
       if (lowerLine.includes('for (') && lowerLine.includes('i++')) {
-        suggestions.push({
-          type: 'Gas Optimization',
-          description: 'Consider using unchecked increment for gas savings',
+        if (!lowerLine.includes('unchecked')) {
+          gasOptimizations.push({
+            type: 'unchecked-increment',
+            description: 'Loop counter increment can be unchecked for gas savings',
+            lineNumber,
+            recommendation: 'Use unchecked { i++; } when overflow is impossible',
+            potentialSavings: '30-40 gas per iteration'
+          });
+        }
+      }
+
+      // State variable packing
+      if (lowerLine.match(/\b(uint\d+|bytes\d+|bool|address)\s+\w+/) && lowerLine.includes('public')) {
+        gasOptimizations.push({
+          type: 'state-variable-packing',
+          description: 'Consider packing smaller state variables together',
           lineNumber,
-          recommendation: 'Use unchecked { i++; } for better gas efficiency in loops'
+          recommendation: 'Pack smaller types (uint128, bool, bytes1-16) together in storage slots',
+          potentialSavings: '20,000-40,000 gas'
         });
+      }
+
+      // Custom errors vs require strings
+      if (lowerLine.includes('require(') && line.includes('"')) {
+        gasOptimizations.push({
+          type: 'custom-errors',
+          description: 'Use custom errors instead of require with string',
+          lineNumber,
+          recommendation: 'Define custom errors and use them instead of require("message")',
+          potentialSavings: '~50 gas per revert'
+        });
+      }
+
+      // Code quality checks
+      // Missing NatSpec documentation
+      if (lowerLine.includes('function') && (lowerLine.includes('public') || lowerLine.includes('external'))) {
+        let hasDocs = false;
+        for (let j = Math.max(0, index - 5); j < index; j++) {
+          if (lines[j].includes('///') || lines[j].includes('/**')) {
+            hasDocs = true;
+            break;
+          }
+        }
+        if (!hasDocs) {
+          codeQuality.push({
+            type: 'missing-documentation',
+            description: 'Function is missing NatSpec documentation',
+            lineNumber,
+            recommendation: 'Add NatSpec comments (///) for all public/external functions',
+            severity: 'MEDIUM'
+          });
+        }
       }
 
       // Check for missing events
@@ -135,8 +201,15 @@ export class SimpleScanner {
       }
     });
 
-    // Check for pragma version
+    // Check for pragma version (add to code quality)
     if (!contractCode.toLowerCase().includes('pragma solidity')) {
+      codeQuality.push({
+        type: 'missing-pragma',
+        description: 'No pragma solidity version directive found',
+        lineNumber: 1,
+        recommendation: "Add 'pragma solidity ^0.8.0;' at the top of the file",
+        severity: 'HIGH'
+      });
       warnings.push({
         type: 'Missing Pragma',
         description: 'No pragma directive found',
@@ -144,8 +217,15 @@ export class SimpleScanner {
       });
     }
 
-    // Check for license
+    // Check for license (add to code quality)
     if (!contractCode.toLowerCase().includes('spdx-license-identifier')) {
+      codeQuality.push({
+        type: 'missing-license',
+        description: 'No SPDX license identifier found',
+        lineNumber: 1,
+        recommendation: "Add '// SPDX-License-Identifier: MIT' at the top of the file",
+        severity: 'MEDIUM'
+      });
       suggestions.push({
         type: 'Missing License',
         description: 'No license identifier found',
@@ -156,7 +236,9 @@ export class SimpleScanner {
     return {
       vulnerabilities,
       warnings,
-      suggestions
+      suggestions,
+      gasOptimizations,
+      codeQuality
     };
   }
 } 
