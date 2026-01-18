@@ -1,5 +1,6 @@
 import { parse } from '@solidity-parser/parser';
 import * as solc from 'solc';
+import { ASTTraverser, ASTNode } from './ASTTraverser';
 
 export interface ScanResult {
   vulnerabilities: Vulnerability[];
@@ -36,11 +37,13 @@ export class ContractScanner {
   private contractCode: string;
   private ast: any;
   private lineMap: Map<number, number>;
+  private traverser: ASTTraverser;
 
   constructor(contractCode: string) {
     this.contractCode = contractCode;
-    this.ast = parse(contractCode);
+    this.ast = parse(contractCode, { loc: true });
     this.lineMap = this.createLineMap();
+    this.traverser = new ASTTraverser(this.ast);
   }
 
   private createLineMap(): Map<number, number> {
@@ -117,7 +120,7 @@ export class ContractScanner {
   }
 
   private checkReentrancy(vulnerabilities: Vulnerability[]): void {
-    const functions = this.findFunctions(this.ast);
+    const functions = this.traverser.findAllFunctions();
     
     functions.forEach(func => {
       const stateChanges = this.findStateChanges(func);
@@ -286,7 +289,7 @@ export class ContractScanner {
   }
 
   private checkUnprotectedSelfdestruct(vulnerabilities: Vulnerability[]): void {
-    const functions = this.findFunctions(this.ast);
+    const functions = this.traverser.findAllFunctions();
     
     functions.forEach(func => {
       const selfdestructCalls = this.findSelfdestructCalls(func);
@@ -389,7 +392,7 @@ export class ContractScanner {
   }
 
   private checkTxOriginUsage(vulnerabilities: Vulnerability[]): void {
-    const functions = this.findFunctions(this.ast);
+    const functions = this.traverser.findAllFunctions();
     functions.forEach(func => {
       const txOriginUsages = this.findTxOriginUsages(func);
       txOriginUsages.forEach(usage => {
@@ -420,7 +423,7 @@ export class ContractScanner {
   }
 
   private checkUncheckedExternalCalls(vulnerabilities: Vulnerability[]): void {
-    const functions = this.findFunctions(this.ast);
+    const functions = this.traverser.findAllFunctions();
     functions.forEach(func => {
       const externalCalls = this.findExternalCalls(func);
       externalCalls.forEach(call => {
@@ -456,7 +459,7 @@ export class ContractScanner {
   }
 
   private checkWeakRandomness(vulnerabilities: Vulnerability[]): void {
-    const functions = this.findFunctions(this.ast);
+    const functions = this.traverser.findAllFunctions();
     functions.forEach(func => {
       const weakRandomness = this.findWeakRandomness(func);
       weakRandomness.forEach(expr => {
@@ -493,7 +496,7 @@ export class ContractScanner {
   }
 
   private checkMissingAccessControl(vulnerabilities: Vulnerability[]): void {
-    const functions = this.findFunctions(this.ast);
+    const functions = this.traverser.findAllFunctions();
     functions.forEach(func => {
       // Only check public/external functions
       if (func.visibility === 'public' || func.visibility === 'external') {
@@ -513,7 +516,7 @@ export class ContractScanner {
   }
 
   private checkDangerousDelegatecall(vulnerabilities: Vulnerability[]): void {
-    const functions = this.findFunctions(this.ast);
+    const functions = this.traverser.findAllFunctions();
     functions.forEach(func => {
       const delegatecalls = this.findDelegatecalls(func);
       delegatecalls.forEach(call => {
