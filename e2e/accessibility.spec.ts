@@ -189,7 +189,7 @@ test.describe('Accessibility Tests', () => {
 
             const accessibilityScanResults = await new AxeBuilder({ page })
                 .withTags(['wcag2aa'])
-                .include(['color-contrast'])
+                .withRules(['color-contrast'])
                 .analyze();
 
             expect(accessibilityScanResults.violations).toEqual([]);

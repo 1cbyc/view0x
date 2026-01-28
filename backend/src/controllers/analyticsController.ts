@@ -16,15 +16,43 @@ export const getAnalyticsDashboard = async (req: Request, res: Response) => {
     }
 
     try {
-        const { startDate, endDate, endpoint } = req.query;
+        const { startDate, endDate, endpoint, dateRange } = req.query;
 
         // Build date range filter
         const dateFilter: any = {};
-        if (startDate) {
-            dateFilter[Op.gte] = new Date(startDate as string);
+
+        // Handle dateRange shortcuts (7d, 30d, 90d)
+        if (dateRange) {
+            const now = new Date();
+            let daysAgo = 7; // default
+
+            if (dateRange === '30d') daysAgo = 30;
+            else if (dateRange === '90d') daysAgo = 90;
+            else if (dateRange === '7d') daysAgo = 7;
+            else {
+                throw new ValidationError(`Invalid dateRange: ${dateRange}. Use 7d, 30d, or 90d`);
+            }
+
+            const startTime = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+            dateFilter[Op.gte] = startTime;
+            dateFilter[Op.lte] = now;
         }
-        if (endDate) {
-            dateFilter[Op.lte] = new Date(endDate as string);
+        // Handle explicit start/end dates
+        else {
+            if (startDate) {
+                const start = new Date(startDate as string);
+                if (isNaN(start.getTime())) {
+                    throw new ValidationError(`Invalid startDate format: ${startDate}`);
+                }
+                dateFilter[Op.gte] = start;
+            }
+            if (endDate) {
+                const end = new Date(endDate as string);
+                if (isNaN(end.getTime())) {
+                    throw new ValidationError(`Invalid endDate format: ${endDate}`);
+                }
+                dateFilter[Op.lte] = end;
+            }
         }
 
         const whereClause: any = {};
