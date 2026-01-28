@@ -1,0 +1,69 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "view0x-sdk"
+version = "1.0.0"
+description = "Official Python SDK for view0x - Smart Contract Security Analysis Platform"
+readme = "README.md"
+authors = [
+    { name = "Nsisong Labs", email = "hello@view0x.com" }
+]
+license = { text = "MIT" }
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Security",
+]
+keywords = [
+    "view0x",
+    "smart-contract",
+    "security",
+    "analysis",
+    "audit",
+    "ethereum",
+    "solidity",
+    "blockchain",
+    "vulnerability"
+]
+requires-python = ">=3.8"
+dependencies = [
+    "requests>=2.25.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=3.0.0",
+    "black>=22.0.0",
+    "mypy>=0.950",
+    "flake8>=4.0.0",
+]
+
+[project.urls]
+Homepage = "https://view0x.com"
+Documentation = "https://docs.view0x.com"
+Repository = "https://github.com/1cbyc/view0x"
+"Bug Tracker" = "https://github.com/1cbyc/view0x/issues"
+
+[tool.setuptools.packages.find]
+include = ["view0x_sdk*"]
+
+[tool.black]
+line-length = 120
+target-version = ["py38", "py39", "py310", "py311", "py312"]
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
