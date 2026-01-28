@@ -3,8 +3,8 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "view0x-sdk"
-version = "1.0.0"
+name = "view0x"
+version = "1.0.1"
 description = "Official Python SDK for view0x - Smart Contract Security Analysis Platform"
 readme = "README.md"
 authors = [
