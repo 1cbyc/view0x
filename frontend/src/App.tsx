@@ -12,6 +12,7 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Webhooks = lazy(() => import("./pages/Webhooks"));
 const RepositoryAnalyzer = lazy(() => import("./pages/RepositoryAnalyzer"));
+const AnalyticsDashboard = lazy(() => import("./pages/AnalyticsDashboard"));
 
 // Layout Components
 import Navbar from "./components/Navbar";
@@ -52,6 +53,7 @@ const App: React.FC = () => {
               <Route path="/" element={<ContractAnalyzer />} />
               <Route path="/analyze" element={<ContractAnalyzer />} />
               <Route path="/repository" element={<RepositoryAnalyzer />} />
+              <Route path="/analytics" element={<AnalyticsDashboard />} />
 
               {/* Authentication pages */}
               <Route path="/login" element={<Login />} />
