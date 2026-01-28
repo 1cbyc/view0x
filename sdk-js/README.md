@@ -5,17 +5,17 @@ Official JavaScript/TypeScript SDK for [view0x](https://view0x.com) - Smart Cont
 ## Installation
 
 ```bash
-npm install view0x-sdk
+npm install view0x
 # or
-yarn add view0x-sdk
+yarn add view0x
 # or
-pnpm add view0x-sdk
+pnpm add view0x
 ```
 
 ## Quick Start
 
 ```typescript
-import { View0xSDK } from 'view0x-sdk';
+import { View0xSDK } from 'view0x';
 
 // Initialize the SDK with your API key
 const client = new View0xSDK({
@@ -210,7 +210,7 @@ export VIEW0X_TIMEOUT=30000
 The SDK is written in TypeScript and includes full type definitions:
 
 ```typescript
-import { View0xSDK, Analysis, Vulnerability } from 'view0x-sdk';
+import { View0xSDK, Analysis, Vulnerability } from 'view0x';
 
 const client = new View0xSDK({ apiKey: 'key' });
 

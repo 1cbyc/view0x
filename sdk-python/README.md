@@ -5,7 +5,7 @@ Official Python SDK for [view0x](https://view0x.com) - Smart Contract Security A
 ## Installation
 
 ```bash
-pip install view0x-sdk
+pip install view0x
 ```
 
 ## Quick Start
