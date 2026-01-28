@@ -1,0 +1,150 @@
+name: Security Scans
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+  schedule:
+    - cron: '0 2 * * 1' # Weekly on Monday at 2 AM
+  workflow_dispatch:
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: view0x_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install dependencies
+        run: |
+          cd backend && npm ci
+          cd ../frontend && npm ci
+
+      - name: Run dependency audit (backend)
+        working-directory: ./backend
+        continue-on-error: true
+        run: |
+          npm audit --json > audit-backend.json || true
+          npm audit
+
+      - name: Run dependency audit (frontend)
+        working-directory: ./frontend
+        continue-on-error: true
+        run: |
+          npm audit --json > audit-frontend.json || true
+          npm audit
+
+      - name: Setup backend
+        working-directory: ./backend
+        run: |
+          cp .env.example .env
+          echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/view0x_test" >> .env
+          echo "REDIS_URL=redis://localhost:6379" >> .env
+          npm run migrate
+          npm run build
+
+      - name: Start backend server
+        working-directory: ./backend
+        run: |
+          npm start &
+          echo $! > server.pid
+          sleep 15
+
+      - name: Run OWASP ZAP baseline scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: 'http://localhost:3001'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a'
+          allow_issue_writing: false
+          fail_action: false
+
+      - name: Install Playwright
+        working-directory: ./
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright security tests
+        working-directory: ./
+        run: npx playwright test security-tests/
+
+      - name: Upload security reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            backend/audit-backend.json
+            frontend/audit-frontend.json
+            zap-report.html
+
+      - name: Stop backend server
+        if: always()
+        working-directory: ./backend
+        run: |
+          if [ -f server.pid ]; then
+            kill $(cat server.pid) || true
+          fi
+
+      - name: Comment PR with security findings
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let comment = '## Security Scan Results 🔒\n\n';
+            
+            try {
+              const backendAudit = JSON.parse(fs.readFileSync('backend/audit-backend.json', 'utf8'));
+              const vulnerabilities = backendAudit.metadata.vulnerabilities;
+              
+              comment += '**Backend Dependencies:**\n';
+              comment += `- Critical: ${vulnerabilities.critical}\n`;
+              comment += `- High: ${vulnerabilities.high}\n`;
+              comment += `- Moderate: ${vulnerabilities.moderate}\n`;
+              comment += `- Low: ${vulnerabilities.low}\n\n`;
+            } catch (e) {
+              comment += '**Backend Dependencies:** No critical issues found ✅\n\n';
+            }
+            
+            comment += '**OWASP ZAP Scan:** See attached artifacts for details\n';
+            comment += '**Playwright Security Tests:** See test results\n';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });

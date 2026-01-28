@@ -8,6 +8,8 @@
   "devDependencies": {
     "@playwright/test": "^1.57.0",
     "@vitest/coverage-v8": "^4.0.17",
+    "artillery": "^2.0.28",
+    "k6": "^0.0.0",
     "playwright": "^1.57.0"
   }
 }

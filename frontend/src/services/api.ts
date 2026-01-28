@@ -29,7 +29,7 @@ api.interceptors.response.use(
     const remaining = response.headers["ratelimit-remaining"] || response.headers["x-ratelimit-remaining"];
     const reset = response.headers["ratelimit-reset"] || response.headers["x-ratelimit-reset"];
     const limit = response.headers["ratelimit-limit"] || response.headers["x-ratelimit-limit"];
-    
+
     if (remaining !== undefined) {
       // Store rate limit info for UI feedback
       localStorage.setItem("rateLimitInfo", JSON.stringify({
@@ -39,7 +39,7 @@ api.interceptors.response.use(
         timestamp: Date.now(),
       }));
     }
-    
+
     return response;
   },
   (error) => {
@@ -55,7 +55,7 @@ api.interceptors.response.use(
         }));
       }
     }
-    
+
     // Return the more detailed error object from the backend if it exists
     if (error.response && error.response.data) {
       return Promise.reject(error.response.data);
@@ -122,7 +122,7 @@ export const analysisApi = {
   /**
    * Generates a report for an analysis in the specified format.
    */
-  generateReport: (analysisId: string, options: { format: string; includeCode?: boolean; includeRecommendations?: boolean; includeMetadata?: boolean }) => 
+  generateReport: (analysisId: string, options: { format: string; includeCode?: boolean; includeRecommendations?: boolean; includeMetadata?: boolean }) =>
     api.post(`/analysis/${analysisId}/report`, options, { responseType: 'blob' }),
 
   /**
@@ -253,3 +253,6 @@ export const twoFactorApi = {
   disable2FA: (password: string) =>
     api.post("/2fa/disable", { password }),
 };
+
+// Export the base API instance for custom requests
+export { api };
