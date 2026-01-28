@@ -81,6 +81,7 @@ export const analyticsMiddleware = async (
 
 /**
  * Sanitize sensitive data from request/response
+ * Recursively scrubs nested fields and only stores safe metadata
  */
 function sanitizeData(data: any): any {
     if (!data) return null;
@@ -88,21 +89,45 @@ function sanitizeData(data: any): any {
     const sensitiveFields = [
         "password",
         "token",
+        "accessToken",
+        "refreshToken",
         "apiKey",
         "secret",
         "authorization",
         "creditCard",
         "ssn",
+        "cookie",
+        "cookies",
+        "session",
     ];
 
+    // For objects, recursively sanitize
     if (typeof data === "object" && !Array.isArray(data)) {
-        const sanitized = { ...data };
-        for (const field of sensitiveFields) {
-            if (sanitized[field]) {
-                sanitized[field] = "[REDACTED]";
+        const sanitized: any = {};
+
+        for (const [key, value] of Object.entries(data)) {
+            const lowerKey = key.toLowerCase();
+
+            // Redact sensitive fields
+            if (sensitiveFields.some(field => lowerKey.includes(field))) {
+                sanitized[key] = "[REDACTED]";
+            }
+            // Recursively sanitize nested objects
+            else if (typeof value === "object" && value !== null) {
+                sanitized[key] = sanitizeData(value);
+            }
+            // Keep primitive values
+            else {
+                sanitized[key] = value;
             }
         }
+
         return sanitized;
+    }
+
+    // For arrays, sanitize each element
+    if (Array.isArray(data)) {
+        return data.map(item => sanitizeData(item));
     }
 
     return data;

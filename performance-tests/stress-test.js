@@ -5,7 +5,6 @@ import { Rate, Trend } from 'k6/metrics';
 // Custom metrics
 const errorRate = new Rate('errors');
 const publicAnalysisDuration = new Trend('public_analysis_duration');
-const authAnalysisDuration = new Trend('auth_analysis_duration');
 
 // Test configuration
 export const options = {
