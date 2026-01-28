@@ -4,7 +4,6 @@ import { analysisService } from "../services/analysisService";
 import { User } from "../models/User";
 import {
     AuthenticationError,
-    AuthorizationError,
     ValidationError,
 } from "../middleware/errorHandler";
 import { logger } from "../utils/logger";

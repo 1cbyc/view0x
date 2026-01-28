@@ -41,7 +41,7 @@ const RepositoryAnalyzer: React.FC = () => {
         setLoading(true);
 
         try {
-            const authToken = localStorage.getItem("token");
+            const authToken = localStorage.getItem("accessToken");
             if (!authToken) {
                 setError("You must be logged in to analyze repositories");
                 setLoading(false);
@@ -110,8 +110,8 @@ const RepositoryAnalyzer: React.FC = () => {
                                     type="button"
                                     onClick={() => setPlatform("github")}
                                     className={`flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all ${platform === "github"
-                                            ? "border-accent bg-accent/10 text-accent"
-                                            : "border-white/10 bg-dark-800/50 text-gray-400 hover:border-accent/50"
+                                        ? "border-accent bg-accent/10 text-accent"
+                                        : "border-white/10 bg-dark-800/50 text-gray-400 hover:border-accent/50"
                                         }`}
                                 >
                                     <Github className="w-5 h-5" />
@@ -121,8 +121,8 @@ const RepositoryAnalyzer: React.FC = () => {
                                     type="button"
                                     onClick={() => setPlatform("gitlab")}
                                     className={`flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all ${platform === "gitlab"
-                                            ? "border-accent bg-accent/10 text-accent"
-                                            : "border-white/10 bg-dark-800/50 text-gray-400 hover:border-accent/50"
+                                        ? "border-accent bg-accent/10 text-accent"
+                                        : "border-white/10 bg-dark-800/50 text-gray-400 hover:border-accent/50"
                                         }`}
                                 >
                                     <GitBranch className="w-5 h-5" />
@@ -172,8 +172,8 @@ const RepositoryAnalyzer: React.FC = () => {
                                 type="button"
                                 onClick={() => setUseToken(!useToken)}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${useToken
-                                        ? "border-accent bg-accent/10 text-accent"
-                                        : "border-white/10 bg-dark-800/50 text-gray-400"
+                                    ? "border-accent bg-accent/10 text-accent"
+                                    : "border-white/10 bg-dark-800/50 text-gray-400"
                                     }`}
                             >
                                 {useToken ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
