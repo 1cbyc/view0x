@@ -1,0 +1,98 @@
+name: Visual Regression Tests
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'frontend/**'
+      - 'e2e/visual-regression.spec.ts'
+  workflow_dispatch:
+
+jobs:
+  visual-regression:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm install
+
+      - name: Install Playwright browsers
+        working-directory: ./frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+
+      - name: Start frontend dev server
+        working-directory: ./frontend
+        run: |
+          npm run dev &
+          echo $! > dev-server.pid
+          npx wait-on http://localhost:5173 --timeout 30000
+
+      - name: Run visual regression tests
+        working-directory: ./
+        run: npx playwright test e2e/visual-regression.spec.ts --reporter=html
+        continue-on-error: true
+
+      - name: Upload visual regression report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-report
+          path: |
+            playwright-report/
+            test-results/
+
+      - name: Upload failed screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failed-screenshots
+          path: test-results/**/*-diff.png
+
+      - name: Stop dev server
+        if: always()
+        working-directory: ./frontend
+        run: |
+          if [ -f dev-server.pid ]; then
+            kill $(cat dev-server.pid) || true
+          fi
+
+      - name: Comment PR with visual changes
+        if: github.event_name == 'pull_request' && failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comment = `## Visual Regression Results 👁️
+            
+            ⚠️ Visual changes detected!
+            
+            Please review the uploaded screenshots to ensure the changes are intentional.
+            
+            If the changes are expected:
+            1. Review the visual diff images in the artifacts
+            2. Run locally: \`npx playwright test e2e/visual-regression.spec.ts --update-snapshots\`
+            3. Commit the updated baseline screenshots
+            
+            See the visual regression report artifact for details.
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
