@@ -25,7 +25,7 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: ./frontend
-        run: npm ci
+        run: npm install
 
       - name: Install Playwright browsers
         working-directory: ./frontend
@@ -40,7 +40,7 @@ jobs:
         run: |
           npm run dev &
           echo $! > dev-server.pid
-          sleep 10
+          npx wait-on http://localhost:5173 --timeout 30000
 
       - name: Run visual regression tests
         working-directory: ./

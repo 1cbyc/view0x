@@ -60,38 +60,39 @@ export const analyzeGitHubRepo = async (req: Request, res: Response) => {
             });
         }
 
-        // Create analysis jobs for each file
-        const analysisJobs = [];
-        for (const file of files) {
-            if (!user.canAnalyze()) {
-                logger.warn(
-                    `User ${userId} reached analysis limit while processing repository`,
-                );
-                break;
-            }
+        // Create analysis jobs for each file in parallel
+        const analysisJobs = await Promise.all(
+            files.map(async (file) => {
+                if (!user.canAnalyze()) {
+                    logger.warn(
+                        `User ${userId} reached analysis limit while processing repository`,
+                    );
+                    return null;
+                }
 
-            const jobData = {
-                contractCode: file.content,
-                contractName:
-                    contractName || `${repoInfo.repo}/${file.path}`,
-                metadata: {
-                    source: "github",
-                    repository: `${repoInfo.owner}/${repoInfo.repo}`,
-                    branch: branch || repoInfo.branch,
+                const jobData = {
+                    contractCode: file.content,
+                    contractName:
+                        contractName || `${repoInfo.repo}/${file.path}`,
+                    metadata: {
+                        source: "github",
+                        repository: `${repoInfo.owner}/${repoInfo.repo}`,
+                        branch: branch || repoInfo.branch,
+                        filePath: file.path,
+                        sha: file.sha,
+                    },
+                };
+
+                const analysisJob = await analysisService.create(userId, jobData);
+                await user.incrementUsage();
+
+                return {
+                    jobId: analysisJob.id,
                     filePath: file.path,
-                    sha: file.sha,
-                },
-            };
-
-            const analysisJob = await analysisService.create(userId, jobData);
-            await user.incrementUsage();
-
-            analysisJobs.push({
-                jobId: analysisJob.id,
-                filePath: file.path,
-                status: analysisJob.status,
-            });
-        }
+                    status: analysisJob.status,
+                };
+            })
+        ).then(jobs => jobs.filter(Boolean));
 
         logger.info(
             `Created ${analysisJobs.length} analysis jobs for GitHub repository: ${repoInfo.owner}/${repoInfo.repo}`,
@@ -166,38 +167,39 @@ export const analyzeGitLabRepo = async (req: Request, res: Response) => {
             });
         }
 
-        // Create analysis jobs for each file
-        const analysisJobs = [];
-        for (const file of files) {
-            if (!user.canAnalyze()) {
-                logger.warn(
-                    `User ${userId} reached analysis limit while processing repository`,
-                );
-                break;
-            }
+        // Create analysis jobs for each file in parallel
+        const analysisJobs = await Promise.all(
+            files.map(async (file) => {
+                if (!user.canAnalyze()) {
+                    logger.warn(
+                        `User ${userId} reached analysis limit while processing repository`,
+                    );
+                    return null;
+                }
 
-            const jobData = {
-                contractCode: file.content,
-                contractName:
-                    contractName || `${repoInfo.repo}/${file.path}`,
-                metadata: {
-                    source: "gitlab",
-                    repository: `${repoInfo.owner}/${repoInfo.repo}`,
-                    branch: branch || repoInfo.branch,
+                const jobData = {
+                    contractCode: file.content,
+                    contractName:
+                        contractName || `${repoInfo.repo}/${file.path}`,
+                    metadata: {
+                        source: "gitlab",
+                        repository: `${repoInfo.owner}/${repoInfo.repo}`,
+                        branch: branch || repoInfo.branch,
+                        filePath: file.path,
+                        sha: file.sha,
+                    },
+                };
+
+                const analysisJob = await analysisService.create(userId, jobData);
+                await user.incrementUsage();
+
+                return {
+                    jobId: analysisJob.id,
                     filePath: file.path,
-                    sha: file.sha,
-                },
-            };
-
-            const analysisJob = await analysisService.create(userId, jobData);
-            await user.incrementUsage();
-
-            analysisJobs.push({
-                jobId: analysisJob.id,
-                filePath: file.path,
-                status: analysisJob.status,
-            });
-        }
+                    status: analysisJob.status,
+                };
+            })
+        ).then(jobs => jobs.filter(Boolean));
 
         logger.info(
             `Created ${analysisJobs.length} analysis jobs for GitLab repository: ${repoInfo.owner}/${repoInfo.repo}`,

@@ -3,6 +3,7 @@ import ApiAnalytics from "../models/ApiAnalytics";
 import { Op } from "sequelize";
 import { logger } from "../utils/logger";
 import { AuthenticationError, ValidationError } from "../middleware/errorHandler";
+import { stringify } from "csv-stringify/sync";
 
 /**
  * @description Get analytics dashboard data
@@ -252,47 +253,45 @@ export const exportAnalytics = async (req: Request, res: Response) => {
             limit: 10000, // Limit to prevent overwhelming exports
         });
 
+        // Mask PII data before exporting
+        const sanitizedData = analytics.map(record => ({
+            timestamp: record.timestamp.toISOString(),
+            endpoint: record.endpoint,
+            method: record.method,
+            statusCode: record.statusCode,
+            responseTime: record.responseTime,
+            userId: record.userId ? `***${record.userId.toString().slice(-4)}` : "",
+            ipAddress: record.ipAddress ? record.ipAddress.replace(/\d+\.\d+\.\d+\./, "***.***.***.") : "",
+        }));
+
         if (format === "json") {
             res.setHeader("Content-Type", "application/json");
             res.setHeader(
                 "Content-Disposition",
                 `attachment; filename="analytics-${Date.now()}.json"`,
             );
-            res.send(JSON.stringify(analytics, null, 2));
+            res.send(JSON.stringify(sanitizedData, null, 2));
         } else {
-            // CSV format
-            const csvRows = [
-                [
-                    "Timestamp",
-                    "Endpoint",
-                    "Method",
-                    "Status Code",
-                    "Response Time (ms)",
-                    "User ID",
-                    "IP Address",
-                ].join(","),
-            ];
-
-            for (const record of analytics) {
-                csvRows.push(
-                    [
-                        record.timestamp.toISOString(),
-                        `"${record.endpoint}"`,
-                        record.method,
-                        record.statusCode,
-                        record.responseTime,
-                        record.userId || "",
-                        record.ipAddress || "",
-                    ].join(","),
-                );
-            }
+            // CSV format using csv-stringify to prevent CSV injection
+            const csvData = stringify(sanitizedData, {
+                header: true,
+                columns: [
+                    { key: 'timestamp', header: 'Timestamp' },
+                    { key: 'endpoint', header: 'Endpoint' },
+                    { key: 'method', header: 'Method' },
+                    { key: 'statusCode', header: 'Status Code' },
+                    { key: 'responseTime', header: 'Response Time (ms)' },
+                    { key: 'userId', header: 'User ID (Masked)' },
+                    { key: 'ipAddress', header: 'IP Address (Masked)' },
+                ],
+            });
 
             res.setHeader("Content-Type", "text/csv");
             res.setHeader(
                 "Content-Disposition",
                 `attachment; filename="analytics-${Date.now()}.csv"`,
             );
-            res.send(csvRows.join("\n"));
+            res.send(csvData);
         }
 
         logger.info(`Analytics exported: ${format} format by user ${userId}`);
