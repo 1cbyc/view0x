@@ -1,0 +1,108 @@
+name: Accessibility Tests
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'frontend/**'
+      - 'e2e/accessibility.spec.ts'
+  workflow_dispatch:
+
+jobs:
+  accessibility-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm install
+
+      - name: Install Playwright browsers
+        working-directory: ./frontend
+        run: npx playwright install --with-deps
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+
+      - name: Start frontend dev server
+        working-directory: ./frontend
+        run: |
+          npm run dev &
+          echo $! > dev-server.pid
+          sleep 10
+
+      - name: Run accessibility tests
+        working-directory: ./
+        run: npx playwright test e2e/accessibility.spec.ts --reporter=html
+
+      - name: Upload accessibility report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: accessibility-report
+          path: playwright-report/
+
+      - name: Stop dev server
+        if: always()
+        working-directory: ./frontend
+        run: |
+          if [ -f dev-server.pid ]; then
+            kill $(cat dev-server.pid) || true
+          fi
+
+      - name: Comment PR with accessibility results
+        if: github.event_name == 'pull_request' && failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comment = `## Accessibility Test Results ♿
+            
+            ⚠️ Accessibility violations detected!
+            
+            Please review the uploaded accessibility report for details.
+            All pages must meet WCAG 2.1 Level AA standards.
+            
+            Common issues to check:
+            - Missing alt text on images
+            - Insufficient color contrast
+            - Missing ARIA labels on interactive elements
+            - Improper heading hierarchy
+            - Keyboard navigation issues
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: Pass accessibility check
+        if: github.event_name == 'pull_request' && success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comment = `## Accessibility Test Results ♿
+            
+            ✅ All accessibility tests passed!
+            
+            All pages meet WCAG 2.1 Level AA standards.
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });

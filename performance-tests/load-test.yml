@@ -1,0 +1,86 @@
+config:
+  target: "http://localhost:3001"
+  phases:
+    - duration: 60
+      arrivalRate: 5
+      name: "Warm up"
+    - duration: 120
+      arrivalRate: 10
+      name: "Sustained load"
+    - duration: 60
+      arrivalRate: 20
+      name: "Peak load"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+scenarios:
+  - name: "Public Analysis Flow"
+    weight: 50
+    flow:
+      - post:
+          url: "/api/analysis/public"
+          json:
+            contractCode: |
+              pragma solidity ^0.8.0;
+              contract SimpleStorage {
+                  uint256 public value;
+                  function setValue(uint256 _value) public {
+                      value = _value;
+                  }
+              }
+          capture:
+            - json: "$.success"
+              as: "success"
+          expect:
+            - statusCode: 200
+            - contentType: json
+            - hasProperty: "success"
+
+  - name: "Health Check"
+    weight: 20
+    flow:
+      - get:
+          url: "/health"
+          expect:
+            - statusCode: 200
+
+  - name: "API Documentation"
+    weight: 10
+    flow:
+      - get:
+          url: "/api-docs.json"
+          expect:
+            - statusCode: 200
+
+  - name: "Authenticated Analysis Flow"
+    weight: 20
+    flow:
+      # Login to get token
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "{{ $randomEmail() }}"
+            password: "{{ $processEnvironment.TEST_PASSWORD || 'TestPassword123!' }}"
+          capture:
+            - json: "$.data.token"
+              as: "authToken"
+      
+      # Get user analyses
+      - get:
+          url: "/api/analysis"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+
+# Performance thresholds
+ensure:
+  maxErrorRate: 1  # Max 1% error rate
+  p95: 500         # 95th percentile response time < 500ms
+  p99: 1000        # 99th percentile response time < 1000ms
+
+# Reporting
+plugins:
+  expect: {}
+  metrics-by-endpoint: {}

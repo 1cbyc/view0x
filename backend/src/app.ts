@@ -15,12 +15,12 @@ import { initializeConnections, getConnectionHealth } from "./config/database";
 import { syncModels } from "./models";
 import { onAnalysisUpdate, AnalysisUpdatePayload } from "./events/appEvents";
 
-// Middleware
 import { errorHandler } from "./middleware/errorHandler";
 import { rateLimiter } from "./middleware/rateLimit";
 import { requestLogger } from "./middleware/logging";
 import { csrfProtection } from "./middleware/csrf";
 import { requestSigningMiddleware } from "./middleware/requestSigning";
+import { analyticsMiddleware } from "./middleware/analyticsMiddleware";
 
 // Routes
 import authRoutes from "./routes/auth";
@@ -30,6 +30,8 @@ import templateRoutes from "./routes/templates";
 import webhookRoutes from "./routes/webhooks";
 import twoFactorRoutes from "./routes/2fa";
 import activityLogRoutes from "./routes/activityLogs";
+import repositoryRoutes from "./routes/repository";
+import analyticsRoutes from "./routes/analytics";
 // import userRoutes from './routes/users';
 
 // Initialize Express app
@@ -108,6 +110,9 @@ app.use(csrfProtection);
 // Request signing for API key requests (after CSRF, before routes)
 app.use(requestSigningMiddleware);
 
+// Analytics tracking middleware (after request signing, before routes)
+app.use(analyticsMiddleware);
+
 // Caching middleware for public endpoints (applied per-route in route files)
 
 // Health check endpoint (before other routes)
@@ -162,6 +167,8 @@ app.use("/api/templates", templateRoutes);
 app.use("/api/webhooks", webhookRoutes);
 app.use("/api/2fa", twoFactorRoutes);
 app.use("/api/activity-logs", activityLogRoutes);
+app.use("/api/repository", repositoryRoutes);
+app.use("/api/analytics", analyticsRoutes);
 // app.use('/api/users', userRoutes);
 
 // Root endpoint with API information
