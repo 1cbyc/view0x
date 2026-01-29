@@ -58,11 +58,11 @@ export class RepositoryService {
 
         const owner = pathParts[0];
         const repo = pathParts[1].replace(/\.git$/, "");
-        const branch = pathParts[3] === "blob" || pathParts[3] === "tree" 
-          ? pathParts[4] 
+        const branch = pathParts[2] === "blob" || pathParts[2] === "tree"
+          ? pathParts[3]
           : "main";
-        const path = pathParts[3] === "blob" || pathParts[3] === "tree"
-          ? pathParts.slice(5).join("/")
+        const path = pathParts[2] === "blob" || pathParts[2] === "tree"
+          ? pathParts.slice(4).join("/")
           : undefined;
 
         return { platform: "github", owner, repo, branch, path };
