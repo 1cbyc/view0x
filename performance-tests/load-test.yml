@@ -61,7 +61,7 @@ scenarios:
           url: "/api/auth/login"
           json:
             email: "{{ $randomEmail() }}"
-            password: "TestPassword123!"
+            password: "{{ $processEnvironment.TEST_PASSWORD || 'TestPassword123!' }}"
           capture:
             - json: "$.data.token"
               as: "authToken"
