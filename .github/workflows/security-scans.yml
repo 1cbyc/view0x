@@ -50,8 +50,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd backend && npm ci
-          cd ../frontend && npm ci
+          cd backend && npm install
+          cd ../frontend && npm install
 
       - name: Run dependency audit (backend)
         working-directory: ./backend
@@ -73,6 +73,8 @@ jobs:
           cp .env.example .env
           echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/view0x_test" >> .env
           echo "REDIS_URL=redis://localhost:6379" >> .env
+          echo "JWT_SECRET=test_jwt_secret_for_ci_testing_only_do_not_use_in_production" >> .env
+          echo "REFRESH_TOKEN_SECRET=test_refresh_token_secret_for_ci_testing_only_do_not_use_in_production" >> .env
           npm run migrate
           npm run build
 
@@ -98,7 +100,7 @@ jobs:
 
       - name: Run Playwright security tests
         working-directory: ./
-        run: npx playwright test security-tests/
+        run: npx playwright test security-tests/security-tests.spec.ts
 
       - name: Upload security reports
         if: always()
