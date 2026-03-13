@@ -128,7 +128,7 @@ const Dashboard: React.FC = () => {
           timestamp: new Date().toISOString(),
         }));
       } catch (err: any) {
-        if (err.response?.status === 401 || err.response?.status === 403) {
+        if (err.status === 401 || err.status === 403 || err.response?.status === 401 || err.response?.status === 403) {
           localStorage.removeItem("accessToken");
           localStorage.removeItem("refreshToken");
           localStorage.removeItem("user");
@@ -137,7 +137,8 @@ const Dashboard: React.FC = () => {
           return;
         }
         setError(
-          err.response?.data?.error?.message ||
+          err.error?.message ||
+            err.message ||
             "Failed to fetch analysis history. Please check your connection and try again."
         );
       } finally {
