@@ -1,5 +1,44 @@
+import "../setup";
 import { Verifier } from '@pact-foundation/pact';
 import path from 'path';
+
+jest.mock('../../config/database', () => {
+    const mockSequelize = {
+        define: jest.fn(),
+        transaction: jest.fn((callback) => callback({})),
+        authenticate: jest.fn().mockResolvedValue(true),
+        sync: jest.fn().mockResolvedValue(true),
+        close: jest.fn().mockResolvedValue(true),
+    };
+
+    return {
+        sequelize: mockSequelize,
+        cacheRedis: {
+            get: jest.fn().mockResolvedValue(null),
+            set: jest.fn(),
+            ping: jest.fn().mockResolvedValue('PONG'),
+            disconnect: jest.fn(),
+        },
+        redis: {
+            ping: jest.fn().mockResolvedValue('PONG'),
+            disconnect: jest.fn(),
+            on: jest.fn(),
+        },
+        bullQueueClient: {
+            disconnect: jest.fn(),
+        },
+        bullQueueSubscriber: {
+            disconnect: jest.fn(),
+        },
+        initializeConnections: jest.fn().mockResolvedValue(true),
+        getConnectionHealth: jest.fn().mockResolvedValue({
+            database: { status: 'up', responseTime: 1 },
+            redis: { status: 'up', responseTime: 1 },
+            cache: { status: 'up', responseTime: 1 },
+        }),
+    };
+});
+
 import { app } from '../../app';
 import { Server } from 'http';
 

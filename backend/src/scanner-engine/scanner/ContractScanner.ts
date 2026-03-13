@@ -1,6 +1,5 @@
-import { parse } from '@solidity-parser/parser';
-import * as solc from 'solc';
-import { ASTTraverser, ASTNode } from './ASTTraverser';
+import { parse } from "@solidity-parser/parser";
+import { ASTNode, ASTTraverser } from "./ASTTraverser";
 
 export interface ScanResult {
   vulnerabilities: Vulnerability[];
@@ -11,7 +10,7 @@ export interface ScanResult {
 
 export interface Vulnerability {
   type: string;
-  severity: 'HIGH' | 'MEDIUM' | 'LOW';
+  severity: "HIGH" | "MEDIUM" | "LOW";
   description: string;
   lineNumber: number;
   recommendation: string;
@@ -27,7 +26,7 @@ export interface GasOptimization {
 
 export interface CodeQualityIssue {
   type: string;
-  severity: 'HIGH' | 'MEDIUM' | 'LOW';
+  severity: "HIGH" | "MEDIUM" | "LOW";
   description: string;
   lineNumber: number;
   recommendation: string;
@@ -35,25 +34,25 @@ export interface CodeQualityIssue {
 
 export class ContractScanner {
   private contractCode: string;
-  private ast: any;
+  private ast: ASTNode;
   private lineMap: Map<number, number>;
   private traverser: ASTTraverser;
 
   constructor(contractCode: string) {
     this.contractCode = contractCode;
-    this.ast = parse(contractCode, { loc: true });
+    this.ast = parse(contractCode, { loc: true }) as ASTNode;
     this.lineMap = this.createLineMap();
     this.traverser = new ASTTraverser(this.ast);
   }
 
   private createLineMap(): Map<number, number> {
-    const lines = this.contractCode.split('\n');
+    const lines = this.contractCode.split("\n");
     const map = new Map<number, number>();
     let currentPosition = 0;
 
     lines.forEach((line, index) => {
       map.set(currentPosition, index + 1);
-      currentPosition += line.length + 1; // +1 for newline
+      currentPosition += line.length + 1;
     });
 
     return map;
@@ -74,46 +73,51 @@ export class ContractScanner {
     return lineNumber;
   }
 
+  private getNodeLineNumber(node: ASTNode): number {
+    return node.loc?.start?.line || this.getLineNumber(node.loc?.start?.offset || 0);
+  }
+
+  private findNodesInSubtree(
+    root: ASTNode,
+    predicate: (node: ASTNode) => boolean,
+  ): ASTNode[] {
+    return this.traverser.findNodes((node) => {
+      if (node === root) {
+        return predicate(node);
+      }
+
+      return this.traverser.isDescendantOf(node, root) && predicate(node);
+    });
+  }
+
   public async scan(): Promise<ScanResult> {
     const vulnerabilities = await this.detectVulnerabilities();
     const gasOptimizations = this.analyzeGasOptimizations();
     const codeQuality = this.assessCodeQuality();
-
-    const overallScore = this.calculateOverallScore(vulnerabilities, gasOptimizations, codeQuality);
+    const overallScore = this.calculateOverallScore(
+      vulnerabilities,
+      gasOptimizations,
+      codeQuality,
+    );
 
     return {
       vulnerabilities,
       gasOptimizations,
       codeQuality,
-      overallScore
+      overallScore,
     };
   }
 
   private async detectVulnerabilities(): Promise<Vulnerability[]> {
     const vulnerabilities: Vulnerability[] = [];
-    
-    // Check for reentrancy vulnerabilities
+
     this.checkReentrancy(vulnerabilities);
-    
-    // Check for integer overflow/underflow
     this.checkIntegerOverflow(vulnerabilities);
-    
-    // Check for unprotected selfdestruct
     this.checkUnprotectedSelfdestruct(vulnerabilities);
-    
-    // Check for tx.origin usage
     this.checkTxOriginUsage(vulnerabilities);
-    
-    // Check for unchecked external calls
     this.checkUncheckedExternalCalls(vulnerabilities);
-    
-    // Check for weak randomness
     this.checkWeakRandomness(vulnerabilities);
-    
-    // Check for missing access control
     this.checkMissingAccessControl(vulnerabilities);
-    
-    // Check for dangerous delegatecall
     this.checkDangerousDelegatecall(vulnerabilities);
 
     return vulnerabilities;
@@ -121,460 +125,526 @@ export class ContractScanner {
 
   private checkReentrancy(vulnerabilities: Vulnerability[]): void {
     const functions = this.traverser.findAllFunctions();
-    
-    functions.forEach(func => {
-      const stateChanges = this.findStateChanges(func);
-      const externalCalls = this.findExternalCalls(func);
-      
-      // Check if there are external calls followed by state changes
-      externalCalls.forEach(call => {
-        const callPosition = call.loc?.start?.offset || 0;
-        const callLine = this.getLineNumber(callPosition);
-        
-        // Find state changes that occur after the external call
-        const subsequentStateChanges = stateChanges.filter(change => {
-          const changePosition = change.loc?.start?.offset || 0;
-          return changePosition > callPosition;
-        });
 
-        if (subsequentStateChanges.length > 0) {
+    functions.forEach((func) => {
+      const stateChanges = this.findStateChanges(func);
+      const externalCalls = this.findExternalCalls(func).filter(
+        (call) => !this.isExternalCallChecked(call, func),
+      );
+
+      externalCalls.forEach((call) => {
+        const callLine = this.getNodeLineNumber(call);
+        const hasStateChangeAfterCall = stateChanges.some(
+          (change) => this.getNodeLineNumber(change) > callLine,
+        );
+
+        if (hasStateChangeAfterCall) {
           vulnerabilities.push({
-            type: 'reentrancy',
-            severity: 'HIGH',
-            description: 'Potential reentrancy vulnerability: State changes after external call',
+            type: "reentrancy",
+            severity: "HIGH",
+            description:
+              "Potential reentrancy vulnerability: state changes happen after an external call.",
             lineNumber: callLine,
-            recommendation: 'Consider using the checks-effects-interactions pattern. Update state variables before making external calls.'
+            recommendation:
+              "Follow the checks-effects-interactions pattern and update state before external calls.",
           });
         }
       });
     });
   }
 
-  private findFunctions(node: any): any[] {
-    const functions: any[] = [];
-    
-    if (node.type === 'FunctionDefinition') {
-      functions.push(node);
-    }
-    
-    if (node.children) {
-      node.children.forEach((child: any) => {
-        functions.push(...this.findFunctions(child));
-      });
-    }
-    
-    return functions;
+  private findFunctions(node: ASTNode): ASTNode[] {
+    return this.findNodesInSubtree(
+      node,
+      (candidate) => candidate.type === "FunctionDefinition",
+    );
   }
 
-  private findStateChanges(node: any): any[] {
-    const stateChanges: any[] = [];
-    
-    if (node.type === 'Assignment' || 
-        node.type === 'VariableDeclaration' ||
-        node.type === 'ExpressionStatement' && 
-        node.expression.type === 'Assignment') {
-      stateChanges.push(node);
-    }
-    
-    if (node.children) {
-      node.children.forEach((child: any) => {
-        stateChanges.push(...this.findStateChanges(child));
-      });
-    }
-    
-    return stateChanges;
-  }
-
-  private findExternalCalls(node: any): any[] {
-    const externalCalls: any[] = [];
-    
-    if (node.type === 'FunctionCall' && 
-        (node.expression.type === 'MemberAccess' || 
-         node.expression.type === 'Identifier')) {
-      const callName = node.expression.name || 
-                      (node.expression.memberName || '');
-      
-      if (['call', 'send', 'transfer', 'delegatecall'].includes(callName)) {
-        externalCalls.push(node);
+  private findStateChanges(node: ASTNode): ASTNode[] {
+    return this.findNodesInSubtree(node, (candidate) => {
+      if (candidate.type === "Assignment") {
+        return true;
       }
-    }
-    
-    if (node.children) {
-      node.children.forEach((child: any) => {
-        externalCalls.push(...this.findExternalCalls(child));
-      });
-    }
-    
-    return externalCalls;
+
+      if (
+        candidate.type === "BinaryOperation" &&
+        ["=", "+=", "-=", "*=", "/=", "%="].includes(candidate.operator)
+      ) {
+        return true;
+      }
+
+      return (
+        candidate.type === "UnaryOperation" &&
+        ["++", "--", "delete"].includes(candidate.operator)
+      );
+    });
+  }
+
+  private findExternalCalls(node: ASTNode): ASTNode[] {
+    return this.findNodesInSubtree(node, (candidate) => {
+      if (candidate.type !== "FunctionCall") {
+        return false;
+      }
+
+      let expression = candidate.expression;
+      if (expression?.type === "NameValueExpression") {
+        expression = expression.expression;
+      }
+
+      if (expression?.type === "MemberAccess") {
+        return ["call", "send", "transfer", "delegatecall"].includes(
+          expression.memberName,
+        );
+      }
+
+      if (expression?.type === "Identifier") {
+        return ["call", "send", "transfer", "delegatecall"].includes(
+          expression.name,
+        );
+      }
+
+      return false;
+    });
   }
 
   private checkIntegerOverflow(vulnerabilities: Vulnerability[]): void {
     const functions = this.findFunctions(this.ast);
-    
-    functions.forEach(func => {
+
+    functions.forEach((func) => {
       const arithmeticOps = this.findArithmeticOperations(func);
-      
-      arithmeticOps.forEach(op => {
-        const opPosition = op.loc?.start?.offset || 0;
-        const opLine = this.getLineNumber(opPosition);
-        
-        // Check if the operation is protected by SafeMath or similar
-        const isProtected = this.isOperationProtected(op);
-        
-        if (!isProtected) {
+
+      arithmeticOps.forEach((op) => {
+        if (!this.isOperationProtected(op)) {
           vulnerabilities.push({
-            type: 'integer-overflow',
-            severity: 'HIGH',
-            description: 'Potential integer overflow/underflow in arithmetic operation',
-            lineNumber: opLine,
-            recommendation: 'Use SafeMath library or Solidity 0.8.0+ for automatic overflow checks. Consider adding explicit checks for overflow/underflow conditions.'
+            type: "integer-overflow",
+            severity: "HIGH",
+            description:
+              "Potential integer overflow or underflow in arithmetic operation.",
+            lineNumber: this.getNodeLineNumber(op),
+            recommendation:
+              "Use Solidity 0.8.x checked arithmetic or explicit overflow guards around sensitive math.",
           });
         }
       });
     });
   }
 
-  private findArithmeticOperations(node: any): any[] {
-    const operations: any[] = [];
-    
-    if (node.type === 'BinaryOperation' && 
-        ['+', '-', '*', '/', '%'].includes(node.operator)) {
-      operations.push(node);
-    }
-    
-    if (node.children) {
-      node.children.forEach((child: any) => {
-        operations.push(...this.findArithmeticOperations(child));
-      });
-    }
-    
-    return operations;
+  private findArithmeticOperations(node: ASTNode): ASTNode[] {
+    return this.findNodesInSubtree(
+      node,
+      (candidate) =>
+        candidate.type === "BinaryOperation" &&
+        ["+", "-", "*", "/", "%"].includes(candidate.operator),
+    );
   }
 
-  private isOperationProtected(node: any): boolean {
-    // Check if the operation is wrapped in a SafeMath call
-    let parent = node.parent;
-    while (parent) {
-      if (parent.type === 'FunctionCall' && 
-          parent.expression.type === 'MemberAccess' &&
-          ['add', 'sub', 'mul', 'div', 'mod'].includes(parent.expression.memberName)) {
+  private isOperationProtected(node: ASTNode): boolean {
+    for (const ancestor of this.traverser.getAncestors(node)) {
+      if (ancestor.type === "UncheckedStatement") {
         return true;
       }
-      parent = parent.parent;
-    }
-    
-    // Check if the contract is using Solidity 0.8.0 or higher
-    const pragmaDirective = this.findPragmaDirective(this.ast);
-    if (pragmaDirective) {
-      const version = pragmaDirective.value;
-      return version.startsWith('^0.8.') || version.startsWith('>=0.8.');
-    }
-    
-    return false;
-  }
 
-  private findPragmaDirective(node: any): any {
-    if (node.type === 'PragmaDirective') {
-      return node;
-    }
-    
-    if (node.children) {
-      for (const child of node.children) {
-        const pragma = this.findPragmaDirective(child);
-        if (pragma) return pragma;
+      if (
+        ancestor.type === "FunctionCall" &&
+        ancestor.expression?.type === "MemberAccess" &&
+        ["add", "sub", "mul", "div", "mod"].includes(
+          ancestor.expression.memberName,
+        )
+      ) {
+        return true;
       }
     }
-    
-    return null;
+
+    const pragmaDirective = this.findPragmaDirective();
+    if (!pragmaDirective) {
+      return false;
+    }
+
+    const version = pragmaDirective.value || "";
+    return (
+      version.startsWith("^0.8.") ||
+      version.startsWith(">=0.8.") ||
+      version.includes("0.8.")
+    );
+  }
+
+  private findPragmaDirective(): ASTNode | null {
+    return this.traverser.findFirstNodeOfType("PragmaDirective");
   }
 
   private checkUnprotectedSelfdestruct(vulnerabilities: Vulnerability[]): void {
     const functions = this.traverser.findAllFunctions();
-    
-    functions.forEach(func => {
+
+    functions.forEach((func) => {
       const selfdestructCalls = this.findSelfdestructCalls(func);
-      
-      selfdestructCalls.forEach(call => {
-        const callPosition = call.loc?.start?.offset || 0;
-        const callLine = this.getLineNumber(callPosition);
-        
-        // Check if the function has proper access control
-        const hasAccessControl = this.hasAccessControl(func);
-        
-        if (!hasAccessControl) {
-          vulnerabilities.push({
-            type: 'unprotected-selfdestruct',
-            severity: 'HIGH',
-            description: 'Unprotected selfdestruct call: Function lacks proper access control',
-            lineNumber: callLine,
-            recommendation: 'Add access control modifiers (e.g., onlyOwner) to functions containing selfdestruct calls. Consider implementing a timelock mechanism for critical operations.'
-          });
-        }
+      if (selfdestructCalls.length === 0 || this.hasAccessControl(func)) {
+        return;
+      }
+
+      selfdestructCalls.forEach((call) => {
+        vulnerabilities.push({
+          type: "unprotected-selfdestruct",
+          severity: "HIGH",
+          description:
+            "Unprotected selfdestruct call found in a function without access control.",
+          lineNumber: this.getNodeLineNumber(call),
+          recommendation:
+            "Protect selfdestruct behind a trusted modifier or remove it entirely.",
+        });
       });
     });
   }
 
-  private findSelfdestructCalls(node: any): any[] {
-    const calls: any[] = [];
-    
-    if (node.type === 'FunctionCall' && 
-        node.expression.type === 'Identifier' &&
-        node.expression.name === 'selfdestruct') {
-      calls.push(node);
-    }
-    
-    if (node.children) {
-      node.children.forEach((child: any) => {
-        calls.push(...this.findSelfdestructCalls(child));
-      });
-    }
-    
-    return calls;
+  private findSelfdestructCalls(node: ASTNode): ASTNode[] {
+    return this.findNodesInSubtree(
+      node,
+      (candidate) =>
+        candidate.type === "FunctionCall" &&
+        candidate.expression?.type === "Identifier" &&
+        candidate.expression.name === "selfdestruct",
+    );
   }
 
-  private hasAccessControl(node: any): boolean {
-    // Check for common access control modifiers
+  private hasAccessControl(node: ASTNode): boolean {
     const accessControlModifiers = [
-      'onlyOwner',
-      'onlyAdmin',
-      'onlyAuthorized',
-      'onlyRole',
-      'requireAuth'
+      "onlyOwner",
+      "onlyAdmin",
+      "onlyAuthorized",
+      "onlyRole",
+      "requireAuth",
     ];
-    
-    if (node.modifiers) {
-      return node.modifiers.some((mod: any) => 
-        accessControlModifiers.includes(mod.name)
-      );
+
+    if (
+      Array.isArray(node.modifiers) &&
+      node.modifiers.some(
+        (modifier: ASTNode) =>
+          accessControlModifiers.includes(modifier.name) ||
+          accessControlModifiers.includes(modifier.modifierName?.name),
+      )
+    ) {
+      return true;
     }
-    
-    // Check for require statements with owner checks
-    const requireStatements = this.findRequireStatements(node);
-    return requireStatements.some((stmt: any) => {
-      const condition = stmt.condition;
+
+    return this.findRequireStatements(node).some((statement) => {
+      const condition = statement.arguments?.[0];
+      if (!condition) {
+        return false;
+      }
+
       return (
-        (condition.type === 'BinaryOperation' && 
-         condition.operator === '==' &&
-         (this.isOwnerCheck(condition.left) || this.isOwnerCheck(condition.right))) ||
-        (condition.type === 'FunctionCall' &&
-         condition.expression.type === 'Identifier' &&
-         accessControlModifiers.includes(condition.expression.name))
+        (condition.type === "BinaryOperation" &&
+          condition.operator === "==" &&
+          (this.isOwnerCheck(condition.left) || this.isOwnerCheck(condition.right))) ||
+        (condition.type === "FunctionCall" &&
+          condition.expression?.type === "Identifier" &&
+          accessControlModifiers.includes(condition.expression.name))
       );
     });
   }
 
-  private findRequireStatements(node: any): any[] {
-    const statements: any[] = [];
-    
-    if (node.type === 'FunctionCall' && 
-        node.expression.type === 'Identifier' &&
-        node.expression.name === 'require') {
-      statements.push(node);
-    }
-    
-    if (node.children) {
-      node.children.forEach((child: any) => {
-        statements.push(...this.findRequireStatements(child));
-      });
-    }
-    
-    return statements;
+  private findRequireStatements(node: ASTNode): ASTNode[] {
+    return this.findNodesInSubtree(
+      node,
+      (candidate) =>
+        candidate.type === "FunctionCall" &&
+        candidate.expression?.type === "Identifier" &&
+        candidate.expression.name === "require",
+    );
   }
 
-  private isOwnerCheck(node: any): boolean {
-    if (node.type === 'MemberAccess') {
-      return node.memberName === 'owner' || 
-             (node.expression.type === 'Identifier' && 
-              node.expression.name === 'msg' && 
-              node.memberName === 'sender');
+  private isOwnerCheck(node: ASTNode | undefined): boolean {
+    if (!node) {
+      return false;
     }
+
+    if (node.type === "Identifier") {
+      return ["owner", "admin"].includes(node.name);
+    }
+
+    if (node.type === "MemberAccess") {
+      return (
+        node.memberName === "owner" ||
+        (node.expression?.type === "Identifier" &&
+          node.expression.name === "msg" &&
+          node.memberName === "sender")
+      );
+    }
+
     return false;
   }
 
   private checkTxOriginUsage(vulnerabilities: Vulnerability[]): void {
-    const functions = this.traverser.findAllFunctions();
-    functions.forEach(func => {
-      const txOriginUsages = this.findTxOriginUsages(func);
-      txOriginUsages.forEach(usage => {
-        const usagePosition = usage.loc?.start?.offset || 0;
-        const usageLine = this.getLineNumber(usagePosition);
+    this.traverser.findAllFunctions().forEach((func) => {
+      this.findTxOriginUsages(func).forEach((usage) => {
         vulnerabilities.push({
-          type: 'tx-origin-usage',
-          severity: 'HIGH',
-          description: 'Dangerous use of tx.origin for authorization. This can be exploited in phishing attacks.',
-          lineNumber: usageLine,
-          recommendation: 'Use msg.sender for authorization instead of tx.origin.'
+          type: "tx-origin-usage",
+          severity: "HIGH",
+          description:
+            "Dangerous use of tx.origin for authorization. This is vulnerable to phishing-style attacks.",
+          lineNumber: this.getNodeLineNumber(usage),
+          recommendation:
+            "Use msg.sender for authorization and permission checks instead of tx.origin.",
         });
       });
     });
   }
 
-  private findTxOriginUsages(node: any): any[] {
-    const usages: any[] = [];
-    if (node.type === 'MemberAccess' && node.expression.type === 'Identifier' && node.expression.name === 'tx' && node.memberName === 'origin') {
-      usages.push(node);
-    }
-    if (node.children) {
-      node.children.forEach((child: any) => {
-        usages.push(...this.findTxOriginUsages(child));
-      });
-    }
-    return usages;
+  private findTxOriginUsages(node: ASTNode): ASTNode[] {
+    return this.findNodesInSubtree(
+      node,
+      (candidate) =>
+        candidate.type === "MemberAccess" &&
+        candidate.expression?.type === "Identifier" &&
+        candidate.expression.name === "tx" &&
+        candidate.memberName === "origin",
+    );
   }
 
   private checkUncheckedExternalCalls(vulnerabilities: Vulnerability[]): void {
-    const functions = this.traverser.findAllFunctions();
-    functions.forEach(func => {
-      const externalCalls = this.findExternalCalls(func);
-      externalCalls.forEach(call => {
-        // Check if the return value is used (i.e., checked)
-        if (!this.isExternalCallChecked(call, func)) {
-          const callPosition = call.loc?.start?.offset || 0;
-          const callLine = this.getLineNumber(callPosition);
-          vulnerabilities.push({
-            type: 'unchecked-external-call',
-            severity: 'MEDIUM',
-            description: 'Unchecked external call. The return value of an external call should be checked to ensure it succeeded.',
-            lineNumber: callLine,
-            recommendation: 'Check the return value of external calls and handle failures appropriately.'
-          });
+    this.traverser.findAllFunctions().forEach((func) => {
+      this.findExternalCalls(func).forEach((call) => {
+        if (this.isExternalCallChecked(call, func)) {
+          return;
         }
+
+        vulnerabilities.push({
+          type: "unchecked-external-call",
+          severity: "MEDIUM",
+          description:
+            "Unchecked external call found. The return value should be validated before continuing.",
+          lineNumber: this.getNodeLineNumber(call),
+          recommendation:
+            "Capture the return value of low-level calls and enforce success with require/assert.",
+        });
       });
     });
   }
 
-  private isExternalCallChecked(call: any, func: any): boolean {
-    // Naive check: see if the parent is a require/assert or if/while condition
-    let parent = call.parent;
-    while (parent) {
-      if (parent.type === 'FunctionCall' && parent.expression.type === 'Identifier' && ['require', 'assert'].includes(parent.expression.name)) {
+  private isExternalCallChecked(call: ASTNode, func: ASTNode): boolean {
+    for (const ancestor of this.traverser.getAncestors(call)) {
+      if (ancestor === func) {
+        break;
+      }
+
+      if (
+        ancestor.type === "FunctionCall" &&
+        ancestor.expression?.type === "Identifier" &&
+        ["require", "assert"].includes(ancestor.expression.name)
+      ) {
         return true;
       }
-      if (parent.type === 'IfStatement' || parent.type === 'WhileStatement') {
+
+      if (ancestor.type === "IfStatement" || ancestor.type === "WhileStatement") {
         return true;
       }
-      parent = parent.parent;
     }
+
     return false;
   }
 
   private checkWeakRandomness(vulnerabilities: Vulnerability[]): void {
-    const functions = this.traverser.findAllFunctions();
-    functions.forEach(func => {
-      const weakRandomness = this.findWeakRandomness(func);
-      weakRandomness.forEach(expr => {
-        const exprPosition = expr.loc?.start?.offset || 0;
-        const exprLine = this.getLineNumber(exprPosition);
+    this.traverser.findAllFunctions().forEach((func) => {
+      this.findWeakRandomness(func).forEach((expr) => {
         vulnerabilities.push({
-          type: 'weak-randomness',
-          severity: 'MEDIUM',
-          description: 'Weak randomness source detected. Using block variables for randomness is insecure.',
-          lineNumber: exprLine,
-          recommendation: 'Use a secure randomness source such as Chainlink VRF.'
+          type: "weak-randomness",
+          severity: "MEDIUM",
+          description:
+            "Weak randomness source detected. Block properties can be influenced and should not drive randomness.",
+          lineNumber: this.getNodeLineNumber(expr),
+          recommendation:
+            "Use a verifiable randomness source such as Chainlink VRF instead of block data.",
         });
       });
     });
   }
 
-  private findWeakRandomness(node: any): any[] {
-    const weak: any[] = [];
-    // Look for keccak256(...block.timestamp...) or ...block.difficulty...
-    if (node.type === 'FunctionCall' && node.expression.type === 'Identifier' && node.expression.name === 'keccak256') {
-      if (JSON.stringify(node).includes('block.timestamp') || JSON.stringify(node).includes('block.difficulty')) {
-        weak.push(node);
+  private findWeakRandomness(node: ASTNode): ASTNode[] {
+    return this.findNodesInSubtree(node, (candidate) => {
+      if (
+        candidate.type === "FunctionCall" &&
+        candidate.expression?.type === "Identifier" &&
+        candidate.expression.name === "keccak256"
+      ) {
+        const serialized = JSON.stringify(candidate);
+        return (
+          serialized.includes('"memberName":"timestamp"') ||
+          serialized.includes('"memberName":"difficulty"') ||
+          serialized.includes('"memberName":"number"')
+        );
       }
-    }
-    if (node.type === 'MemberAccess' && node.expression.type === 'Identifier' && node.expression.name === 'block' && ['timestamp', 'difficulty', 'number', 'hash'].includes(node.memberName)) {
-      weak.push(node);
-    }
-    if (node.children) {
-      node.children.forEach((child: any) => {
-        weak.push(...this.findWeakRandomness(child));
-      });
-    }
-    return weak;
+
+      return (
+        candidate.type === "MemberAccess" &&
+        candidate.expression?.type === "Identifier" &&
+        candidate.expression.name === "block" &&
+        ["timestamp", "difficulty", "number", "hash"].includes(
+          candidate.memberName,
+        )
+      );
+    });
   }
 
   private checkMissingAccessControl(vulnerabilities: Vulnerability[]): void {
-    const functions = this.traverser.findAllFunctions();
-    functions.forEach(func => {
-      // Only check public/external functions
-      if (func.visibility === 'public' || func.visibility === 'external') {
-        if (!this.hasAccessControl(func)) {
-          const funcPosition = func.loc?.start?.offset || 0;
-          const funcLine = this.getLineNumber(funcPosition);
-          vulnerabilities.push({
-            type: 'missing-access-control',
-            severity: 'HIGH',
-            description: 'Function is public or external and lacks access control. This may allow unauthorized access.',
-            lineNumber: funcLine,
-            recommendation: 'Add access control modifiers (e.g., onlyOwner) or require statements to restrict access.'
-          });
-        }
+    const sensitiveNames = [
+      "setowner",
+      "destroy",
+      "withdraw",
+      "transfer",
+      "mint",
+      "delegatecall",
+      "safecall",
+      "unsafecall",
+    ];
+
+    this.traverser.findAllFunctions().forEach((func) => {
+      if (func.visibility !== "public" && func.visibility !== "external") {
+        return;
       }
+
+      const name = (func.name || "").toLowerCase();
+      const seemsSensitive =
+        sensitiveNames.some((keyword) => name.includes(keyword)) ||
+        this.findSelfdestructCalls(func).length > 0 ||
+        this.findExternalCalls(func).length > 0;
+
+      if (!seemsSensitive || this.hasAccessControl(func)) {
+        return;
+      }
+
+      vulnerabilities.push({
+        type: "missing-access-control",
+        severity: "HIGH",
+        description:
+          "Sensitive public or external function appears to lack access control.",
+        lineNumber: this.getNodeLineNumber(func),
+        recommendation:
+          "Restrict this function with an access control modifier or explicit authorization check.",
+      });
     });
   }
 
   private checkDangerousDelegatecall(vulnerabilities: Vulnerability[]): void {
-    const functions = this.traverser.findAllFunctions();
-    functions.forEach(func => {
-      const delegatecalls = this.findDelegatecalls(func);
-      delegatecalls.forEach(call => {
-        const callPosition = call.loc?.start?.offset || 0;
-        const callLine = this.getLineNumber(callPosition);
+    this.traverser.findAllFunctions().forEach((func) => {
+      this.findDelegatecalls(func).forEach((call) => {
         vulnerabilities.push({
-          type: 'dangerous-delegatecall',
-          severity: 'HIGH',
-          description: 'Dangerous use of delegatecall. This can lead to code execution vulnerabilities.',
-          lineNumber: callLine,
-          recommendation: 'Avoid using delegatecall unless absolutely necessary. If used, ensure strict input validation and access control.'
+          type: "dangerous-delegatecall",
+          severity: "HIGH",
+          description:
+            "Dangerous use of delegatecall detected. This can allow untrusted code execution in the caller context.",
+          lineNumber: this.getNodeLineNumber(call),
+          recommendation:
+            "Avoid delegatecall unless absolutely necessary and protect it with strict input validation and access control.",
         });
       });
     });
   }
 
-  private findDelegatecalls(node: any): any[] {
-    const calls: any[] = [];
-    if (node.type === 'FunctionCall' && node.expression.type === 'MemberAccess' && node.expression.memberName === 'delegatecall') {
-      calls.push(node);
-    }
-    if (node.children) {
-      node.children.forEach((child: any) => {
-        calls.push(...this.findDelegatecalls(child));
-      });
-    }
-    return calls;
+  private findDelegatecalls(node: ASTNode): ASTNode[] {
+    return this.findNodesInSubtree(
+      node,
+      (candidate) =>
+        candidate.type === "FunctionCall" &&
+        candidate.expression?.type === "MemberAccess" &&
+        candidate.expression.memberName === "delegatecall",
+    );
   }
 
   private analyzeGasOptimizations(): GasOptimization[] {
-    // Placeholder: Always return a sample optimization
-    return [{
-      type: 'state-variable-packing',
-      potentialSavings: 'Moderate',
-      description: 'Consider packing state variables of the same type together to reduce storage costs.',
-      lineNumber: 1,
-      recommendation: 'Group smaller state variables together to optimize storage.'
-    }];
+    const optimizations: GasOptimization[] = [];
+    const lines = this.contractCode.split("\n");
+
+    lines.forEach((line, index) => {
+      const trimmed = line.trim();
+      const lineNumber = index + 1;
+
+      if (
+        trimmed.includes("for(") ||
+        trimmed.includes("for (")
+      ) {
+        optimizations.push({
+          type: "loop-optimization",
+          potentialSavings: "Moderate",
+          description:
+            "Loop detected. Review whether caching array length or using unchecked increments is safe.",
+          lineNumber,
+          recommendation:
+            "Cache repeated storage reads inside loops and use unchecked increments when overflow is impossible.",
+        });
+      }
+
+      if (trimmed.includes('require(') && trimmed.includes('"')) {
+        optimizations.push({
+          type: "custom-errors",
+          potentialSavings: "Low",
+          description:
+            "String-based revert reason detected. Custom errors are often cheaper.",
+          lineNumber,
+          recommendation:
+            "Replace repeated require strings with custom errors for lower deployment and revert costs.",
+        });
+      }
+    });
+
+    return optimizations;
   }
 
   private assessCodeQuality(): CodeQualityIssue[] {
-    // Placeholder: Always return a sample code quality issue
-    return [{
-      type: 'missing-documentation',
-      severity: 'LOW',
-      description: 'Some functions are missing documentation comments.',
-      lineNumber: 1,
-      recommendation: 'Add NatSpec comments to all public and external functions.'
-    }];
+    const issues: CodeQualityIssue[] = [];
+
+    this.traverser.findAllFunctions().forEach((func) => {
+      if (func.visibility !== "public" && func.visibility !== "external") {
+        return;
+      }
+
+      const startLine = this.getNodeLineNumber(func);
+      const hasNatSpec = this.contractCode
+        .split("\n")
+        .slice(Math.max(0, startLine - 4), startLine - 1)
+        .some((line) => line.trim().startsWith("///") || line.trim().startsWith("/**"));
+
+      if (!hasNatSpec) {
+        issues.push({
+          type: "missing-documentation",
+          severity: "LOW",
+          description:
+            "Public or external function is missing NatSpec or documentation comments.",
+          lineNumber: startLine,
+          recommendation:
+            "Add concise NatSpec comments to improve maintainability and auditability.",
+        });
+      }
+    });
+
+    return issues;
   }
 
   private calculateOverallScore(
     vulnerabilities: Vulnerability[],
     gasOptimizations: GasOptimization[],
-    codeQuality: CodeQualityIssue[]
+    codeQuality: CodeQualityIssue[],
   ): number {
-    // Implementation for overall score calculation
-    // This will calculate a comprehensive security score based on all findings
-    return 0; // Placeholder
+    const vulnerabilityPenalty = vulnerabilities.reduce((total, vulnerability) => {
+      if (vulnerability.severity === "HIGH") {
+        return total + 22;
+      }
+      if (vulnerability.severity === "MEDIUM") {
+        return total + 10;
+      }
+      return total + 4;
+    }, 0);
+
+    const qualityPenalty = codeQuality.reduce((total, issue) => {
+      if (issue.severity === "HIGH") {
+        return total + 10;
+      }
+      if (issue.severity === "MEDIUM") {
+        return total + 5;
+      }
+      return total + 2;
+    }, 0);
+
+    const gasPenalty = Math.min(gasOptimizations.length * 2, 10);
+
+    return Math.max(0, 100 - vulnerabilityPenalty - qualityPenalty - gasPenalty);
   }
-} 
+}
