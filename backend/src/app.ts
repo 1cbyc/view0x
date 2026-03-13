@@ -32,7 +32,7 @@ import twoFactorRoutes from "./routes/2fa";
 import activityLogRoutes from "./routes/activityLogs";
 import repositoryRoutes from "./routes/repository";
 import analyticsRoutes from "./routes/analytics";
-// import userRoutes from './routes/users';
+import userRoutes from "./routes/users";
 
 // Initialize Express app
 const app = express();
@@ -169,7 +169,7 @@ app.use("/api/2fa", twoFactorRoutes);
 app.use("/api/activity-logs", activityLogRoutes);
 app.use("/api/repository", repositoryRoutes);
 app.use("/api/analytics", analyticsRoutes);
-// app.use('/api/users', userRoutes);
+app.use("/api/users", userRoutes);
 
 // Root endpoint with API information
 app.get("/", (req, res) => {

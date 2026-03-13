@@ -50,14 +50,14 @@ const Profile: React.FC = () => {
           company: userData.company || '',
         });
       } catch (err: any) {
-        if (err.response?.status === 401 || err.response?.status === 403) {
+        if (err.status === 401 || err.status === 403 || err.response?.status === 401 || err.response?.status === 403) {
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
           localStorage.removeItem('user');
           navigate('/login', { replace: true });
           return;
         }
-        setError(err.error?.message || 'Failed to load profile');
+        setError(err.error?.message || err.message || 'Failed to load profile');
       } finally {
         setIsLoading(false);
       }
@@ -82,7 +82,7 @@ const Profile: React.FC = () => {
         setSuccess('Profile updated successfully');
       }
     } catch (err: any) {
-      setError(err.response?.data?.error?.message || 'Failed to update profile');
+      setError(err.error?.message || err.message || 'Failed to update profile');
     } finally {
       setIsSaving(false);
     }
@@ -99,7 +99,7 @@ const Profile: React.FC = () => {
         setSuccess('Verification email sent! Please check your inbox.');
       }
     } catch (err: any) {
-      setError(err.response?.data?.error?.message || 'Failed to send verification email');
+      setError(err.error?.message || err.message || 'Failed to send verification email');
     } finally {
       setIsResendingVerification(false);
     }

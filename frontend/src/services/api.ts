@@ -58,7 +58,11 @@ api.interceptors.response.use(
 
     // Return the more detailed error object from the backend if it exists
     if (error.response && error.response.data) {
-      return Promise.reject(error.response.data);
+      return Promise.reject({
+        ...error.response.data,
+        status: error.response.status,
+        headers: error.response.headers,
+      });
     }
     // Otherwise, return a generic error
     return Promise.reject(error);

@@ -374,6 +374,7 @@ const ContractAnalyzer: React.FC = () => {
         } catch (authError: any) {
           // If 401, token is invalid/expired - clear it and use public endpoint
           const is401 = authError.error?.statusCode === 401 || 
+                       authError.status === 401 ||
                        authError.response?.status === 401 ||
                        (authError.response && authError.response.status === 401);
           
@@ -459,8 +460,9 @@ const ContractAnalyzer: React.FC = () => {
     } catch (err: any) {
       // Handle errors
       const errorMessage =
-        err.response?.data?.error?.message ||
+        err.error?.message ||
         err.message ||
+        err.response?.data?.error?.message ||
         "Failed to analyze contract. Please try again.";
       setError(errorMessage);
       setIsAnalyzing(false);
