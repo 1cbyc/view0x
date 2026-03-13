@@ -1,4 +1,4 @@
-import { Pact } from '@pact-foundation/pact';
+import { PactV2 as Pact } from '@pact-foundation/pact';
 import path from 'path';
 import axios from 'axios';
 
@@ -13,9 +13,17 @@ const provider = new Pact({
 });
 
 describe('view0x API Contract Tests', () => {
-    beforeAll(() => provider.setup());
-    afterEach(() => provider.verify());
-    afterAll(() => provider.finalize());
+    beforeAll(async () => {
+        await provider.setup();
+    });
+
+    afterEach(async () => {
+        await provider.verify();
+    });
+
+    afterAll(async () => {
+        await provider.finalize();
+    });
 
     describe('Analysis API', () => {
         it('should create a new analysis job', async () => {

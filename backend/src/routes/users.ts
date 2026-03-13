@@ -1,52 +1,98 @@
-import { Router, Request, Response } from "express";
+import { Request, Response, Router } from "express";
+import { auth } from "../middleware/auth";
+import { asyncHandler, NotFoundError, ValidationError } from "../middleware/errorHandler";
+import { User } from "../models/User";
 
 const router = Router();
 
-// Get user profile
-router.get("/profile", (req: Request, res: Response) => {
-  res.json({
-    success: true,
-    message: "User profile endpoint - coming soon",
-    data: {
-      note: "This will return user profile information",
-    },
-  });
-});
+router.use(auth);
 
-// Update user profile
-router.put("/profile", (req: Request, res: Response) => {
-  res.json({
-    success: true,
-    message: "Update user profile endpoint - coming soon",
-    data: {
-      note: "This will update user profile information",
-    },
-  });
-});
+router.get(
+  "/profile",
+  asyncHandler(async (req: Request, res: Response) => {
+    const user = await User.scope("withoutSecrets").findByPk(req.user?.userId);
+    if (!user) {
+      throw new NotFoundError("User not found");
+    }
 
-// Get usage statistics
-router.get("/usage", (req: Request, res: Response) => {
-  res.json({
-    success: true,
-    message: "User usage statistics endpoint - coming soon",
-    data: {
-      note: "This will return user usage statistics",
-    },
-  });
-});
+    res.json({
+      success: true,
+      data: {
+        user: user.toProfileObject(),
+      },
+    });
+  }),
+);
 
-// Health check for users service
-router.get("/health", (req: Request, res: Response) => {
+router.put(
+  "/profile",
+  asyncHandler(async (req: Request, res: Response) => {
+    const user = await User.findByPk(req.user?.userId);
+    if (!user) {
+      throw new NotFoundError("User not found");
+    }
+
+    const { name, company, avatar } = req.body as {
+      name?: string;
+      company?: string;
+      avatar?: string;
+    };
+
+    if (name !== undefined) {
+      const trimmedName = name.trim();
+      if (!trimmedName) {
+        throw new ValidationError("Name cannot be empty");
+      }
+      user.name = trimmedName;
+    }
+
+    if (company !== undefined) {
+      (user as any).company = company.trim() || null;
+    }
+
+    if (avatar !== undefined) {
+      (user as any).avatar = avatar.trim() || null;
+    }
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Profile updated successfully",
+      data: {
+        user: user.toProfileObject(),
+      },
+    });
+  }),
+);
+
+router.get(
+  "/usage",
+  asyncHandler(async (req: Request, res: Response) => {
+    const user = await User.findByPk(req.user?.userId);
+    if (!user) {
+      throw new NotFoundError("User not found");
+    }
+
+    res.json({
+      success: true,
+      data: {
+        plan: user.plan,
+        usageCount: user.usageCount,
+        usageLimit: user.usageLimit,
+        usagePercentage: user.getUsagePercentage(),
+        canAnalyze: user.canAnalyze(),
+      },
+    });
+  }),
+);
+
+router.get("/health", (req, res) => {
   res.json({
     success: true,
     service: "users",
     status: "operational",
     timestamp: new Date().toISOString(),
-    features: {
-      profile: "coming_soon",
-      usage: "coming_soon",
-      settings: "coming_soon",
-    },
   });
 });
 
