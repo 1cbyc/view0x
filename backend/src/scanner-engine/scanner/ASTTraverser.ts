@@ -68,97 +68,38 @@ export class ASTTraverser {
    */
   private getChildren(node: ASTNode): ASTNode[] {
     const children: ASTNode[] = [];
+    const seen = new Set<ASTNode>();
 
-    // Common AST structures
-    if (Array.isArray(node.children)) {
-      children.push(...node.children);
-    }
-
-    // Function definitions
-    if (node.type === 'FunctionDefinition' && node.body?.statements) {
-      children.push(...node.body.statements);
-    }
-
-    // Contract/Library/Interface definitions
-    if ((node.type === 'ContractDefinition' || node.type === 'LibraryDefinition' || node.type === 'InterfaceDefinition') && node.subNodes) {
-      children.push(...node.subNodes);
-    }
-
-    // Block statements
-    if (node.type === 'Block' && node.statements) {
-      children.push(...node.statements);
-    }
-
-    // Expression statements
-    if (node.type === 'ExpressionStatement' && node.expression) {
-      children.push(node.expression);
-    }
-
-    // Binary operations
-    if (node.type === 'BinaryOperation') {
-      if (node.left) children.push(node.left);
-      if (node.right) children.push(node.right);
-    }
-
-    // Unary operations
-    if (node.type === 'UnaryOperation' && node.subExpression) {
-      children.push(node.subExpression);
-    }
-
-    // Function calls
-    if (node.type === 'FunctionCall') {
-      if (node.expression) children.push(node.expression);
-      if (node.arguments) {
-        children.push(...node.arguments);
+    const addChild = (value: unknown) => {
+      if (!value) {
+        return;
       }
-    }
 
-    // Member access
-    if (node.type === 'MemberAccess' && node.expression) {
-      children.push(node.expression);
-    }
+      if (Array.isArray(value)) {
+        value.forEach(addChild);
+        return;
+      }
 
-    // Conditional statements
-    if (node.type === 'IfStatement') {
-      if (node.condition) children.push(node.trueBody);
-      if (node.trueBody) children.push(node.trueBody);
-      if (node.falseBody) children.push(node.falseBody);
-    }
+      if (
+        typeof value === "object" &&
+        value !== null &&
+        "type" in (value as Record<string, unknown>) &&
+        typeof (value as ASTNode).type === "string"
+      ) {
+        const child = value as ASTNode;
+        if (!seen.has(child)) {
+          seen.add(child);
+          children.push(child);
+        }
+      }
+    };
 
-    // While loops
-    if (node.type === 'WhileStatement') {
-      if (node.condition) children.push(node.condition);
-      if (node.body) children.push(node.body);
-    }
-
-    // For loops
-    if (node.type === 'ForStatement') {
-      if (node.initExpression) children.push(node.initExpression);
-      if (node.conditionExpression) children.push(node.conditionExpression);
-      if (node.loopExpression) children.push(node.loopExpression);
-      if (node.body) children.push(node.body);
-    }
-
-    // Return statements
-    if (node.type === 'ReturnStatement' && node.expression) {
-      children.push(node.expression);
-    }
-
-    // Variable declarations
-    if (node.type === 'VariableDeclaration' && node.value) {
-      children.push(node.value);
-    }
-
-    // Assignments
-    if (node.type === 'Assignment') {
-      if (node.leftHandSide) children.push(node.leftHandSide);
-      if (node.rightHandSide) children.push(node.rightHandSide);
-    }
-
-    // Modifier invocations
-    if (node.type === 'ModifierInvocation' && node.arguments) {
-      children.push(...node.arguments);
-    }
+    Object.entries(node).forEach(([key, value]) => {
+      if (key === "parent" || key === "loc" || key === "range") {
+        return;
+      }
+      addChild(value);
+    });
 
     return children;
   }
