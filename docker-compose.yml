@@ -1,105 +1,133 @@
-version: "3.9"
-
-# This Docker Compose file sets up the complete development environment
-# for the view0x application, including the frontend, backend,
-# database, cache, and the Python analysis worker.
+name: ${COMPOSE_PROJECT_NAME:-view0x}
 
 services:
-  # 1. Frontend Service (React UI)
-  frontend:
-    build:
-      context: .
-      dockerfile: ./frontend/Dockerfile
-    container_name: frontend
-    ports:
-      - "3000:3000"
-    # The frontend's vite.config.js is configured to proxy /api requests
-    # to the backend service. This setup relies on Docker's networking.
-    # To make this work, the frontend container will talk to the host,
-    # and the backend container must expose its port to the host.
-    environment:
-      - VITE_API_URL=/api  # Use relative path, Vite proxy will handle it
-      - VITE_SOCKET_URL=http://localhost:3001
-      - VITE_BACKEND_URL=http://backend:3001  # For Vite proxy to backend service
-    depends_on:
-      - backend
-
-  # 2. Backend Service (Node.js API)
-  backend:
-    build:
-      context: ./backend
-    container_name: backend
-    ports:
-      # Expose port 3001 to the host machine for the frontend proxy
-      - "3001:3001"
-    env_file:
-      - ./backend/.env
-    environment:
-      # Override .env variables to use Docker service names
-      - DATABASE_URL=postgresql://postgres:password@db:5432/view0x_dev
-      - REDIS_URL=redis://redis:6379
-      - PYTHON_API_URL=http://python-worker:8000
-    depends_on:
-      - db
-      - redis
-      - python-worker
-
-  # 3. Python Analysis Worker Service
-  python-worker:
-    build:
-      context: ./python
-    container_name: python-worker
+  postgres:
+    image: postgres:15-alpine
     restart: unless-stopped
     env_file:
-      - ./python/.env
-    # The port is exposed to other services on the Docker network,
-    # but not to the host machine.
-    expose:
-      - "8000"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    depends_on:
-      redis:
-        condition: service_healthy
-
-  # 4. PostgreSQL Database Service
-  db:
-    image: postgres:15-alpine
-    container_name: db
-    restart: always
+      - .env
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=view0x_dev
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      # Expose port 5433 to the host to avoid conflict with local PostgreSQL
-      - "5433:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
     volumes:
-      # Persist database data across container restarts
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
 
-  # 5. Redis Cache Service
   redis:
     image: redis:7-alpine
-    container_name: redis
-    restart: always
-    # Expose port to host for local development
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "6379:6379"
+      - "127.0.0.1:${REDIS_PORT:-6380}:6379"
+    volumes:
+      - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
 
-# Named volume for persisting PostgreSQL data
+  python-worker:
+    build:
+      context: ./python
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PORT: 8000
+      REDIS_URL: ${REDIS_URL}
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      PORT: 3001
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      PYTHON_API_URL: ${PYTHON_API_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      REFRESH_TOKEN_EXPIRES_IN: ${REFRESH_TOKEN_EXPIRES_IN}
+      API_VERSION: ${API_VERSION}
+      SLITHER_TIMEOUT: ${SLITHER_TIMEOUT}
+      MAX_CONTRACT_SIZE: ${MAX_CONTRACT_SIZE}
+      MAX_CONCURRENT_ANALYSES: ${MAX_CONCURRENT_ANALYSES}
+      ANALYSIS_ENGINE: ${ANALYSIS_ENGINE}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS}
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE}
+      UPLOAD_DIR: ${UPLOAD_DIR}
+      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      LOG_LEVEL: ${LOG_LEVEL}
+      ENABLE_REQUEST_LOGGING: ${ENABLE_REQUEST_LOGGING}
+      DB_POOL_MAX: ${DB_POOL_MAX}
+      DB_POOL_MIN: ${DB_POOL_MIN}
+      DB_POOL_ACQUIRE: ${DB_POOL_ACQUIRE}
+      DB_POOL_IDLE: ${DB_POOL_IDLE}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      python-worker:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${API_PORT:-3001}:3001"
+    volumes:
+      - backend_uploads:/app/uploads
+      - backend_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3001/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+        VITE_SOCKET_URL: ${VITE_SOCKET_URL}
+        VITE_APP_TITLE: ${VITE_APP_TITLE}
+        VITE_APP_DESCRIPTION: ${VITE_APP_DESCRIPTION}
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-8088}:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
 volumes:
   postgres_data:
+  redis_data:
+  backend_uploads:
+  backend_logs:
