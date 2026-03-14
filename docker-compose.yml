@@ -1,58 +1,133 @@
+name: ${COMPOSE_PROJECT_NAME:-view0x}
+
 services:
-  view0x:
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6380}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  python-worker:
+    build:
+      context: ./python
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PORT: 8000
+      REDIS_URL: ${REDIS_URL}
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      PORT: 3001
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      PYTHON_API_URL: ${PYTHON_API_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      REFRESH_TOKEN_EXPIRES_IN: ${REFRESH_TOKEN_EXPIRES_IN}
+      API_VERSION: ${API_VERSION}
+      SLITHER_TIMEOUT: ${SLITHER_TIMEOUT}
+      MAX_CONTRACT_SIZE: ${MAX_CONTRACT_SIZE}
+      MAX_CONCURRENT_ANALYSES: ${MAX_CONCURRENT_ANALYSES}
+      ANALYSIS_ENGINE: ${ANALYSIS_ENGINE}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS}
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE}
+      UPLOAD_DIR: ${UPLOAD_DIR}
+      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      LOG_LEVEL: ${LOG_LEVEL}
+      ENABLE_REQUEST_LOGGING: ${ENABLE_REQUEST_LOGGING}
+      DB_POOL_MAX: ${DB_POOL_MAX}
+      DB_POOL_MIN: ${DB_POOL_MIN}
+      DB_POOL_ACQUIRE: ${DB_POOL_ACQUIRE}
+      DB_POOL_IDLE: ${DB_POOL_IDLE}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      python-worker:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${API_PORT:-3001}:3001"
+    volumes:
+      - backend_uploads:/app/uploads
+      - backend_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3001/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  web:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: frontend/Dockerfile
       args:
-        VITE_API_URL: ${VITE_API_URL:-/api}
-        VITE_SOCKET_URL: ${VITE_SOCKET_URL:-/}
-        VITE_APP_TITLE: ${VITE_APP_TITLE:-view0x - Smart Contract Analysis}
-        VITE_APP_DESCRIPTION: ${VITE_APP_DESCRIPTION:-Analyze your Solidity smart contracts for vulnerabilities, gas optimizations, and code quality issues}
-    container_name: view0x
+        VITE_API_URL: ${VITE_API_URL}
+        VITE_SOCKET_URL: ${VITE_SOCKET_URL}
+        VITE_APP_TITLE: ${VITE_APP_TITLE}
+        VITE_APP_DESCRIPTION: ${VITE_APP_DESCRIPTION}
     restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
     ports:
-      - "${APP_PORT:-8088}:80"
-    environment:
-      NODE_ENV: ${NODE_ENV:-production}
-      PORT: 3001
-      POSTGRES_DB: ${POSTGRES_DB:-view0x_db}
-      POSTGRES_USER: ${POSTGRES_USER:-view0x_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_this_secure_password}
-      JWT_SECRET: ${JWT_SECRET:-change_this_jwt_secret_to_at_least_32_characters}
-      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET:-change_this_refresh_secret_to_at_least_32_characters}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
-      REFRESH_TOKEN_EXPIRES_IN: ${REFRESH_TOKEN_EXPIRES_IN:-7d}
-      API_VERSION: ${API_VERSION:-v1}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://127.0.0.1}
-      SLITHER_TIMEOUT: ${SLITHER_TIMEOUT:-300}
-      MAX_CONTRACT_SIZE: ${MAX_CONTRACT_SIZE:-1048576}
-      MAX_CONCURRENT_ANALYSES: ${MAX_CONCURRENT_ANALYSES:-3}
-      ANALYSIS_ENGINE: ${ANALYSIS_ENGINE:-python}
-      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-3600000}
-      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-1000}
-      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-1048576}
-      UPLOAD_DIR: ${UPLOAD_DIR:-./uploads}
-      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
-      LOG_LEVEL: ${LOG_LEVEL:-info}
-      ENABLE_REQUEST_LOGGING: ${ENABLE_REQUEST_LOGGING:-true}
-      DB_POOL_MAX: ${DB_POOL_MAX:-10}
-      DB_POOL_MIN: ${DB_POOL_MIN:-2}
-      DB_POOL_ACQUIRE: ${DB_POOL_ACQUIRE:-30000}
-      DB_POOL_IDLE: ${DB_POOL_IDLE:-10000}
-    volumes:
-      - view0x_postgres:/var/lib/postgresql/data
-      - view0x_redis:/var/lib/redis
-      - view0x_uploads:/app/backend/uploads
-      - view0x_logs:/app/backend/logs
+      - "${WEB_PORT:-8088}:80"
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
 
 volumes:
-  view0x_postgres:
-  view0x_redis:
-  view0x_uploads:
-  view0x_logs:
+  postgres_data:
+  redis_data:
+  backend_uploads:
+  backend_logs:

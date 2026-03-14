@@ -24,7 +24,7 @@ COPY ./requirements-minimal.txt ./requirements.txt
 # Install the Python dependencies
 # --no-cache-dir reduces image size
 # Use --no-deps flag for faster installation (dependencies are already specified)
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+RUN pip install --no-cache-dir --upgrade pip "setuptools<81" wheel
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application code into the container
