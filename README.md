@@ -62,6 +62,35 @@ view0x is a cloud-native SaaS platform for automated smart contract security ana
 
 ## How to Run
 
+### Option 0: Single Docker Container (VPS-friendly)
+
+If you want the frontend, backend, Python worker, Redis, and PostgreSQL to run inside a single container, use the all-in-one Docker path:
+
+1. Copy the root environment template:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Set at least:
+   ```env
+   POSTGRES_PASSWORD=replace_this
+   JWT_SECRET=replace_with_a_secure_random_string_of_at_least_32_characters
+   REFRESH_TOKEN_SECRET=replace_with_another_secure_random_string_of_at_least_32_characters
+   CORS_ORIGINS=https://your-domain.com
+   ```
+
+3. Build and start the single-container stack:
+   ```bash
+   docker compose -f docker-compose.single.yml up -d --build
+   ```
+
+4. Open the app:
+   - App: `http://YOUR_SERVER_IP` or your domain
+   - Health check: `http://YOUR_SERVER_IP/health`
+   - API docs: `http://YOUR_SERVER_IP/api-docs`
+
+This mode is designed for simple VPS deployments where you want one container instead of separate frontend/backend/worker/database/cache containers.
+
 ### Option 1: Using Docker Compose (Recommended)
 
 The easiest way to run the entire project is using Docker Compose:
