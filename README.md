@@ -62,54 +62,49 @@ view0x is a cloud-native SaaS platform for automated smart contract security ana
 
 ## How to Run
 
-### Option 1: Using Docker Compose (Recommended)
+### Option 1: Docker Compose (Recommended)
 
-The easiest way to run the entire project is using Docker Compose:
+The default Docker setup runs the app as separate services:
+- `web` - frontend container
+- `api` - Node/Express backend
+- `python-worker` - analysis worker
+- `postgres` - PostgreSQL
+- `redis` - Redis
 
-1. **Prerequisites:**
-   - Docker and Docker Compose installed
-   - Create environment files (if needed)
+Everything uses the single root [`.env.example`](/Users/nsisong/projects/view0x/.env.example). Do not create separate `backend/.env` or `frontend/.env` files for Docker.
 
-2. **Create environment files:**
-
-   Create `backend/.env`:
-   ```env
-   NODE_ENV=development
-   PORT=3001
-   DATABASE_URL=postgresql://postgres:password@db:5432/view0x_dev
-   REDIS_URL=redis://redis:6379
-   PYTHON_API_URL=http://python-worker:8000
-   JWT_SECRET=your-secret-key-here
-   JWT_EXPIRES_IN=24h
-   REFRESH_TOKEN_SECRET=your-refresh-secret-here
-   REFRESH_TOKEN_EXPIRES_IN=7d
-   ```
-
-   Create `python/.env` (if needed):
-   ```env
-   REDIS_URL=redis://redis:6379
-   ```
-
-3. **Start all services:**
+1. Copy the root environment template:
    ```bash
-   docker-compose up
+   cp .env.example .env
    ```
 
-   Or run in detached mode:
+2. Start the stack:
    ```bash
-   docker-compose up -d
+   docker compose up -d --build
    ```
 
-4. **Access the application:**
-   - Frontend: http://localhost:3000
-   - Backend API: http://api.view0x.com/
-   - API Documentation: http://api.view0x.com//api-docs
-   - PostgreSQL: localhost:5433 (Note: Port 5433 to avoid conflict with local PostgreSQL)
+3. Access the services:
+   - Frontend: `http://localhost:8088`
+   - Backend API: `http://localhost:3001`
+   - API docs: `http://localhost:8088/api-docs`
+   - PostgreSQL: `localhost:5433`
+   - Redis: `localhost:6380`
 
-5. **Stop services:**
+4. Check container status:
    ```bash
-   docker-compose down
+   docker compose ps
    ```
+
+5. Stop the stack:
+   ```bash
+   docker compose down
+   ```
+
+You can change any host port from the single root `.env`:
+- `WEB_PORT`
+- `API_PORT`
+- `POSTGRES_PORT`
+- `REDIS_PORT`
 
 ### Option 2: Manual Setup (Development)
 
@@ -153,13 +148,17 @@ If you prefer to run services individually:
 
 ### Environment Variables
 
-Key environment variables needed for the backend (in `backend/.env`):
+The project now uses a single root `.env` / `.env.example` as the main configuration source for Docker.
 
-- `DATABASE_URL` - PostgreSQL connection string
-- `REDIS_URL` - Redis connection string
+Important values:
+- `WEB_PORT` - Host port for the frontend container
+- `API_PORT` - Host port for the backend container
+- `POSTGRES_PORT` - Host port for PostgreSQL
+- `REDIS_PORT` - Host port for Redis
+- `DATABASE_URL` - Internal PostgreSQL connection string for containers
+- `REDIS_URL` - Internal Redis connection string for containers
 - `JWT_SECRET` - Secret for JWT tokens
-- `PYTHON_API_URL` - URL for Python analysis worker
-- `PORT` - Backend server port (default: 3001)
+- `PYTHON_API_URL` - URL for the Python analysis worker
 
 ## Deployment
 

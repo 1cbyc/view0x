@@ -1,26 +1,28 @@
-FROM node:20-alpine
+FROM node:20-bookworm-slim AS build
 
 WORKDIR /app
 
-# Install dependencies for building native modules
-RUN apk add --no-cache python3 make g++
+COPY package.json package-lock.json ./
+RUN npm ci
 
-# Copy package files
-COPY package.json yarn.lock ./
-
-# Configure yarn to use npm registry and disable SSL verification temporarily
-RUN yarn config set registry https://registry.npmjs.org/ && \
-    yarn config set strict-ssl false
-
-# Install dependencies with platform-specific handling
-RUN yarn install --network-timeout 100000 --ignore-optional
-
-# Copy all source files
 COPY . .
+RUN npm run build
 
-# Build the application
-RUN yarn build
+FROM node:20-bookworm-slim
+
+WORKDIR /app
+ENV NODE_ENV=production
+
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+COPY --from=build /app/dist ./dist
+
+RUN mkdir -p /app/uploads /app/logs
 
 EXPOSE 3001
 
-CMD ["yarn", "start"]
+CMD ["node", "dist/server.js"]
