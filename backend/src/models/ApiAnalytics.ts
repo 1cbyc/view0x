@@ -117,10 +117,10 @@ ApiAnalytics.init(
                 fields: ["method"],
             },
             {
-                fields: ["statusCode"],
+                fields: ["status_code"],
             },
             {
-                fields: ["userId"],
+                fields: ["user_id"],
             },
             {
                 fields: ["timestamp"],
