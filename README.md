@@ -64,7 +64,7 @@ view0x is a cloud-native SaaS platform for automated smart contract security ana
 
 ### Option 0: Single Docker Container (VPS-friendly)
 
-If you want the frontend, backend, Python worker, Redis, and PostgreSQL to run inside a single container, use the all-in-one Docker path:
+If you want the frontend, backend, Python worker, Redis, and PostgreSQL to run inside a single container, use the default Docker setup:
 
 1. Copy the root environment template:
    ```bash
@@ -73,23 +73,24 @@ If you want the frontend, backend, Python worker, Redis, and PostgreSQL to run i
 
 2. Set at least:
    ```env
+   APP_PORT=8088
    POSTGRES_PASSWORD=replace_this
    JWT_SECRET=replace_with_a_secure_random_string_of_at_least_32_characters
    REFRESH_TOKEN_SECRET=replace_with_another_secure_random_string_of_at_least_32_characters
-   CORS_ORIGINS=https://your-domain.com
+    CORS_ORIGINS=https://your-domain.com
    ```
 
 3. Build and start the single-container stack:
    ```bash
-   docker compose -f docker-compose.single.yml up -d --build
+   docker compose up -d --build
    ```
 
 4. Open the app:
-   - App: `http://YOUR_SERVER_IP` or your domain
-   - Health check: `http://YOUR_SERVER_IP/health`
-   - API docs: `http://YOUR_SERVER_IP/api-docs`
+   - App: `http://YOUR_SERVER_IP:8088` or `http://YOUR_SERVER_IP:${APP_PORT}`
+   - Health check: `http://YOUR_SERVER_IP:8088/health`
+   - API docs: `http://YOUR_SERVER_IP:8088/api-docs`
 
-This mode is designed for simple VPS deployments where you want one container instead of separate frontend/backend/worker/database/cache containers.
+This mode is designed for simple VPS deployments where you want one container instead of separate frontend/backend/worker/database/cache containers, and the host port is configurable so it does not collide with other local projects.
 
 ### Option 1: Using Docker Compose (Recommended)
 

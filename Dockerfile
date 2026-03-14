@@ -37,12 +37,11 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/opt/venv/bin:$PATH"
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
     python3 \
     python3-pip \
     python3-venv \
-    build-essential \
-    libpq-dev \
     curl \
     nginx \
     supervisor \
@@ -57,7 +56,7 @@ WORKDIR /app
 
 COPY python/requirements-minimal.txt /tmp/requirements.txt
 RUN python3 -m venv /opt/venv \
-    && /opt/venv/bin/pip install --no-cache-dir --upgrade pip setuptools wheel \
+    && /opt/venv/bin/pip install --no-cache-dir --upgrade pip "setuptools<81" wheel \
     && /opt/venv/bin/pip install --no-cache-dir -r /tmp/requirements.txt
 
 COPY --from=backend-builder /app/backend /app/backend

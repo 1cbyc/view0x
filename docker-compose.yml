@@ -1,105 +1,58 @@
-version: "3.9"
-
-# This Docker Compose file sets up the complete development environment
-# for the view0x application, including the frontend, backend,
-# database, cache, and the Python analysis worker.
-
 services:
-  # 1. Frontend Service (React UI)
-  frontend:
+  view0x:
     build:
       context: .
-      dockerfile: ./frontend/Dockerfile
-    container_name: frontend
-    ports:
-      - "3000:3000"
-    # The frontend's vite.config.js is configured to proxy /api requests
-    # to the backend service. This setup relies on Docker's networking.
-    # To make this work, the frontend container will talk to the host,
-    # and the backend container must expose its port to the host.
-    environment:
-      - VITE_API_URL=/api  # Use relative path, Vite proxy will handle it
-      - VITE_SOCKET_URL=http://localhost:3001
-      - VITE_BACKEND_URL=http://backend:3001  # For Vite proxy to backend service
-    depends_on:
-      - backend
-
-  # 2. Backend Service (Node.js API)
-  backend:
-    build:
-      context: ./backend
-    container_name: backend
-    ports:
-      # Expose port 3001 to the host machine for the frontend proxy
-      - "3001:3001"
-    env_file:
-      - ./backend/.env
-    environment:
-      # Override .env variables to use Docker service names
-      - DATABASE_URL=postgresql://postgres:password@db:5432/view0x_dev
-      - REDIS_URL=redis://redis:6379
-      - PYTHON_API_URL=http://python-worker:8000
-    depends_on:
-      - db
-      - redis
-      - python-worker
-
-  # 3. Python Analysis Worker Service
-  python-worker:
-    build:
-      context: ./python
-    container_name: python-worker
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-/api}
+        VITE_SOCKET_URL: ${VITE_SOCKET_URL:-/}
+        VITE_APP_TITLE: ${VITE_APP_TITLE:-view0x - Smart Contract Analysis}
+        VITE_APP_DESCRIPTION: ${VITE_APP_DESCRIPTION:-Analyze your Solidity smart contracts for vulnerabilities, gas optimizations, and code quality issues}
+    container_name: view0x
     restart: unless-stopped
-    env_file:
-      - ./python/.env
-    # The port is exposed to other services on the Docker network,
-    # but not to the host machine.
-    expose:
-      - "8000"
+    ports:
+      - "${APP_PORT:-8088}:80"
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3001
+      POSTGRES_DB: ${POSTGRES_DB:-view0x_db}
+      POSTGRES_USER: ${POSTGRES_USER:-view0x_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_this_secure_password}
+      JWT_SECRET: ${JWT_SECRET:-change_this_jwt_secret_to_at_least_32_characters}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET:-change_this_refresh_secret_to_at_least_32_characters}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+      REFRESH_TOKEN_EXPIRES_IN: ${REFRESH_TOKEN_EXPIRES_IN:-7d}
+      API_VERSION: ${API_VERSION:-v1}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://127.0.0.1}
+      SLITHER_TIMEOUT: ${SLITHER_TIMEOUT:-300}
+      MAX_CONTRACT_SIZE: ${MAX_CONTRACT_SIZE:-1048576}
+      MAX_CONCURRENT_ANALYSES: ${MAX_CONCURRENT_ANALYSES:-3}
+      ANALYSIS_ENGINE: ${ANALYSIS_ENGINE:-python}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-3600000}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-1000}
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-1048576}
+      UPLOAD_DIR: ${UPLOAD_DIR:-./uploads}
+      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      ENABLE_REQUEST_LOGGING: ${ENABLE_REQUEST_LOGGING:-true}
+      DB_POOL_MAX: ${DB_POOL_MAX:-10}
+      DB_POOL_MIN: ${DB_POOL_MIN:-2}
+      DB_POOL_ACQUIRE: ${DB_POOL_ACQUIRE:-30000}
+      DB_POOL_IDLE: ${DB_POOL_IDLE:-10000}
+    volumes:
+      - view0x_postgres:/var/lib/postgresql/data
+      - view0x_redis:/var/lib/redis
+      - view0x_uploads:/app/backend/uploads
+      - view0x_logs:/app/backend/logs
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1/health"]
       interval: 30s
       timeout: 10s
       retries: 5
-    depends_on:
-      redis:
-        condition: service_healthy
+      start_period: 60s
 
-  # 4. PostgreSQL Database Service
-  db:
-    image: postgres:15-alpine
-    container_name: db
-    restart: always
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=view0x_dev
-    ports:
-      # Expose port 5433 to the host to avoid conflict with local PostgreSQL
-      - "5433:5432"
-    volumes:
-      # Persist database data across container restarts
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # 5. Redis Cache Service
-  redis:
-    image: redis:7-alpine
-    container_name: redis
-    restart: always
-    # Expose port to host for local development
-    ports:
-      - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-# Named volume for persisting PostgreSQL data
 volumes:
-  postgres_data:
+  view0x_postgres:
+  view0x_redis:
+  view0x_uploads:
+  view0x_logs:
