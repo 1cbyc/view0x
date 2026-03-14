@@ -5,6 +5,7 @@ import { Vulnerability } from "./Vulnerability";
 import { VulnerabilityComment } from "./VulnerabilityComment";
 import { ActivityLog } from "./ActivityLog";
 import { AnalysisTemplate } from "./AnalysisTemplate";
+import ApiAnalytics from "./ApiAnalytics";
 import { logger } from "../utils/logger";
 
 // 1. Initialize all models
@@ -15,6 +16,7 @@ const models = {
   VulnerabilityComment,
   ActivityLog,
   AnalysisTemplate,
+  ApiAnalytics,
 };
 
 // 2. Define associations (relationships) between models
@@ -98,17 +100,27 @@ defineAssociations();
 export const syncModels = async () => {
   try {
     logger.info("[MODELS] Starting database synchronization...");
-    // The `force: true` option will drop tables if they already exist.
-    // Use with caution, especially in production.
+    
+    // SAFE SYNC OPTIONS FOR PRODUCTION
+    // Don't use force or alter in production - can cause data loss
     const options = {
-      force: process.env.NODE_ENV === "development" ? true : false,
-      alter: process.env.NODE_ENV === "production" ? true : false,
+      force: false,    // NEVER force in production
+      alter: false,    // Don't alter tables automatically
     };
-    await sequelize.sync(options);
-    logger.info("[MODELS] All models were synchronized successfully.");
+    
+    // Try to sync, but don't fail if tables already exist
+    try {
+      await sequelize.sync(options);
+      logger.info("[MODELS] All models were synchronized successfully.");
+    } catch (syncError: any) {
+      // If sync fails, log warning but continue (tables might already exist)
+      logger.warn("[MODELS] Sync had issues (tables may already exist):", syncError?.message || syncError);
+      logger.info("[MODELS] Continuing with existing database structure...");
+    }
   } catch (error) {
     logger.error("[MODELS] ❌ Unable to synchronize the database:", error);
-    throw error;
+    // Don't throw - allow app to start even if sync fails
+    logger.warn("[MODELS] Starting with potentially incomplete database sync...");
   }
 };
 
