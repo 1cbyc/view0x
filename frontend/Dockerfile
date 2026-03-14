@@ -1,20 +1,27 @@
-# Use a slim Node.js image for a smaller footprint
-FROM node:20-alpine
+FROM node:20-bookworm-slim AS build
 
-# Set the working directory for the application
 WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json* ./
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
 
-# Install dependencies
-RUN npm ci || npm install
+COPY frontend ./
 
-# Copy the frontend source code
-COPY . .
+ARG VITE_API_URL=/api
+ARG VITE_SOCKET_URL=/
+ARG VITE_APP_TITLE="view0x - Smart Contract Analysis"
+ARG VITE_APP_DESCRIPTION="Analyze your Solidity smart contracts for vulnerabilities, gas optimizations, and code quality issues"
 
-# Expose the port the Vite dev server will run on
-EXPOSE 3000
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_SOCKET_URL=$VITE_SOCKET_URL
+ENV VITE_APP_TITLE=$VITE_APP_TITLE
+ENV VITE_APP_DESCRIPTION=$VITE_APP_DESCRIPTION
 
-# The command to run the frontend development server
-CMD ["npm", "run", "dev"]
+RUN npm run build
+
+FROM nginx:1.27-alpine
+
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY docker/web/nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
