@@ -209,11 +209,6 @@ function extractToken(req: Request): string | null {
     return authHeader.substring(7);
   }
 
-  // Check query parameter (for WebSocket connections)
-  if (req.query.token && typeof req.query.token === "string") {
-    return req.query.token;
-  }
-
   return null;
 }
 

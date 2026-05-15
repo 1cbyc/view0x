@@ -5,8 +5,8 @@ import { test, expect } from '@playwright/test';
  * Tests for common web vulnerabilities and security best practices
  */
 
-const API_URL = process.env.API_URL || 'http://localhost:3001';
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+const API_URL = process.env.API_URL || 'http://localhost:18091';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 test.describe('Security Tests', () => {
     test.describe('Authentication Security', () => {
