@@ -208,6 +208,54 @@ const documentedPaths: swaggerJsdoc.OAS3Definition["paths"] = {
       responses: { "202": { description: "Analysis queued" } },
     },
   },
+  "/api/scan/chains": {
+    get: {
+      tags: ["Address scan"],
+      summary: "List supported chains for address scanning",
+      responses: { "200": { description: "Chain list" } },
+    },
+  },
+  "/api/scan/address": {
+    post: {
+      tags: ["Address scan"],
+      summary: "Scan contract address (heuristics + optional Slither queue)",
+      description:
+        "Returns reputation score and flags. Set runSlither=true when signed in and source is verified to queue full Slither analysis.",
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              required: ["address", "chainId"],
+              properties: {
+                address: { type: "string", example: "0x0000000000000000000000000000000000000000" },
+                chainId: { type: "integer", enum: [1, 56] },
+                runSlither: { type: "boolean", default: false },
+              },
+            },
+          },
+        },
+      },
+      responses: {
+        "200": { description: "Scan result with scanId" },
+        "429": { description: "Rate limit exceeded" },
+      },
+    },
+  },
+  "/api/scan/address/{id}": {
+    get: {
+      tags: ["Address scan"],
+      summary: "Get address scan by ID",
+      parameters: [
+        { name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+      ],
+      responses: {
+        "200": { description: "Stored scan result" },
+        "404": { description: "Not found" },
+      },
+    },
+  },
 };
 
 function swaggerApiGlobs(): string[] {
@@ -307,6 +355,7 @@ export function getSwaggerSpec(): ReturnType<typeof swaggerJsdoc> {
         { name: "Health", description: "Liveness and dependency checks" },
         { name: "Authentication", description: "Registration, login, email verification" },
         { name: "Analysis", description: "Contract analysis jobs and results" },
+        { name: "Address scan", description: "On-chain address reputation and explorer fetch" },
       ],
     },
     apis: swaggerApiGlobs(),

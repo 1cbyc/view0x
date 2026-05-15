@@ -41,6 +41,7 @@ export const AddressScanPanel: React.FC = () => {
   const [chainId, setChainId] = useState("1");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [runSlither, setRunSlither] = useState(false);
   const [result, setResult] = useState<AddressScanResult | null>(null);
 
   const handleScan = async () => {
@@ -51,6 +52,7 @@ export const AddressScanPanel: React.FC = () => {
       const res = await scanApi.scanAddress({
         address: address.trim(),
         chainId: Number(chainId),
+        runSlither,
       });
       setResult(res.data.data);
     } catch (err: unknown) {
@@ -91,6 +93,15 @@ export const AddressScanPanel: React.FC = () => {
             <Label htmlFor="scan-address">Contract address</Label>
             <Input id="scan-address" placeholder="0x..." value={address} onChange={(e) => setAddress(e.target.value)} />
           </div>
+          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+            <input
+              type="checkbox"
+              checked={runSlither}
+              onChange={(e) => setRunSlither(e.target.checked)}
+              className="rounded border-border"
+            />
+            Queue full Slither scan if verified (requires sign-in)
+          </label>
         </CardContent>
         <CardFooter>
           <Button className="w-full" onClick={handleScan} disabled={loading || !address.trim()}>
@@ -132,8 +143,16 @@ export const AddressScanPanel: React.FC = () => {
                 ))}
               </ul>
             )}
-            {result.sourceAvailable && (
-              <p className="text-xs text-muted-foreground">Verified source found — run a full Slither scan from the Paste source tab.</p>
+            {result.slitherJobId && (
+              <p className="text-xs text-primary">
+                Slither job queued: {result.slitherJobId}
+                {result.analysisStatus ? ` (${result.analysisStatus})` : ""}
+              </p>
+            )}
+            {result.sourceAvailable && !result.slitherJobId && (
+              <p className="text-xs text-muted-foreground">
+                Verified source on explorer — enable Slither above when signed in.
+              </p>
             )}
           </CardContent>
         </Card>

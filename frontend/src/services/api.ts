@@ -164,6 +164,7 @@ export interface AddressScanFlag {
 }
 
 export interface AddressScanResult {
+  scanId?: string;
   address: string;
   chainId: number;
   chainName: string;
@@ -180,12 +181,18 @@ export interface AddressScanResult {
   };
   sourceAvailable: boolean;
   scannedAt: string;
+  slitherJobId?: string;
+  analysisStatus?: string;
 }
 
 export const scanApi = {
   getChains: () => api.get("/scan/chains"),
-  scanAddress: (data: { address: string; chainId: number }) =>
-    api.post("/scan/address", data, { timeout: 60000 }),
+  scanAddress: (data: {
+    address: string;
+    chainId: number;
+    runSlither?: boolean;
+  }) => api.post("/scan/address", data, { timeout: 90000 }),
+  getScan: (scanId: string) => api.get(`/scan/address/${scanId}`),
 };
 
 // --- Vulnerability Comments API Endpoints ---

@@ -6,12 +6,14 @@ import { VulnerabilityComment } from "./VulnerabilityComment";
 import { ActivityLog } from "./ActivityLog";
 import { AnalysisTemplate } from "./AnalysisTemplate";
 import ApiAnalytics from "./ApiAnalytics";
+import { AddressScan } from "./AddressScan";
 import { logger } from "../utils/logger";
 
 // 1. Initialize all models
 const models = {
   User,
   Analysis,
+  AddressScan,
   Vulnerability,
   VulnerabilityComment,
   ActivityLog,
@@ -33,6 +35,24 @@ function defineAssociations() {
   Analysis.belongsTo(User, {
     foreignKey: "userId",
     as: "user",
+  });
+
+  User.hasMany(AddressScan, {
+    foreignKey: "userId",
+    as: "addressScans",
+    onDelete: "SET NULL",
+  });
+  AddressScan.belongsTo(User, {
+    foreignKey: "userId",
+    as: "user",
+  });
+  AddressScan.belongsTo(Analysis, {
+    foreignKey: "analysisId",
+    as: "analysis",
+  });
+  Analysis.hasOne(AddressScan, {
+    foreignKey: "analysisId",
+    as: "addressScan",
   });
 
   // Analysis <-> Vulnerability (One-to-Many)

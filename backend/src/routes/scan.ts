@@ -1,13 +1,28 @@
 import { Router } from "express";
 import { asyncHandler } from "../middleware/errorHandler";
-import { listScanChains, scanAddress } from "../controllers/addressScanController";
+import {
+  listScanChains,
+  scanAddress,
+  getScanResult,
+} from "../controllers/addressScanController";
 import { validateScanAddress } from "../middleware/validation";
-import { auth } from "../middleware/auth";
+import { optionalAuth } from "../middleware/auth";
+import { addressScanRateLimiter } from "../middleware/rateLimit";
 
 const router = Router();
 
 router.get("/chains", asyncHandler(listScanChains));
-router.post("/address", validateScanAddress, asyncHandler(scanAddress));
-router.post("/address/authenticated", auth, validateScanAddress, asyncHandler(scanAddress));
+router.post(
+  "/address",
+  addressScanRateLimiter,
+  optionalAuth,
+  validateScanAddress,
+  asyncHandler(scanAddress),
+);
+router.get(
+  "/address/:id",
+  optionalAuth,
+  asyncHandler(getScanResult),
+);
 
 export default router;

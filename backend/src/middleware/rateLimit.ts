@@ -77,6 +77,20 @@ export const authRateLimiter = createRateLimiter({
   skipSuccessfulRequests: false,
 });
 
+// Address scan (anonymous: stricter per IP)
+export const addressScanRateLimiter = createRateLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 12,
+  message: "Address scan rate limit exceeded. Try again later or sign in.",
+  keyGenerator: (req: Request) => {
+    const userId = (req as { user?: { userId?: string } }).user?.userId;
+    if (userId) {
+      return `addrscan_user_${userId}`;
+    }
+    return `addrscan_ip_${getIpAddress(req)}`;
+  },
+});
+
 // Analysis rate limiter (stricter for free users)
 export const analysisRateLimiter = createRateLimiter({
   windowMs: 60 * 60 * 1000, // 1 hour

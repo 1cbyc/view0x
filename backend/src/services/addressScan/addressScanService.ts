@@ -1,8 +1,15 @@
 import { getChain, listChains } from "../../config/chains";
+import { AddressScan } from "../../models/AddressScan";
+import { User } from "../../models/User";
+import { Analysis } from "../../models/Analysis";
 import type { AddressScanResult, ScanAddressRequest } from "../../shared/types/addressScan";
 import { fetchContractFromExplorer } from "../explorer/explorerClient";
+import { analysisService } from "../analysisService";
 import { runHeuristics } from "./heuristics";
 import { computeReputationScore, scoreToRiskLevel } from "./reputationScore";
+import { logger } from "../../utils/logger";
+
+const CACHE_HOURS = 24;
 
 export function getSupportedChains() {
   return listChains().map((c) => ({
@@ -14,7 +21,7 @@ export function getSupportedChains() {
   }));
 }
 
-export async function scanContractAddress(
+async function buildScanResult(
   input: ScanAddressRequest,
 ): Promise<AddressScanResult> {
   const chain = getChain(input.chainId);
@@ -40,5 +47,115 @@ export async function scanContractAddress(
     explorer,
     sourceAvailable: Boolean(explorer.sourceCode),
     scannedAt: new Date().toISOString(),
+  };
+}
+
+async function queueSlitherIfRequested(
+  result: AddressScanResult,
+  userId: string | undefined,
+  runSlither: boolean,
+): Promise<string | undefined> {
+  if (!runSlither || !result.sourceAvailable || !result.explorer.sourceCode) {
+    return undefined;
+  }
+
+  if (!userId) {
+    throw new Error(
+      "Sign in to queue a full Slither analysis for verified contracts.",
+    );
+  }
+
+  const user = await User.findByPk(userId);
+  if (!user) {
+    throw new Error("User not found.");
+  }
+  if (!user.canAnalyze()) {
+    throw new Error(
+      "You have reached your analysis limit. Upgrade your plan to run Slither.",
+    );
+  }
+
+  const job = await analysisService.create(userId, {
+    contractCode: result.explorer.sourceCode,
+    contractName:
+      result.explorer.contractName ||
+      `Address ${result.address.slice(0, 10)}…`,
+    options: {},
+  });
+
+  await user.incrementUsage();
+  logger.info(
+    `[AddressScan] Queued Slither job ${job.id} for ${result.address} (chain ${result.chainId})`,
+  );
+  return job.id;
+}
+
+export async function scanContractAddress(
+  input: ScanAddressRequest,
+  userId?: string,
+): Promise<AddressScanResult & { scanId: string }> {
+  const normalizedAddress = input.address.trim().toLowerCase();
+
+  const cached = await AddressScan.findRecentCached(
+    normalizedAddress,
+    input.chainId,
+    CACHE_HOURS,
+  );
+  if (cached) {
+    const payload = cached.result as AddressScanResult;
+    return { ...payload, scanId: cached.id };
+  }
+
+  const result = await buildScanResult(input);
+  const slitherJobId = await queueSlitherIfRequested(
+    result,
+    userId,
+    Boolean(input.runSlither),
+  );
+  if (slitherJobId) {
+    result.slitherJobId = slitherJobId;
+  }
+
+  const record = await AddressScan.create({
+    userId: userId ?? null,
+    address: result.address.toLowerCase(),
+    chainId: result.chainId,
+    result,
+    analysisId: slitherJobId ?? null,
+  });
+
+  return { ...result, scanId: record.id };
+}
+
+export async function getAddressScanById(
+  scanId: string,
+  userId?: string,
+): Promise<AddressScanResult & { scanId: string; analysisStatus?: string }> {
+  const record = await AddressScan.findByPk(scanId);
+  if (!record) {
+    throw new Error("Address scan not found");
+  }
+
+  if (userId && record.userId && record.userId !== userId) {
+    throw new Error("Not authorized to view this scan");
+  }
+
+  const payload = record.result as AddressScanResult;
+  let analysisStatus: string | undefined;
+
+  if (record.analysisId) {
+    const analysis = await Analysis.findByPk(record.analysisId, {
+      attributes: ["status", "progress"],
+    });
+    analysisStatus = analysis?.status;
+    if (analysis) {
+      payload.slitherJobId = record.analysisId;
+    }
+  }
+
+  return {
+    ...payload,
+    scanId: record.id,
+    analysisStatus,
   };
 }

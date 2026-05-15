@@ -27,6 +27,7 @@ export interface ExplorerContractInfo {
 }
 
 export interface AddressScanResult {
+  scanId?: string;
   address: string;
   chainId: number;
   chainName: string;
@@ -38,6 +39,7 @@ export interface AddressScanResult {
   sourceAvailable: boolean;
   scannedAt: string;
   slitherJobId?: string;
+  analysisStatus?: string;
 }
 
 export interface ScanAddressRequest {
