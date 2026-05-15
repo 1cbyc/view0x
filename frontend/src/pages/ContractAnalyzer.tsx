@@ -47,6 +47,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Services and Types
 import { analysisApi } from "@/services/api";
+import { AddressScanPanel } from "@/components/AddressScanPanel";
 import { socketService, AnalysisUpdatePayload } from "@/services/socketService";
 
 // --- Type Definitions ---
@@ -726,7 +727,7 @@ const ContractAnalyzer: React.FC = () => {
           Smart Contract Security Scanner
         </h1>
         <p className="text-sm sm:text-base md:text-lg text-white/60 mt-2 sm:mt-4 max-w-2xl mx-auto px-2">
-          Paste your Solidity code to get an instant security analysis. No login required to scan contracts.
+          Paste Solidity source or scan a deployed contract address. No login required.
         </p>
         <p className="text-xs sm:text-sm text-white/40 mt-1 sm:mt-2 px-2">
           <Link 
@@ -739,6 +740,15 @@ const ContractAnalyzer: React.FC = () => {
         </p>
       </div>
 
+      <Tabs defaultValue="source" className="w-full">
+        <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-4">
+          <TabsTrigger value="source">Paste source</TabsTrigger>
+          <TabsTrigger value="address">Scan address</TabsTrigger>
+        </TabsList>
+        <TabsContent value="address" className="mt-0">
+          <AddressScanPanel />
+        </TabsContent>
+        <TabsContent value="source" className="mt-0">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-8">
         <div className="space-y-3 sm:space-y-4">
           <Card className="overflow-hidden">
@@ -960,6 +970,8 @@ const ContractAnalyzer: React.FC = () => {
         </div>
         <div className="space-y-3 sm:space-y-4">{renderResults()}</div>
       </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

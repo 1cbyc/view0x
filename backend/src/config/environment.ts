@@ -39,6 +39,7 @@ export interface EnvironmentConfig {
   // External services
   MYTHX_API_KEY?: string;
   ETHERSCAN_API_KEY?: string;
+  BSCSCAN_API_KEY?: string;
 
   // Email configuration (future)
   SMTP_HOST?: string;
@@ -158,6 +159,7 @@ function parseEnvironmentConfig(): EnvironmentConfig {
     // External services
     MYTHX_API_KEY: process.env.MYTHX_API_KEY,
     ETHERSCAN_API_KEY: process.env.ETHERSCAN_API_KEY,
+    BSCSCAN_API_KEY: process.env.BSCSCAN_API_KEY,
 
     // Email
     SMTP_HOST: process.env.SMTP_HOST,

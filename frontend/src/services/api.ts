@@ -154,6 +154,40 @@ export const analysisApi = {
     api.patch(`/analysis/${analysisId}/favorite`),
 };
 
+// --- Address scan (Token Sniffer / DappBay style) ---
+export interface AddressScanFlag {
+  id: string;
+  category: string;
+  title: string;
+  description: string;
+  severity: string;
+}
+
+export interface AddressScanResult {
+  address: string;
+  chainId: number;
+  chainName: string;
+  contractType: "contract" | "eoa" | "unknown";
+  reputationScore: number;
+  riskLevel: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  heuristics: AddressScanFlag[];
+  explorer: {
+    explorerUrl: string;
+    contractName: string | null;
+    isVerified: boolean;
+    isProxy: boolean;
+    sourceCode: string | null;
+  };
+  sourceAvailable: boolean;
+  scannedAt: string;
+}
+
+export const scanApi = {
+  getChains: () => api.get("/scan/chains"),
+  scanAddress: (data: { address: string; chainId: number }) =>
+    api.post("/scan/address", data, { timeout: 60000 }),
+};
+
 // --- Vulnerability Comments API Endpoints ---
 export const vulnerabilityApi = {
   /**

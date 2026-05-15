@@ -33,6 +33,7 @@ import activityLogRoutes from "./routes/activityLogs";
 import repositoryRoutes from "./routes/repository";
 import analyticsRoutes from "./routes/analytics";
 import userRoutes from "./routes/users";
+import scanRoutes from "./routes/scan";
 
 // Initialize Express app
 const app = express();
@@ -165,6 +166,7 @@ app.use(`/api/${API_VERSION}/analysis`, analysisRoutes);
 app.use(`/api/${API_VERSION}/vulnerabilities`, vulnerabilityRoutes);
 app.use(`/api/${API_VERSION}/templates`, templateRoutes);
 app.use(`/api/${API_VERSION}/webhooks`, webhookRoutes);
+app.use(`/api/${API_VERSION}/scan`, scanRoutes);
 
 // Legacy routes (backward compatibility)
 app.use("/api/auth", authRoutes);
@@ -177,6 +179,7 @@ app.use("/api/activity-logs", activityLogRoutes);
 app.use("/api/repository", repositoryRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/scan", scanRoutes);
 
 // Root endpoint with API information
 app.get("/", (req, res) => {

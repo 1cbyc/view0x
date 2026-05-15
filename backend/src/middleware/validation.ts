@@ -52,6 +52,31 @@ export const validateCreateAnalysis = (
   next();
 };
 
+const scanAddressSchema = Joi.object({
+  address: Joi.string().pattern(/^0x[a-fA-F0-9]{40}$/).required().messages({
+    "string.pattern.base": "Address must be a valid 0x-prefixed 40-character hex string.",
+  }),
+  chainId: Joi.number().integer().valid(1, 56).required(),
+  runSlither: Joi.boolean().optional(),
+});
+
+export const validateScanAddress = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const { error, value } = scanAddressSchema.validate(req.body, {
+    abortEarly: false,
+    stripUnknown: true,
+  });
+  if (error) {
+    const message = error.details.map((d) => d.message).join(", ");
+    return next(new ValidationError(message));
+  }
+  req.body = value;
+  next();
+};
+
 // You can add other validation schemas here as needed
 
 const registerSchema = Joi.object({
