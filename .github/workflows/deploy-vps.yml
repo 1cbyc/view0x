@@ -1,0 +1,73 @@
+name: Deploy VPS
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to deploy
+        required: false
+        default: main
+  push:
+    branches:
+      - main
+      - 1cbyc-dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Requires repository secrets: VPS_HOST, VPS_USER, VPS_SSH_KEY
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+
+      - name: Install SSH tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rsync openssh-client
+
+      - name: Configure SSH
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/view0x_deploy_key
+          chmod 600 ~/.ssh/view0x_deploy_key
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts
+
+      - name: Sync project files to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/view0x_deploy_key" \
+            --exclude ".git/" \
+            --exclude ".env" \
+            --exclude "node_modules/" \
+            --exclude "backend/node_modules/" \
+            --exclude "frontend/node_modules/" \
+            --exclude "backend/dist/" \
+            --exclude "frontend/dist/" \
+            --exclude "playwright-report/" \
+            --exclude "test-results/" \
+            ./ "$VPS_USER@$VPS_HOST:/home/view0x/app/"
+
+      - name: Rebuild and restart Docker stack
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          ssh -i ~/.ssh/view0x_deploy_key "$VPS_USER@$VPS_HOST" <<'EOF'
+            set -euo pipefail
+            cd /home/view0x/app
+            test -f .env
+            export WEB_PORT API_PORT
+            WEB_PORT="$(grep -E '^WEB_PORT=' .env | cut -d= -f2- | tr -d '\r' || echo 18088)"
+            API_PORT="$(grep -E '^API_PORT=' .env | cut -d= -f2- | tr -d '\r' || echo 13001)"
+            docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d --build
+            docker compose -f docker-compose.yml -f docker-compose.vps.yml ps
+            curl -fsS "http://127.0.0.1:${WEB_PORT}/health"
+            curl -fsS "http://127.0.0.1:${API_PORT}/health"
+          EOF

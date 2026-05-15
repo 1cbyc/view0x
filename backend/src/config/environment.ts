@@ -1,8 +1,5 @@
-import { config } from 'dotenv';
+import './loadEnv';
 import { logger } from '../utils/logger';
-
-// Load environment variables from .env file
-config();
 
 export interface EnvironmentConfig {
   // Server configuration
@@ -112,7 +109,14 @@ function parseEnvironmentConfig(): EnvironmentConfig {
     ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
     : process.env.NODE_ENV === 'production' 
       ? ['https://view0x.com', 'https://www.view0x.com'] // Production defaults for view0x.com
-      : ['http://localhost:3000', 'https://localhost:3000']; // Dev defaults only
+      : [
+          'http://localhost:5173',
+          'http://127.0.0.1:5173',
+          'http://localhost:18088',
+          'http://127.0.0.1:18088',
+          'http://localhost:18091',
+          'http://127.0.0.1:18091',
+        ]; // Dev defaults only
 
   // Build configuration object
   const config: EnvironmentConfig = {

@@ -15,7 +15,7 @@ import asyncio
 import signal
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import uvicorn
@@ -201,7 +201,7 @@ async def health_check():
         raise HTTPException(status_code=500, detail="Health check failed")
 
 @app.post("/analyze", response_model=AnalysisResponse)
-async def analyze_contract(request: AnalysisRequest, background_tasks: BackgroundTasks):
+async def analyze_contract(request: AnalysisRequest):
     """Analyze a smart contract"""
     try:
         logger.info(f"Starting analysis for job {request.job_id}")
@@ -213,9 +213,7 @@ async def analyze_contract(request: AnalysisRequest, background_tasks: Backgroun
                 detail="Contract code too large (max 5MB)"
             )
 
-        # Add background task for analysis
-        background_tasks.add_task(
-            process_analysis,
+        analysis_result = await process_analysis(
             request.job_id,
             request.contract_code,
             request.options,
@@ -225,7 +223,8 @@ async def analyze_contract(request: AnalysisRequest, background_tasks: Backgroun
         return AnalysisResponse(
             success=True,
             job_id=request.job_id,
-            message="Analysis started successfully"
+            message="Analysis completed successfully",
+            data=analysis_result
         )
 
     except HTTPException:
@@ -239,7 +238,7 @@ async def process_analysis(
     contract_code: str,
     options: Dict[str, Any],
     callback_url: Optional[str] = None
-):
+) -> Dict[str, Any]:
     """Process contract analysis in background"""
     try:
         logger.info(f"Processing analysis for job {job_id}")
@@ -361,6 +360,8 @@ async def process_analysis(
         if callback_url:
             await send_callback(callback_url, job_id, analysis_result)
 
+        return analysis_result
+
     except Exception as e:
         logger.error(f"Analysis failed for job {job_id}: {e}")
         logger.error(traceback.format_exc())
@@ -377,6 +378,8 @@ async def process_analysis(
             await store_analysis_result(job_id, error_result, failed=True)
         else:
             logger.warning("Redis not available - skipping error storage")
+
+        raise
 
 async def update_job_status(
     job_id: str,
