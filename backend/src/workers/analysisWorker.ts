@@ -3,11 +3,14 @@ import axios from "axios";
 import { Analysis } from "../models/Analysis";
 import { logger } from "../utils/logger";
 import { env } from "../config/environment";
-import { bullQueueClient, bullQueueSubscriber } from "../config/database";
 import { analysisService } from "../services/analysisService";
 import { emitAnalysisUpdate } from "../events/appEvents";
 import { scannerEngineService } from "../services/scannerEngineService";
 import { ResultMerger } from "../services/resultMerger";
+import {
+  normalizeAnalysisResult,
+  unwrapPythonAnalysisPayload,
+} from "../services/analysisResultNormalizer";
 
 // Define the Job Payload Interface
 interface AnalysisJobPayload {
@@ -17,17 +20,8 @@ interface AnalysisJobPayload {
 }
 
 // Create the Bull Queue
-export const analysisQueue = new Queue<AnalysisJobPayload>("analysis-jobs", {
-  createClient: (type) => {
-    switch (type) {
-      case "client":
-        return bullQueueClient;
-      case "subscriber":
-        return bullQueueSubscriber;
-      default:
-        return new (require("ioredis"))(bullQueueClient.options);
-    }
-  },
+export const analysisQueue = new Queue<AnalysisJobPayload>("analysis-jobs", env.REDIS_URL, {
+  prefix: "view0x:queue",
   defaultJobOptions: {
     attempts: 3,
     backoff: {
@@ -84,7 +78,12 @@ const processAnalysisJob = async (job: Queue.Job<AnalysisJobPayload>) => {
       });
       
       const report = await scannerEngineService.analyzeContract(contractCode, options);
-      result = scannerEngineService.formatResults(report);
+      result = normalizeAnalysisResult(
+        analysisId,
+        contractCode,
+        scannerEngineService.formatResults(report),
+        "scanner-engine",
+      );
       
     } else if (engine === 'all' || engine === 'both') {
       // Run all available engines in parallel
@@ -118,9 +117,17 @@ const processAnalysisJob = async (job: Queue.Job<AnalysisJobPayload>) => {
             },
             { timeout: env.SLITHER_TIMEOUT * 1000 }
           );
+          const normalizedSlither = normalizeAnalysisResult(
+            analysisId,
+            contractCode,
+            unwrapPythonAnalysisPayload(slitherResult.data),
+            "slither",
+          );
           engineResults.push({ 
-            vulnerabilities: slitherResult.data.vulnerabilities || [],
-            warnings: slitherResult.data.warnings || [],
+            vulnerabilities: normalizedSlither.vulnerabilities || [],
+            warnings: normalizedSlither.warnings || [],
+            gasOptimizations: normalizedSlither.gasOptimizations || [],
+            codeQuality: normalizedSlither.codeQuality || [],
             engine: 'slither'
           });
         } catch (error: any) {
@@ -144,12 +151,20 @@ const processAnalysisJob = async (job: Queue.Job<AnalysisJobPayload>) => {
                 job_id: analysisId,
                 contract_code: contractCode,
                 options: { ...options, engine: 'semgrep' },
-              },
-              { timeout: 30000 }
+            },
+            { timeout: 30000 }
+          );
+            const normalizedSemgrep = normalizeAnalysisResult(
+              analysisId,
+              contractCode,
+              unwrapPythonAnalysisPayload(semgrepResult.data),
+              "semgrep",
             );
             engineResults.push({
-              vulnerabilities: semgrepResult.data.vulnerabilities || [],
-              warnings: semgrepResult.data.warnings || [],
+              vulnerabilities: normalizedSemgrep.vulnerabilities || [],
+              warnings: normalizedSemgrep.warnings || [],
+              gasOptimizations: normalizedSemgrep.gasOptimizations || [],
+              codeQuality: normalizedSemgrep.codeQuality || [],
               engine: 'semgrep'
             });
           } catch (error: any) {
@@ -168,10 +183,17 @@ const processAnalysisJob = async (job: Queue.Job<AnalysisJobPayload>) => {
           
           try {
             const report = await scannerEngineService.analyzeContract(contractCode, options);
-            const scannerResults = scannerEngineService.formatResults(report);
+            const scannerResults = normalizeAnalysisResult(
+              analysisId,
+              contractCode,
+              scannerEngineService.formatResults(report),
+              "scanner-engine",
+            );
             engineResults.push({
               vulnerabilities: scannerResults.vulnerabilities || [],
               warnings: scannerResults.warnings || [],
+              gasOptimizations: scannerResults.gasOptimizations || [],
+              codeQuality: scannerResults.codeQuality || [],
               engine: 'scanner-engine'
             });
           } catch (error: any) {
@@ -216,7 +238,12 @@ const processAnalysisJob = async (job: Queue.Job<AnalysisJobPayload>) => {
         { timeout: env.SLITHER_TIMEOUT * 1000 }
       );
 
-      result = response.data;
+      result = normalizeAnalysisResult(
+        analysisId,
+        contractCode,
+        unwrapPythonAnalysisPayload(response.data),
+        "slither",
+      );
     }
 
     // 3. Update the analysis record with the result

@@ -1,4 +1,4 @@
-import "dotenv/config"; // Ensure environment variables are loaded first
+import "./config/loadEnv";
 import { server, initializeApp } from "./app";
 import { env } from "./config/environment";
 import { logger } from "./utils/logger";
