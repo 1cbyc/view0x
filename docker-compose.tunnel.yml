@@ -1,0 +1,15 @@
+# Cloudflare Tunnel — run as view0x user, no koreshield Caddy required.
+# Usage:
+#   1. Create tunnel in Cloudflare Zero Trust, copy token into .env:
+#        CLOUDFLARE_TUNNEL_TOKEN=eyJ...
+#   2. Configure public hostnames → http://127.0.0.1:18088
+#   3. docker compose -f docker-compose.yml -f docker-compose.vps.yml -f docker-compose.tunnel.yml up -d
+
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:2024.12.2
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    network_mode: host
+    env_file:
+      - .env

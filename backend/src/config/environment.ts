@@ -46,6 +46,7 @@ export interface EnvironmentConfig {
   SMTP_USER?: string;
   SMTP_PASS?: string;
   FROM_EMAIL?: string;
+  APP_PUBLIC_URL?: string;
 
   // File upload
   MAX_FILE_SIZE: number;
@@ -163,6 +164,7 @@ function parseEnvironmentConfig(): EnvironmentConfig {
     SMTP_USER: process.env.SMTP_USER,
     SMTP_PASS: process.env.SMTP_PASS,
     FROM_EMAIL: process.env.FROM_EMAIL,
+    APP_PUBLIC_URL: process.env.APP_PUBLIC_URL,
 
     // File upload
     MAX_FILE_SIZE: parseInt(process.env.MAX_FILE_SIZE || '') || defaults.MAX_FILE_SIZE!,

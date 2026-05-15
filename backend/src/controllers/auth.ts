@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { User } from "../models/User";
 import { env } from "../config/environment";
 import { logger } from "../utils/logger";
+import { emailService } from "../services/emailService";
 
 // Helper function to generate JWT token
 const generateToken = (userId: string): string => {
@@ -154,6 +155,13 @@ export const register = async (req: Request, res: Response) => {
 
     logger.info(`New user registered: ${user.email}`);
 
+    if (user.emailVerificationToken) {
+      await emailService.sendVerificationEmail(
+        user.email,
+        user.emailVerificationToken,
+      );
+    }
+
     // Return user data and tokens
     res.status(201).json({
       success: true,
@@ -299,7 +307,7 @@ export const requestPasswordReset = async (req: Request, res: Response) => {
     const resetToken = user.generateResetToken();
     await user.save();
 
-    // TODO: Send email with reset link
+    await emailService.sendPasswordResetEmail(user.email, resetToken);
     logger.info(`Password reset requested for: ${email}`);
 
     res.json({
@@ -564,6 +572,10 @@ export const resendVerification = async (req: Request, res: Response) => {
     }
     user.generateEmailVerificationToken();
     await user.save();
+    await emailService.sendVerificationEmail(
+      user.email,
+      user.emailVerificationToken!,
+    );
     logger.info(`Verification email requested: ${email}`);
     res.json({ success: true, message: "If registered, verification link sent" });
   } catch (error) {

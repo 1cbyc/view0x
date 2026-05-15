@@ -9,6 +9,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const AnalysisDetailPage = lazy(() => import("./pages/AnalysisResult"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Webhooks = lazy(() => import("./pages/Webhooks"));
 const RepositoryAnalyzer = lazy(() => import("./pages/RepositoryAnalyzer"));
@@ -60,6 +61,7 @@ const App: React.FC = () => {
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
 
               {/* User-specific pages */}
               <Route path="/dashboard" element={<Dashboard />} />
