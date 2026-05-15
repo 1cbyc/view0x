@@ -1,4 +1,4 @@
-import express from "express";
+import express, { type NextFunction, type Request, type Response } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
@@ -6,7 +6,7 @@ import compression from "compression";
 import { createServer } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import swaggerUi from "swagger-ui-express";
-import { swaggerSpec } from "./config/swagger";
+import { getSwaggerSpec } from "./config/swagger";
 
 // Configuration and utilities
 import { env } from "./config/environment";
@@ -141,15 +141,22 @@ app.get("/health", async (req, res) => {
   }
 });
 
-// API Documentation
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  customCss: ".swagger-ui .topbar { display: none }",
-  customSiteTitle: "view0x API Documentation",
-}));
-app.get("/api-docs.json", (req, res) => {
+// API documentation at /docs (api.view0x.com/docs in production)
+const swaggerUiHandler = (req: Request, res: Response, next: NextFunction) => {
+  swaggerUi.setup(getSwaggerSpec(), {
+    customCss: ".swagger-ui .topbar { display: none }",
+    customSiteTitle: "view0x API Documentation",
+    swaggerOptions: { persistAuthorization: true },
+  })(req, res, next);
+};
+app.use("/docs", swaggerUi.serve, swaggerUiHandler);
+app.get("/docs.json", (_req, res) => {
   res.setHeader("Content-Type", "application/json");
-  res.send(swaggerSpec);
+  res.setHeader("Cache-Control", "no-store");
+  res.send(getSwaggerSpec());
 });
+app.get("/api-docs", (_req, res) => res.redirect(301, "/docs"));
+app.get("/api-docs.json", (_req, res) => res.redirect(301, "/docs.json"));
 
 // API routes with versioning
 const API_VERSION = env.API_VERSION || "v1";

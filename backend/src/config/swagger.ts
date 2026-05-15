@@ -1,145 +1,320 @@
+import path from "path";
+import fs from "fs";
 import swaggerJsdoc from "swagger-jsdoc";
 import { env } from "./environment";
 
-const options: swaggerJsdoc.Options = {
-  definition: {
-    openapi: "3.0.0",
-    info: {
-      title: "view0x API",
-      version: env.API_VERSION || "1.0.0",
-      description: "API documentation for view0x - Smart Contract Security Analysis Platform",
-      contact: {
-        name: "view0x Support",
-        email: "support@view0x.com",
-      },
-      license: {
-        name: "MIT",
-        url: "https://opensource.org/licenses/MIT",
-      },
-    },
-    servers: [
-      {
-        url: process.env.API_BASE_URL || "http://localhost:18091",
-        description: "Development server",
-      },
-      {
-        url: "https://api.view0x.com",
-        description: "Production server",
-      },
-    ],
-    components: {
-      securitySchemes: {
-        bearerAuth: {
-          type: "http",
-          scheme: "bearer",
-          bearerFormat: "JWT",
-        },
-        apiKeyAuth: {
-          type: "apiKey",
-          in: "header",
-          name: "X-API-Key",
-        },
-      },
-      schemas: {
-        Error: {
-          type: "object",
-          properties: {
-            success: {
-              type: "boolean",
-              example: false,
-            },
-            error: {
-              type: "object",
-              properties: {
-                code: {
-                  type: "string",
-                  example: "VALIDATION_ERROR",
-                },
-                message: {
-                  type: "string",
-                  example: "Invalid input provided",
-                },
-              },
-            },
-          },
-        },
-        Analysis: {
-          type: "object",
-          properties: {
-            id: {
-              type: "string",
-              format: "uuid",
-            },
-            contractName: {
-              type: "string",
-              nullable: true,
-            },
-            status: {
-              type: "string",
-              enum: ["queued", "processing", "completed", "failed"],
-            },
-            summary: {
-              type: "object",
-              properties: {
-                highSeverity: { type: "number" },
-                mediumSeverity: { type: "number" },
-                lowSeverity: { type: "number" },
-              },
-            },
-            createdAt: {
-              type: "string",
-              format: "date-time",
-            },
-          },
-        },
-        PaginationMeta: {
-          type: "object",
-          properties: {
-            page: { type: "number" },
-            limit: { type: "number" },
-            total: { type: "number" },
-            totalPages: { type: "number" },
-            hasNext: { type: "boolean" },
-            hasPrev: { type: "boolean" },
-          },
-        },
-      },
-    },
-    tags: [
-      {
-        name: "Authentication",
-        description: "User authentication and authorization endpoints",
-      },
-      {
-        name: "Analysis",
-        description: "Smart contract analysis endpoints",
-      },
-      {
-        name: "Vulnerabilities",
-        description: "Vulnerability management and comments",
-      },
-      {
-        name: "Templates",
-        description: "Analysis template management",
-      },
-      {
-        name: "Webhooks",
-        description: "Webhook configuration and management",
-      },
-      {
-        name: "Activity Logs",
-        description: "User activity logging",
-      },
-      {
-        name: "2FA",
-        description: "Two-factor authentication",
-      },
-    ],
-  },
-  apis: [
-    "./src/routes/*.ts",
-    "./src/controllers/*.ts",
-  ],
+const apiVersion = env.API_VERSION || "v1";
+
+const publicApiOrigin = (): string =>
+  (env.API_PUBLIC_URL || "https://api.view0x.com").replace(/\/$/, "");
+
+const localApiOrigin = (): string => {
+  const port = process.env.API_PORT || "18091";
+  return `http://localhost:${port}`;
 };
 
-export const swaggerSpec = swaggerJsdoc(options);
+/** OpenAPI paths maintained in code (route files have no JSDoc blocks). */
+const documentedPaths: swaggerJsdoc.OAS3Definition["paths"] = {
+  "/health": {
+    get: {
+      tags: ["Health"],
+      summary: "Service health check",
+      responses: {
+        "200": { description: "Healthy" },
+        "503": { description: "Unhealthy" },
+      },
+    },
+  },
+  "/api/auth/register": {
+    post: {
+      tags: ["Authentication"],
+      summary: "Register a new user",
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              required: ["email", "password", "name"],
+              properties: {
+                email: { type: "string", format: "email" },
+                password: { type: "string", minLength: 8 },
+                name: { type: "string" },
+              },
+            },
+          },
+        },
+      },
+      responses: {
+        "201": { description: "User created" },
+        "400": { description: "Validation error", content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } } },
+      },
+    },
+  },
+  "/api/auth/login": {
+    post: {
+      tags: ["Authentication"],
+      summary: "Login",
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              required: ["email", "password"],
+              properties: {
+                email: { type: "string", format: "email" },
+                password: { type: "string" },
+              },
+            },
+          },
+        },
+      },
+      responses: {
+        "200": { description: "Tokens issued" },
+        "401": { description: "Invalid credentials" },
+      },
+    },
+  },
+  "/api/auth/refresh": {
+    post: {
+      tags: ["Authentication"],
+      summary: "Refresh access token",
+      responses: { "200": { description: "New access token" } },
+    },
+  },
+  "/api/auth/forgot-password": {
+    post: {
+      tags: ["Authentication"],
+      summary: "Request password reset email",
+      requestBody: {
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              required: ["email"],
+              properties: { email: { type: "string", format: "email" } },
+            },
+          },
+        },
+      },
+      responses: { "200": { description: "Reset email queued (if account exists)" } },
+    },
+  },
+  "/api/auth/reset-password": {
+    post: {
+      tags: ["Authentication"],
+      summary: "Reset password with token",
+      responses: { "200": { description: "Password updated" } },
+    },
+  },
+  "/api/auth/verify-email": {
+    post: {
+      tags: ["Authentication"],
+      summary: "Verify email with token",
+      responses: { "200": { description: "Email verified" } },
+    },
+  },
+  "/api/auth/resend-verification": {
+    post: {
+      tags: ["Authentication"],
+      summary: "Resend verification email",
+      responses: { "200": { description: "Verification email sent" } },
+    },
+  },
+  "/api/auth/me": {
+    get: {
+      tags: ["Authentication"],
+      summary: "Current user profile",
+      security: [{ bearerAuth: [] }],
+      responses: { "200": { description: "User profile" } },
+    },
+  },
+  "/api/analysis": {
+    get: {
+      tags: ["Analysis"],
+      summary: "List analyses for the authenticated user",
+      security: [{ bearerAuth: [] }, { apiKeyAuth: [] }],
+      responses: { "200": { description: "Paginated analysis list" } },
+    },
+    post: {
+      tags: ["Analysis"],
+      summary: "Submit contract source for analysis",
+      security: [{ bearerAuth: [] }, { apiKeyAuth: [] }],
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              properties: {
+                sourceCode: { type: "string" },
+                contractName: { type: "string" },
+                fileName: { type: "string" },
+              },
+            },
+          },
+        },
+      },
+      responses: {
+        "202": { description: "Analysis queued", content: { "application/json": { schema: { $ref: "#/components/schemas/Analysis" } } } },
+      },
+    },
+  },
+  "/api/analysis/{id}": {
+    get: {
+      tags: ["Analysis"],
+      summary: "Get analysis by ID",
+      security: [{ bearerAuth: [] }, { apiKeyAuth: [] }],
+      parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }],
+      responses: { "200": { description: "Analysis result" } },
+    },
+    delete: {
+      tags: ["Analysis"],
+      summary: "Delete an analysis",
+      security: [{ bearerAuth: [] }],
+      parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }],
+      responses: { "204": { description: "Deleted" } },
+    },
+  },
+  "/api/analysis/{id}/status": {
+    get: {
+      tags: ["Analysis"],
+      summary: "Poll analysis job status",
+      security: [{ bearerAuth: [] }],
+      parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }],
+      responses: { "200": { description: "Job status" } },
+    },
+  },
+  "/api/analysis/public": {
+    post: {
+      tags: ["Analysis"],
+      summary: "Run a one-off public analysis (no account)",
+      responses: { "200": { description: "Analysis result" } },
+    },
+  },
+  [`/api/${apiVersion}/auth/register`]: {
+    post: {
+      tags: ["Authentication"],
+      summary: "Register (versioned)",
+      responses: { "201": { description: "User created" } },
+    },
+  },
+  [`/api/${apiVersion}/analysis`]: {
+    post: {
+      tags: ["Analysis"],
+      summary: "Submit analysis (versioned)",
+      security: [{ bearerAuth: [] }],
+      responses: { "202": { description: "Analysis queued" } },
+    },
+  },
+};
+
+function swaggerApiGlobs(): string[] {
+  const base = path.join(__dirname, "..");
+  const routesDir = path.join(base, "routes");
+  if (!fs.existsSync(routesDir)) {
+    return [];
+  }
+  const ext = fs.existsSync(path.join(routesDir, "auth.js")) ? "js" : "ts";
+  return [
+    path.join(routesDir, `*.${ext}`),
+    path.join(base, "controllers", `*.${ext}`),
+  ];
+}
+
+let cachedSpec: ReturnType<typeof swaggerJsdoc> | null = null;
+
+export function getSwaggerSpec(): ReturnType<typeof swaggerJsdoc> {
+  if (cachedSpec) {
+    return cachedSpec;
+  }
+
+  const options: swaggerJsdoc.Options = {
+    definition: {
+      openapi: "3.0.0",
+      info: {
+        title: "view0x API",
+        version: apiVersion,
+        description:
+          "Smart contract security analysis API. Submit Solidity source; results include Slither findings and severity summaries.",
+        contact: {
+          name: "view0x Support",
+          email: "support@view0x.com",
+        },
+      },
+      servers: [
+        {
+          url: publicApiOrigin(),
+          description: "Production API (api.view0x.com)",
+        },
+        {
+          url: localApiOrigin(),
+          description: "Local direct API port",
+        },
+      ],
+      paths: documentedPaths,
+      components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: "http",
+            scheme: "bearer",
+            bearerFormat: "JWT",
+          },
+          apiKeyAuth: {
+            type: "apiKey",
+            in: "header",
+            name: "X-API-Key",
+          },
+        },
+        schemas: {
+          Error: {
+            type: "object",
+            properties: {
+              success: { type: "boolean", example: false },
+              error: {
+                type: "object",
+                properties: {
+                  code: { type: "string", example: "VALIDATION_ERROR" },
+                  message: { type: "string", example: "Invalid input provided" },
+                },
+              },
+            },
+          },
+          Analysis: {
+            type: "object",
+            properties: {
+              id: { type: "string", format: "uuid" },
+              contractName: { type: "string", nullable: true },
+              status: {
+                type: "string",
+                enum: ["queued", "processing", "completed", "failed"],
+              },
+              summary: {
+                type: "object",
+                properties: {
+                  highSeverity: { type: "number" },
+                  mediumSeverity: { type: "number" },
+                  lowSeverity: { type: "number" },
+                },
+              },
+              createdAt: { type: "string", format: "date-time" },
+            },
+          },
+        },
+      },
+      tags: [
+        { name: "Health", description: "Liveness and dependency checks" },
+        { name: "Authentication", description: "Registration, login, email verification" },
+        { name: "Analysis", description: "Contract analysis jobs and results" },
+      ],
+    },
+    apis: swaggerApiGlobs(),
+  };
+
+  cachedSpec = swaggerJsdoc(options);
+  return cachedSpec;
+}
+
+/** @deprecated Use getSwaggerSpec() — kept for tests that import swaggerSpec */
+export const swaggerSpec = getSwaggerSpec();

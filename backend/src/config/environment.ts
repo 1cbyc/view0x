@@ -47,6 +47,7 @@ export interface EnvironmentConfig {
   SMTP_PASS?: string;
   FROM_EMAIL?: string;
   APP_PUBLIC_URL?: string;
+  API_PUBLIC_URL?: string;
 
   // File upload
   MAX_FILE_SIZE: number;
@@ -108,8 +109,8 @@ function parseEnvironmentConfig(): EnvironmentConfig {
   // Parse CORS origins
   const corsOrigins = process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
-    : process.env.NODE_ENV === 'production' 
-      ? ['https://view0x.com', 'https://www.view0x.com'] // Production defaults for view0x.com
+    : process.env.NODE_ENV === 'production'
+      ? ['https://view0x.com', 'https://www.view0x.com', 'https://api.view0x.com']
       : [
           'http://localhost:5173',
           'http://127.0.0.1:5173',
@@ -165,6 +166,7 @@ function parseEnvironmentConfig(): EnvironmentConfig {
     SMTP_PASS: process.env.SMTP_PASS,
     FROM_EMAIL: process.env.FROM_EMAIL,
     APP_PUBLIC_URL: process.env.APP_PUBLIC_URL,
+    API_PUBLIC_URL: process.env.API_PUBLIC_URL,
 
     // File upload
     MAX_FILE_SIZE: parseInt(process.env.MAX_FILE_SIZE || '') || defaults.MAX_FILE_SIZE!,

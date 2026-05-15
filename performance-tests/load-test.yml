@@ -49,7 +49,7 @@ scenarios:
     weight: 10
     flow:
       - get:
-          url: "/api-docs.json"
+          url: "/docs.json"
           expect:
             - statusCode: 200
 

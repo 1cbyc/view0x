@@ -165,7 +165,7 @@ test.describe('Security Tests', () => {
         });
 
         test('should prevent clickjacking', async ({ request }) => {
-            const response = await request.get(`${API_URL}/api-docs`);
+            const response = await request.get(`${API_URL}/docs`);
             const headers = response.headers();
 
             const xFrameOptions = headers['x-frame-options'] || headers['X-Frame-Options'];

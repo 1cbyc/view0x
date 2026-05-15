@@ -34,7 +34,7 @@ export const analyticsMiddleware = async (
             if (
                 req.path.startsWith("/api/analytics") ||
                 req.path === "/health" ||
-                req.path.includes("api-docs")
+                req.path.includes("/docs")
             ) {
                 return;
             }

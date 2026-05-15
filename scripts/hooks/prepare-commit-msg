@@ -1,0 +1,7 @@
+#!/bin/sh
+# Strip Cursor co-author trailers so they never enter git history.
+MSG_FILE="$1"
+if [ -f "$MSG_FILE" ]; then
+  grep -viE '^co-authored-by:[[:space:]]*cursor[[:space:]]*<cursoragent@cursor\.com>' "$MSG_FILE" > "${MSG_FILE}.tmp" || true
+  mv "${MSG_FILE}.tmp" "$MSG_FILE"
+fi

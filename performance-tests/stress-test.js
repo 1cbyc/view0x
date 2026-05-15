@@ -82,7 +82,7 @@ export default function () {
     sleep(2);
 
     // Test 3: API Documentation
-    const apiDocs = http.get(`${BASE_URL}/api-docs.json`);
+    const apiDocs = http.get(`${BASE_URL}/docs.json`);
     check(apiDocs, {
         'api docs status is 200': (r) => r.status === 200,
         'api docs is valid JSON': (r) => {
