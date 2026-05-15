@@ -1,0 +1,241 @@
+{
+  "title": "Address & reputation scanning (de.fi / Token Sniffer / DappBay parity)",
+  "version": "1.0.0",
+  "updated": "2026-05-15",
+  "competitors": {
+    "de_fi": {
+      "url": "https://de.fi/scanner",
+      "strengths": ["wallet exposure", "token approvals", "DeFi protocol risk", "polished address UX"],
+      "view0x_gap": "no wallet-level approval graph; no portfolio view"
+    },
+    "token_sniffer": {
+      "url": "https://tokensniffer.com/",
+      "strengths": ["token scam score", "honeypot heuristics", "copy-paste contract detection", "fast verdict"],
+      "view0x_gap": "no reputation score; no liquidity/ownership quick flags for deployed tokens"
+    },
+    "dappbay": {
+      "url": "https://dappbay.bnbchain.org/risk-scanner",
+      "strengths": ["BSC address check", "ecosystem trust signals", "simple scan UX"],
+      "view0x_gap": "no chain-specific BSC scanner; no address-only flow"
+    }
+  },
+  "principles": [
+    "Slither on verified source remains the core differentiator",
+    "Address scan = fetch source + heuristics + optional Slither merge",
+    "Wallet/approval risk (full de.fi parity) is Phase 4, not MVP"
+  ],
+  "phases": [
+    {
+      "id": "phase-0",
+      "name": "Spec & data model",
+      "tasks": [
+        {
+          "id": "0.1",
+          "title": "Competitor signal matrix",
+          "description": "Document signals: honeypot, mintable, owner, tax/fee, blacklist, proxy, liquidity lock, holder concentration, similar bytecode (Token Sniffer), BSC red flags (DappBay).",
+          "status": "pending"
+        },
+        {
+          "id": "0.2",
+          "title": "Unified report schema",
+          "description": "JSON schema: addressScanResult { chain, address, contractType, reputationScore, riskLevel, heuristics[], slitherSummary?, sourceFetched, scannedAt }.",
+          "status": "pending"
+        },
+        {
+          "id": "0.3",
+          "title": "Chain registry config",
+          "description": "chains.json: ETH mainnet, BSC (56); explorer API base URLs, native symbol, block explorer links.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-1",
+      "name": "Explorer integration (foundation)",
+      "tasks": [
+        {
+          "id": "1.1",
+          "title": "Etherscan API client",
+          "description": "getContractSourceCode, getabi, eth_getCode proxy; handle unverified contracts.",
+          "env": ["ETHERSCAN_API_KEY"],
+          "status": "pending"
+        },
+        {
+          "id": "1.2",
+          "title": "BscScan API client",
+          "description": "Same endpoints as Etherscan-compatible BscScan API.",
+          "env": ["BSCSCAN_API_KEY"],
+          "status": "pending"
+        },
+        {
+          "id": "1.3",
+          "title": "Address validation & checksum",
+          "description": "Validate 0x address, EIP-55 checksum, reject EOAs vs contracts (code length check).",
+          "status": "pending"
+        },
+        {
+          "id": "1.4",
+          "title": "Proxy / implementation resolver",
+          "description": "Detect EIP-1967 / minimal proxy; scan implementation address when proxy.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-2",
+      "name": "On-chain heuristics (Token Sniffer / DappBay layer)",
+      "tasks": [
+        {
+          "id": "2.1",
+          "title": "RPC read module",
+          "description": "eth_call for owner(), totalSupply(), decimals(); optional Alchemy/Infura RPC URLs per chain.",
+          "status": "pending"
+        },
+        {
+          "id": "2.2",
+          "title": "Ownership & admin flags",
+          "description": "owner renounced, single owner, hidden owner patterns, mint function exposed.",
+          "status": "pending"
+        },
+        {
+          "id": "2.3",
+          "title": "Trading / honeypot heuristics",
+          "description": "buy/sell tax detection hints, cannot sell, high fee, blacklist mapping checks (bytecode/string scan).",
+          "status": "pending"
+        },
+        {
+          "id": "2.4",
+          "title": "Liquidity signals",
+          "description": "LP pair existence, lock hints (known locker contracts), low liquidity warning.",
+          "status": "pending"
+        },
+        {
+          "id": "2.5",
+          "title": "Reputation score aggregator",
+          "description": "Weighted score 0-100 from heuristics; map to LOW/MEDIUM/HIGH/CRITICAL like Token Sniffer.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-3",
+      "name": "API & pipeline",
+      "tasks": [
+        {
+          "id": "3.1",
+          "title": "POST /api/scan/address",
+          "description": "Body: { address, chainId }. Returns job id or sync result for quick mode.",
+          "status": "pending"
+        },
+        {
+          "id": "3.2",
+          "title": "Scan worker job type",
+          "description": "Bull queue: fetch source -> heuristics -> if source, run Python Slither -> merge into Analysis record.",
+          "status": "pending"
+        },
+        {
+          "id": "3.3",
+          "title": "GET /api/scan/address/:id",
+          "description": "Poll combined result; cache by address+chain 24h.",
+          "status": "pending"
+        },
+        {
+          "id": "3.4",
+          "title": "Public rate limits",
+          "description": "Stricter limits for unauthenticated address scans; API key tier for bulk.",
+          "status": "pending"
+        },
+        {
+          "id": "3.5",
+          "title": "Store scan history",
+          "description": "DB model AddressScan linked to User; dedupe recent scans.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-4",
+      "name": "Frontend UX",
+      "tasks": [
+        {
+          "id": "4.1",
+          "title": "Scan mode toggle",
+          "description": "ContractAnalyzer: Paste source | Scan address; chain dropdown (ETH, BSC).",
+          "status": "pending"
+        },
+        {
+          "id": "4.2",
+          "title": "Unified risk report card",
+          "description": "Sections: Reputation score, Heuristic flags, Slither findings (if source), Explorer links.",
+          "status": "pending"
+        },
+        {
+          "id": "4.3",
+          "title": "Risk badges & copy",
+          "description": "Human-readable explanations per flag (similar to Token Sniffer labels).",
+          "status": "pending"
+        },
+        {
+          "id": "4.4",
+          "title": "Share / export address scan",
+          "description": "Reuse share token flow for address scan results.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-5",
+      "name": "de.fi-style wallet risk (later)",
+      "tasks": [
+        {
+          "id": "5.1",
+          "title": "Wallet address mode",
+          "description": "Scan EOA: list token approvals, unlimited approvals, known malicious spenders.",
+          "status": "pending"
+        },
+        {
+          "id": "5.2",
+          "title": "Approval revocation links",
+          "description": "Deep links to revoke.cash / explorer token approval tools.",
+          "status": "pending"
+        },
+        {
+          "id": "5.3",
+          "title": "Portfolio DeFi exposure",
+          "description": "Optional: DeBank/DefiLlama API for protocol exposure summary.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "phase-6",
+      "name": "Ops & quality",
+      "tasks": [
+        {
+          "id": "6.1",
+          "title": "ETHERSCAN + BSCSCAN keys on VPS",
+          "description": "Add to .env; document in .env.example.",
+          "status": "pending"
+        },
+        {
+          "id": "6.2",
+          "title": "Integration tests",
+          "description": "Mock explorer responses; test known safe vs flagged fixture addresses.",
+          "status": "pending"
+        },
+        {
+          "id": "6.3",
+          "title": "Swagger docs for scan endpoints",
+          "description": "Add to /docs OpenAPI paths.",
+          "status": "pending"
+        }
+      ]
+    }
+  ],
+  "mvp_definition": {
+    "includes": ["phase-0", "phase-1", "phase-2 (subset 2.1-2.5)", "phase-3", "phase-4.1-4.2"],
+    "chains": ["ethereum", "bsc"],
+    "excludes": ["phase-5 wallet approvals", "full de.fi portfolio"]
+  },
+  "github_issue": 100
+}
