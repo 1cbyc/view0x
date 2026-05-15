@@ -1,0 +1,20 @@
+# VPS overlay: bind services on all interfaces for reverse proxy.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d --build
+
+# VPS overlay — do not duplicate ports from docker-compose.yml (Compose merges port lists).
+services:
+  api:
+    ports:
+      - "127.0.0.1:${API_PORT:-18091}:3001"
+
+  web:
+    ports: !override
+      - "0.0.0.0:${WEB_PORT:-18088}:80"
+
+  postgres:
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-15433}:5432"
+
+  redis:
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-16380}:6379"

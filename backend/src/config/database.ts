@@ -85,14 +85,12 @@ export const bullQueueClient = new Redis(redisConfig.url, {
   ...redisConfig.options,
   maxRetriesPerRequest: null, // Bull manages its own retries
   enableReadyCheck: false,
-  keyPrefix: "view0x:queue:",
 });
 
 export const bullQueueSubscriber = new Redis(redisConfig.url, {
   ...redisConfig.options,
   maxRetriesPerRequest: null, // Bull manages its own retries
   enableReadyCheck: false,
-  keyPrefix: "view0x:queue:",
 });
 
 // Redis client for caching

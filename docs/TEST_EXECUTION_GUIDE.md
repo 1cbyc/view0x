@@ -19,8 +19,8 @@ This guide helps you systematically run all tests from `TESTING.md`.
    ```
 
 2. **Verify Services**
-   - Backend: http://localhost:3001/health
-   - Frontend: http://localhost:3000
+   - Backend: http://localhost:18091/health
+   - Frontend: http://localhost:18088
    - Database: Check with `docker ps`
 
 ## Automated Tests
@@ -41,7 +41,7 @@ This will test:
 ### 1. Contract Scanning (Public Endpoint)
 
 **Test Steps:**
-1. Open http://localhost:3000
+1. Open http://localhost:18088
 2. Without logging in, paste sample contract code
 3. Click "Analyze Contract"
 4. Verify results appear
@@ -127,15 +127,15 @@ contract VulnerableContract {
 
 ```bash
 # Health check
-curl http://localhost:3001/health
+curl http://localhost:18091/health
 
 # Public analysis
-curl -X POST http://localhost:3001/api/analysis/public \
+curl -X POST http://localhost:18091/api/analysis/public \
   -H "Content-Type: application/json" \
   -d '{"contractCode":"pragma solidity ^0.8.0; contract Test {}"}'
 
 # Protected endpoint (requires token)
-curl -X GET http://localhost:3001/api/analysis \
+curl -X GET http://localhost:18091/api/analysis \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 

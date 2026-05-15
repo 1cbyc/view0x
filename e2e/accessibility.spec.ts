@@ -6,7 +6,7 @@ import AxeBuilder from '@axe-core/playwright';
  * Tests WCAG 2.1 AA compliance across all pages
  */
 
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 test.describe('Accessibility Tests', () => {
     test.describe('WCAG 2.1 AA Compliance', () => {

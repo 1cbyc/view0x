@@ -13,11 +13,13 @@ export interface AnalysisUpdatePayload {
 
 export type AnalysisUpdateCallback = (payload: AnalysisUpdatePayload) => void;
 
+const rawSocketUrl = import.meta.env.VITE_SOCKET_URL?.trim();
 const SOCKET_URL =
-  import.meta.env.VITE_SOCKET_URL ||
-  (typeof window !== "undefined"
-    ? window.location.origin
-    : "http://localhost:3001");
+  rawSocketUrl && rawSocketUrl !== "/"
+    ? rawSocketUrl
+    : typeof window !== "undefined"
+      ? window.location.origin
+      : "http://localhost:18091";
 
 class SocketService {
   private socket: Socket | null = null;

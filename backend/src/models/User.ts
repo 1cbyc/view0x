@@ -425,6 +425,7 @@ User.init(
         attributes: {
           exclude: [
             "password",
+            "apiKey",
             "resetPasswordToken",
             "resetPasswordExpires",
             "emailVerificationToken",

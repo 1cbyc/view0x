@@ -22,7 +22,7 @@ export const options = {
     },
 };
 
-const BASE_URL = __ENV.API_URL || 'http://localhost:3001';
+const BASE_URL = __ENV.API_URL || 'http://localhost:18091';
 
 // Sample contract code for testing
 const SAMPLE_CONTRACT = `pragma solidity ^0.8.0;

@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test';
  * Captures and compares screenshots to detect unintended UI changes
  */
 
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 test.describe('Visual Regression Tests', () => {
     test.describe('Desktop Views', () => {
