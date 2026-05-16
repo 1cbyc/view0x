@@ -9,6 +9,15 @@ const Footer: React.FC = () => {
           <div className="flex items-center space-x-2 text-muted-foreground">
             <span>© {new Date().getFullYear()} </span>
             <span className="font-bold text-foreground">view0x</span>
+            <span>by</span>
+            <a
+              href="https://nsisong.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-foreground hover:text-primary transition-colors"
+            >
+              Isaac
+            </a>
           </div>
 
           <div className="flex items-center space-x-6">
@@ -34,9 +43,6 @@ const Footer: React.FC = () => {
           </div>
         </div>
 
-        <div className="mt-4 text-center text-sm text-muted-foreground">
-          <p>Smart Contract Security Analysis Platform</p>
-        </div>
       </div>
     </footer>
   );
