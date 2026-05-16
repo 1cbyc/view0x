@@ -4,6 +4,7 @@ import { User } from "../models/User";
 import { env } from "../config/environment";
 import { logger } from "../utils/logger";
 import { emailService } from "../services/emailService";
+import { getGuestSessionIdFromRequest } from "../utils/guestSession";
 
 // Helper function to generate JWT token
 const generateToken = (userId: string): string => {
@@ -18,6 +19,13 @@ const generateRefreshToken = (userId: string): string => {
     expiresIn: "7d",
   });
 };
+
+async function attachGuestWorkIfPresent(req: Request, userId: string) {
+  const guestSessionId = getGuestSessionIdFromRequest(req);
+  if (!guestSessionId) return undefined;
+  const { claimGuestWork } = await import("../services/guestClaimService");
+  return claimGuestWork(userId, guestSessionId);
+}
 
 // Login controller
 export const login = async (req: Request, res: Response) => {
@@ -72,6 +80,13 @@ export const login = async (req: Request, res: Response) => {
 
     logger.info(`User logged in: ${user.email}`);
 
+    let claimedWork;
+    try {
+      claimedWork = await attachGuestWorkIfPresent(req, user.id);
+    } catch (claimErr) {
+      logger.warn("Guest work claim skipped after login:", claimErr);
+    }
+
     // Return user data and tokens
     res.json({
       success: true,
@@ -83,6 +98,7 @@ export const login = async (req: Request, res: Response) => {
           expiresIn: 24 * 60 * 60, // 24 hours in seconds
           tokenType: "Bearer",
         },
+        claimedWork,
       },
     });
   } catch (error) {
@@ -162,6 +178,13 @@ export const register = async (req: Request, res: Response) => {
       );
     }
 
+    let claimedWork;
+    try {
+      claimedWork = await attachGuestWorkIfPresent(req, user.id);
+    } catch (claimErr) {
+      logger.warn("Guest work claim skipped after registration:", claimErr);
+    }
+
     // Return user data and tokens
     res.status(201).json({
       success: true,
@@ -175,6 +198,7 @@ export const register = async (req: Request, res: Response) => {
         },
         message: "User registered successfully",
         requiresEmailVerification: true,
+        claimedWork,
       },
     });
   } catch (error) {
@@ -581,6 +605,40 @@ export const resendVerification = async (req: Request, res: Response) => {
   } catch (error) {
     logger.error("Resend verification error:", error);
     res.status(500).json({ success: false, error: { code: "INTERNAL_SERVER_ERROR", message: "Internal error" } });
+  }
+};
+
+/** Claim anonymous analyses / address scans after sign-in (also runs automatically on login/register). */
+export const claimGuestWorkHandler = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as { user?: { userId: string } }).user?.userId;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: { code: "UNAUTHORIZED", message: "Authentication required" },
+      });
+    }
+
+    const guestSessionId = getGuestSessionIdFromRequest(req);
+    if (!guestSessionId) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: "MISSING_GUEST_SESSION",
+          message: "Send X-Guest-Session header or guestSessionId in body",
+        },
+      });
+    }
+
+    const { claimGuestWork } = await import("../services/guestClaimService");
+    const claimedWork = await claimGuestWork(userId, guestSessionId);
+    res.json({ success: true, data: { claimedWork } });
+  } catch (error) {
+    logger.error("Claim guest work error:", error);
+    res.status(500).json({
+      success: false,
+      error: { code: "INTERNAL_SERVER_ERROR", message: "Internal server error" },
+    });
   }
 };
 

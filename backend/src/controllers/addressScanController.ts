@@ -7,6 +7,7 @@ import {
   getAddressScanByShareToken,
 } from "../services/addressScan/addressScanService";
 import { logger } from "../utils/logger";
+import { getGuestSessionIdFromRequest } from "../utils/guestSession";
 
 export const listScanChains = async (_req: Request, res: Response) => {
   res.json({
@@ -19,6 +20,9 @@ export const scanAddress = async (req: Request, res: Response) => {
   try {
     const { address, chainId, runSlither } = req.body;
     const userId = req.user?.userId;
+    const guestSessionId = userId
+      ? undefined
+      : getGuestSessionIdFromRequest(req);
 
     const result = await scanContractAddress(
       {
@@ -27,6 +31,7 @@ export const scanAddress = async (req: Request, res: Response) => {
         runSlither: Boolean(runSlither),
       },
       userId,
+      guestSessionId,
     );
 
     logger.info(

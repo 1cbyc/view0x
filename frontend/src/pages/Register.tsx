@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authApi } from '../services/api';
+import { getGuestSessionId } from '@/lib/guestSession';
 import { Loader2, AlertTriangle } from 'lucide-react';
 import { PasswordInput } from '@/components/PasswordInput';
 
@@ -37,7 +38,10 @@ const Register: React.FC = () => {
     }
 
     try {
-      const response = await authApi.register(formData);
+      const response = await authApi.register({
+        ...formData,
+        guestSessionId: getGuestSessionId(),
+      });
       
       // If registration returns tokens (auto-login), save them and redirect to dashboard
       if (response.data && response.data.success && response.data.data?.tokens) {

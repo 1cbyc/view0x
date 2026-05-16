@@ -119,9 +119,8 @@ backend/uploads/
 *.db
 CopilotIndices/
 
-# Shell scripts (but keep test scripts)
+# Shell scripts (keep tracked python launcher only)
 *.sh
-!scripts/*.sh
 !python/start.sh
 
 # Local roadmap / planning (never push)

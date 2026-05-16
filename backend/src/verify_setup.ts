@@ -35,9 +35,9 @@ async function verifyPhase1And2() {
   logHeader("STEP 1: VERIFYING DATABASE CONNECTION");
   const dbConnected = await testDatabaseConnection();
   if (dbConnected) {
-    logSuccess("Supabase PostgreSQL connection is successful.");
+    logSuccess("PostgreSQL database connection verified.");
   } else {
-    logFailure("Failed to connect to Supabase PostgreSQL. Halting tests.");
+    logFailure("Failed to connect to PostgreSQL. Halting tests.");
     hasFailed = true;
     process.exit(1);
   }
@@ -51,7 +51,7 @@ async function verifyPhase1And2() {
       "All models (Users, Analyses, Vulnerabilities) were synchronized successfully.",
     );
     logInfo(
-      "Tables `users`, `analyses`, and `vulnerabilities` have been created in your Supabase DB.",
+      "Tables `users`, `analyses`, and `vulnerabilities` were created via Sequelize sync.",
     );
   } catch (error) {
     logFailure("Failed to synchronize database models.", error);

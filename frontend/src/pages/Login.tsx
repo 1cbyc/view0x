@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { authApi } from '../services/api';
+import { getGuestSessionId } from '@/lib/guestSession';
 import { Loader2, AlertTriangle, CheckCircle } from 'lucide-react';
 import { PasswordInput } from '@/components/PasswordInput';
 
@@ -45,7 +46,10 @@ const Login: React.FC = () => {
     }
 
     try {
-      const response = await authApi.login(formData);
+      const response = await authApi.login({
+        ...formData,
+        guestSessionId: getGuestSessionId(),
+      });
 
       // Check if response is successful
       if (response.data && response.data.success && response.data.data) {

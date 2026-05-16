@@ -11,6 +11,7 @@ import {
 import { logger } from "../utils/logger";
 import { SimpleScanner } from "../services/simpleScanner";
 import { ReportGenerator, ReportOptions } from "../services/reportGenerator";
+import { getGuestSessionIdFromRequest } from "../utils/guestSession";
 import crypto from "crypto";
 import { Op } from "sequelize";
 
@@ -38,25 +39,57 @@ export const publicAnalysis = async (req: Request, res: Response) => {
 
     logger.info(`Public analysis completed - found ${result.vulnerabilities.length} vulnerabilities`);
 
+    const summary = {
+      totalVulnerabilities: result.vulnerabilities.length,
+      highSeverity: result.vulnerabilities.filter((v) => v.severity === "HIGH")
+        .length,
+      mediumSeverity: result.vulnerabilities.filter((v) => v.severity === "MEDIUM")
+        .length,
+      lowSeverity: result.vulnerabilities.filter((v) => v.severity === "LOW").length,
+      totalWarnings: result.warnings.length,
+      totalSuggestions: result.suggestions.length,
+      gasOptimizations: result.gasOptimizations?.length || 0,
+      codeQualityIssues: result.codeQuality?.length || 0,
+    };
+
+    const dataPayload = {
+      summary,
+      vulnerabilities: result.vulnerabilities,
+      warnings: result.warnings,
+      suggestions: result.suggestions,
+      gasOptimizations: result.gasOptimizations || [],
+      codeQuality: result.codeQuality || [],
+    };
+
+    const guestSessionId = getGuestSessionIdFromRequest(req);
+    let analysisId: string | undefined;
+
+    if (guestSessionId) {
+      const now = new Date();
+      const record = await Analysis.create({
+        contractCode,
+        contractName: "Quick scan (before sign-in)",
+        status: "completed",
+        progress: 100,
+        currentStep: "completed",
+        startedAt: now,
+        completedAt: now,
+        result: dataPayload,
+        options: { engine: "simple", guestSessionId } as object,
+        guestSessionId,
+      });
+      analysisId = record.id;
+    }
+
     res.json({
       success: true,
-      message: "Analysis completed",
+      message: analysisId
+        ? "Analysis completed — sign in to keep it in your dashboard"
+        : "Analysis completed",
       data: {
-        summary: {
-          totalVulnerabilities: result.vulnerabilities.length,
-          highSeverity: result.vulnerabilities.filter(v => v.severity === 'HIGH').length,
-          mediumSeverity: result.vulnerabilities.filter(v => v.severity === 'MEDIUM').length,
-          lowSeverity: result.vulnerabilities.filter(v => v.severity === 'LOW').length,
-          totalWarnings: result.warnings.length,
-          totalSuggestions: result.suggestions.length,
-          gasOptimizations: result.gasOptimizations?.length || 0,
-          codeQualityIssues: result.codeQuality?.length || 0,
-        },
-        vulnerabilities: result.vulnerabilities,
-        warnings: result.warnings,
-        suggestions: result.suggestions,
-        gasOptimizations: result.gasOptimizations || [],
-        codeQuality: result.codeQuality || [],
+        ...dataPayload,
+        analysisId,
+        guestSessionId: guestSessionId || undefined,
       },
     });
   } catch (error: any) {

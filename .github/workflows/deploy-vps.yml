@@ -15,6 +15,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     # Requires repository secrets: VPS_HOST, VPS_USER, VPS_SSH_KEY
+    # On the VPS, set SWAGGER_DOCS_USER and SWAGGER_DOCS_PASSWORD in /home/view0x/app/.env
+    # so https://api.view0x.com/docs is reachable (HTTP Basic Auth). If unset in production, /docs returns 404.
     steps:
       - uses: actions/checkout@v4
         with:
@@ -57,22 +59,26 @@ jobs:
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
+          # Base64 of former scripts/ensure-vps-edge.sh (wired Caddy routes on Koreshield edge).
+          VIEW0X_EDGE_SCRIPT_B64: IyEvdXNyL2Jpbi9lbnYgc2gKc2V0IC1ldQoKRURHRV9DT05UQUlORVI9IiR7RURHRV9DT05UQUlORVI6LWtvcmVzaGllbGQtY2FkZHl9IgpWSUVXMFhfTkVUV09SSz0iJHtWSUVXMFhfTkVUV09SSzotdmlldzB4X2RlZmF1bHR9IgpWSUVXMFhfV0VCX1VQU1RSRUFNPSIke1ZJRVcwWF9XRUJfVVBTVFJFQU06LTE3Mi4xNy4wLjE6MTgwODh9IgpWSUVXMFhfQVBJX1VQU1RSRUFNPSIke1ZJRVcwWF9BUElfVVBTVFJFQU06LXZpZXcweC1hcGktMTozMDAxfSIKCmlmICEgZG9ja2VyIHBzIC0tZm9ybWF0ICd7ey5OYW1lc319JyB8IGdyZXAgLXF4ICIkRURHRV9DT05UQUlORVIiOyB0aGVuCiAgZWNobyAiTWlzc2luZyBlZGdlIGNvbnRhaW5lcjogJEVER0VfQ09OVEFJTkVSIiA+JjIKICBleGl0IDEKZmkKCmlmICEgZG9ja2VyIG5ldHdvcmsgaW5zcGVjdCAiJFZJRVcwWF9ORVRXT1JLIiA+L2Rldi9udWxsIDI+JjE7IHRoZW4KICBlY2hvICJNaXNzaW5nIHZpZXcweCBEb2NrZXIgbmV0d29yazogJFZJRVcwWF9ORVRXT1JLIiA+JjIKICBleGl0IDEKZmkKCmlmICEgZG9ja2VyIGluc3BlY3QgIiRFREdFX0NPTlRBSU5FUiIgLS1mb3JtYXQgJ3t7anNvbiAuTmV0d29ya1NldHRpbmdzLk5ldHdvcmtzfX0nIHwgZ3JlcCAtcSAiXCIkVklFVzBYX05FVFdPUktcIiI7IHRoZW4KICBkb2NrZXIgbmV0d29yayBjb25uZWN0ICIkVklFVzBYX05FVFdPUksiICIkRURHRV9DT05UQUlORVIiCmZpCgpkb2NrZXIgZXhlYyAtaSBcCiAgLWUgVklFVzBYX1dFQl9VUFNUUkVBTT0iJFZJRVcwWF9XRUJfVVBTVFJFQU0iIFwKICAtZSBWSUVXMFhfQVBJX1VQU1RSRUFNPSIkVklFVzBYX0FQSV9VUFNUUkVBTSIgXAogICIkRURHRV9DT05UQUlORVIiIHNoIC1zIDw8J0VPRicKc2V0IC1ldQoKY2FkZHlmaWxlPSIvZXRjL2NhZGR5L0NhZGR5ZmlsZSIKdG1wPSIvdG1wL0NhZGR5ZmlsZS52aWV3MHgiCgphd2sgJwogIC9eIyBCRUdJTiB2aWV3MHggbWFuYWdlZCByb3V0ZXMkLyB7IHNraXAgPSAxOyBuZXh0IH0KICAvXiMgRU5EIHZpZXcweCBtYW5hZ2VkIHJvdXRlcyQvIHsgc2tpcCA9IDA7IG5leHQgfQogIC9eKHZpZXcweFwuY29tLCB3d3dcLnZpZXcweFwuY29tfGFwaVwudmlldzB4XC5jb20pIFx7JC8gewogICAgc2tpcCA9IDEKICAgIGRlcHRoID0gMQogICAgbmV4dAogIH0KICBza2lwID09IDEgewogICAgZGVwdGggKz0gZ3N1YigvXHsvLCAieyIpCiAgICBkZXB0aCAtPSBnc3ViKC9cfS8sICJ9IikKICAgIGlmIChkZXB0aCA8PSAwKSB7CiAgICAgIHNraXAgPSAwCiAgICB9CiAgICBuZXh0CiAgfQogIHsgcHJpbnQgfQonICIkY2FkZHlmaWxlIiA+ICIkdG1wIgoKY2F0ID4+ICIkdG1wIiA8PFJPVVRFUgoKIyBCRUdJTiB2aWV3MHggbWFuYWdlZCByb3V0ZXMKdmlldzB4LmNvbSwgd3d3LnZpZXcweC5jb20gewogICAgZW5jb2RlIGd6aXAKICAgIHJldmVyc2VfcHJveHkgJHtWSUVXMFhfV0VCX1VQU1RSRUFNfQp9CgphcGkudmlldzB4LmNvbSB7CiAgICBlbmNvZGUgZ3ppcAogICAgcmV2ZXJzZV9wcm94eSAke1ZJRVcwWF9BUElfVVBTVFJFQU19Cn0KIyBFTkQgdmlldzB4IG1hbmFnZWQgcm91dGVzClJPVVRFUwoKY2F0ICIkdG1wIiA+ICIkY2FkZHlmaWxlIgpjYWRkeSB2YWxpZGF0ZSAtLWNvbmZpZyAiJGNhZGR5ZmlsZSIKY2FkZHkgcmVsb2FkIC0tY29uZmlnICIkY2FkZHlmaWxlIgpFT0YKCmRvY2tlciBleGVjICIkRURHRV9DT05UQUlORVIiIHNoIC1sYyAiZ2V0ZW50IGhvc3RzIHZpZXcweC1hcGktMSA+L2Rldi9udWxsICYmIHdnZXQgLXFPLSBodHRwOi8vdmlldzB4LWFwaS0xOjMwMDEvaGVhbHRoID4vZGV2L251bGwiCg==
         run: |
-          ssh -i ~/.ssh/view0x_deploy_key "$VPS_USER@$VPS_HOST" <<'EOF'
+          ssh -i ~/.ssh/view0x_deploy_key "$VPS_USER@$VPS_HOST" <<REMOTE
             set -euo pipefail
             cd /home/view0x/app
             test -f .env
             export WEB_PORT API_PORT
-            WEB_PORT="$(grep -E '^WEB_PORT=' .env | cut -d= -f2- | tr -d '\r' || echo 18088)"
-            API_PORT="$(grep -E '^API_PORT=' .env | cut -d= -f2- | tr -d '\r' || echo 18091)"
+            WEB_PORT="\$(grep -E '^WEB_PORT=' .env | cut -d= -f2- | tr -d '\r' || echo 18088)"
+            API_PORT="\$(grep -E '^API_PORT=' .env | cut -d= -f2- | tr -d '\r' || echo 18091)"
             docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d --build
-            EDGE_CONTAINER=koreshield-caddy \
+            EDGE_B64=$VIEW0X_EDGE_SCRIPT_B64
+            printf '%s' "\$EDGE_B64" | base64 -d | \
+              EDGE_CONTAINER=koreshield-caddy \
               VIEW0X_NETWORK=view0x_default \
-              VIEW0X_WEB_UPSTREAM="172.17.0.1:${WEB_PORT}" \
+              VIEW0X_WEB_UPSTREAM="172.17.0.1:\${WEB_PORT}" \
               VIEW0X_API_UPSTREAM="view0x-api-1:3001" \
-              sh scripts/ensure-vps-edge.sh
+              sh -
             docker compose -f docker-compose.yml -f docker-compose.vps.yml ps
-            curl -fsS "http://127.0.0.1:${WEB_PORT}/health"
-            curl -fsS "http://127.0.0.1:${API_PORT}/health"
+            curl -fsS "http://127.0.0.1:\${WEB_PORT}/health"
+            curl -fsS "http://127.0.0.1:\${API_PORT}/health"
             curl -fsS "https://api.view0x.com/health"
-          EOF
+          REMOTE

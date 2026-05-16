@@ -27,6 +27,12 @@ jest.mock('../../utils/logger', () => ({
   },
 }));
 
+jest.mock('../../services/emailService', () => ({
+  emailService: {
+    sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
+  },
+}));
+
 // Now import after mocks
 import { Request, Response } from 'express';
 import { register, login } from '../../controllers/auth';

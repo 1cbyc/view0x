@@ -63,6 +63,10 @@ export interface EnvironmentConfig {
   ENABLE_REQUEST_LOGGING: boolean;
   SENTRY_DSN?: string;
   SENTRY_TRACES_SAMPLE_RATE: number;
+
+  /** When set (non-empty user + password), `/docs` requires HTTP Basic Auth. In production, if unset, `/docs` is disabled (404). */
+  SWAGGER_DOCS_USER?: string;
+  SWAGGER_DOCS_PASSWORD?: string;
 }
 
 // Default values
@@ -188,6 +192,9 @@ function parseEnvironmentConfig(): EnvironmentConfig {
     SENTRY_TRACES_SAMPLE_RATE:
       parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE || '') ||
       defaults.SENTRY_TRACES_SAMPLE_RATE!,
+
+    SWAGGER_DOCS_USER: process.env.SWAGGER_DOCS_USER?.trim() || undefined,
+    SWAGGER_DOCS_PASSWORD: process.env.SWAGGER_DOCS_PASSWORD || undefined,
   };
 
   // Validate configuration
@@ -273,6 +280,18 @@ logger.info('Environment Configuration:', {
   MAX_CONTRACT_SIZE: `${env.MAX_CONTRACT_SIZE} bytes`,
   MAX_CONCURRENT_ANALYSES: env.MAX_CONCURRENT_ANALYSES,
   CORS_ORIGINS: env.CORS_ORIGINS.join(', '),
+  swaggerDocs:
+    env.NODE_ENV === 'production'
+      ? env.SWAGGER_DOCS_USER?.trim() &&
+          env.SWAGGER_DOCS_PASSWORD &&
+          env.SWAGGER_DOCS_PASSWORD.length > 0
+        ? 'basic-auth'
+        : 'disabled'
+      : env.SWAGGER_DOCS_USER?.trim() &&
+          env.SWAGGER_DOCS_PASSWORD &&
+          env.SWAGGER_DOCS_PASSWORD.length > 0
+        ? 'basic-auth'
+        : 'open',
 });
 
 export default env;

@@ -46,7 +46,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Services and Types
-import { analysisApi } from "@/services/api";
+import { analysisApi, authApi } from "@/services/api";
+import { getGuestSessionId } from "@/lib/guestSession";
 import { AddressScanPanel } from "@/components/AddressScanPanel";
 import { socketService, AnalysisUpdatePayload } from "@/services/socketService";
 
@@ -339,6 +340,14 @@ const ContractAnalyzer: React.FC = () => {
     return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
+  // After sign-in, attach any scans done while logged out
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    authApi.claimGuestWork(getGuestSessionId()).catch(() => {
+      /* non-fatal */
+    });
+  }, [isAuthenticated]);
+
   const resetState = () => {
     setIsAnalyzing(false);
     setAnalysisResult(null);
@@ -437,8 +446,13 @@ const ContractAnalyzer: React.FC = () => {
             lineNumber: issue.location?.line || issue.lineNumber
           }));
 
+          const savedId =
+            typeof response.data?.data?.analysisId === "string"
+              ? response.data.data.analysisId
+              : undefined;
+
           setAnalysisResult({
-            id: `public-${Date.now()}`,
+            id: savedId || `public-${Date.now()}`,
             summary: {
               highSeverity: result.summary.highSeverity || 0,
               mediumSeverity: result.summary.mediumSeverity || 0,

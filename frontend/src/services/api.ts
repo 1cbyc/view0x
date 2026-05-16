@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getGuestSessionId } from "@/lib/guestSession";
 
 // Create a single, configured Axios instance
 const api = axios.create({
@@ -14,6 +15,10 @@ api.interceptors.request.use(
     const token = localStorage.getItem("accessToken");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    const guestSessionId = getGuestSessionId();
+    if (guestSessionId) {
+      config.headers["X-Guest-Session"] = guestSessionId;
     }
     return config;
   },
@@ -71,15 +76,24 @@ api.interceptors.response.use(
 
 // --- Authentication API Endpoints ---
 export const authApi = {
-  login: (credentials: { email: string; password: string }) =>
-    api.post("/auth/login", credentials),
+  login: (credentials: {
+    email: string;
+    password: string;
+    guestSessionId?: string;
+  }) => api.post("/auth/login", credentials),
 
   register: (userData: {
     name: string;
     email: string;
     password: string;
     company?: string;
+    guestSessionId?: string;
   }) => api.post("/auth/register", userData),
+
+  claimGuestWork: (guestSessionId?: string) =>
+    api.post("/auth/claim-guest-work", {
+      guestSessionId: guestSessionId || getGuestSessionId(),
+    }),
 
   getCurrentUser: () => api.get("/auth/me"),
 
@@ -103,8 +117,15 @@ export const analysisApi = {
    * Public analysis endpoint (no authentication required).
    * Returns synchronous results without WebSocket updates.
    */
-  createPublicAnalysis: (data: { contractCode: string; options?: any }) =>
-    api.post("/analysis/public", data),
+  createPublicAnalysis: (data: {
+    contractCode: string;
+    options?: unknown;
+    guestSessionId?: string;
+  }) =>
+    api.post("/analysis/public", {
+      ...data,
+      guestSessionId: data.guestSessionId || getGuestSessionId(),
+    }),
 
   /**
    * Fetches the analysis history for the logged-in user with pagination, filtering, and sorting.

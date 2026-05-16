@@ -35,6 +35,7 @@ export class Analysis extends Model<
   declare shareToken: CreationOptional<string>;
   declare isPublic: CreationOptional<boolean>;
   declare isFavorite: CreationOptional<boolean>;
+  declare guestSessionId: CreationOptional<string | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
@@ -426,6 +427,10 @@ Analysis.init(
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: false,
+    },
+    guestSessionId: {
+      type: DataTypes.STRING(64),
+      allowNull: true,
     },
     createdAt: {
       type: DataTypes.DATE,

@@ -23,6 +23,7 @@ export class AddressScan extends Model<
   declare result: AddressScanResult;
   declare analysisId: ForeignKey<Analysis["id"]> | null;
   declare shareToken: CreationOptional<string | null>;
+  declare guestSessionId: CreationOptional<string | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
@@ -78,6 +79,10 @@ AddressScan.init(
       type: DataTypes.STRING(80),
       allowNull: true,
       unique: true,
+    },
+    guestSessionId: {
+      type: DataTypes.STRING(64),
+      allowNull: true,
     },
     createdAt: DataTypes.DATE,
     updatedAt: DataTypes.DATE,

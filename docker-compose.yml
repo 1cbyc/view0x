@@ -94,6 +94,8 @@ services:
       DB_POOL_MIN: ${DB_POOL_MIN}
       DB_POOL_ACQUIRE: ${DB_POOL_ACQUIRE}
       DB_POOL_IDLE: ${DB_POOL_IDLE}
+      SWAGGER_DOCS_USER: ${SWAGGER_DOCS_USER:-}
+      SWAGGER_DOCS_PASSWORD: ${SWAGGER_DOCS_PASSWORD:-}
     depends_on:
       postgres:
         condition: service_healthy

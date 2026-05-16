@@ -96,6 +96,7 @@ async function queueSlitherIfRequested(
 export async function scanContractAddress(
   input: ScanAddressRequest,
   userId?: string,
+  guestSessionId?: string,
 ): Promise<AddressScanResult & { scanId: string }> {
   const normalizedAddress = input.address.trim().toLowerCase();
   const wantsSlither = Boolean(input.runSlither);
@@ -106,12 +107,16 @@ export async function scanContractAddress(
     CACHE_HOURS,
   );
   if (cached) {
+    if (!userId && guestSessionId && !cached.userId && !cached.guestSessionId) {
+      await cached.update({ guestSessionId });
+    }
     const payload = ensureGuidance({ ...(cached.result as AddressScanResult) });
     if (wantsSlither && payload.sourceAvailable && !payload.slitherJobId) {
       const slitherJobId = await queueSlitherIfRequested(payload, userId, true);
       const resultWithSlither = { ...payload, slitherJobId };
       const record = await AddressScan.create({
         userId: userId ?? null,
+        guestSessionId: userId ? null : guestSessionId ?? null,
         address: payload.address.toLowerCase(),
         chainId: payload.chainId,
         result: resultWithSlither,
@@ -134,6 +139,7 @@ export async function scanContractAddress(
 
   const record = await AddressScan.create({
     userId: userId ?? null,
+    guestSessionId: userId ? null : guestSessionId ?? null,
     address: result.address.toLowerCase(),
     chainId: result.chainId,
     result,

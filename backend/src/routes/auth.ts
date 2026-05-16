@@ -11,6 +11,7 @@ import {
   resendVerification,
   generateApiKey,
   revokeApiKey,
+  claimGuestWorkHandler,
 } from "../controllers/auth";
 import { auth, refreshTokenAuth } from "../middleware/auth";
 import { asyncHandler } from "../middleware/errorHandler";
@@ -62,6 +63,9 @@ router.post("/logout", auth, asyncHandler(logout));
 
 // Get the current authenticated user's profile
 router.get("/me", auth, asyncHandler(getCurrentUser));
+
+// Attach pre-sign-in contract / address scans to this account
+router.post("/claim-guest-work", auth, asyncHandler(claimGuestWorkHandler));
 
 // API key management
 router.post("/api-key", auth, asyncHandler(generateApiKey));

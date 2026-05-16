@@ -21,6 +21,7 @@ import { requestLogger } from "./middleware/logging";
 import { csrfProtection } from "./middleware/csrf";
 import { requestSigningMiddleware } from "./middleware/requestSigning";
 import { analyticsMiddleware } from "./middleware/analyticsMiddleware";
+import { swaggerDocsAccess } from "./middleware/swaggerDocsAuth";
 
 // Routes
 import authRoutes from "./routes/auth";
@@ -90,7 +91,12 @@ app.use(
     origin: env.CORS_ORIGINS,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "X-Guest-Session",
+    ],
     exposedHeaders: ["X-Rate-Limit-Remaining", "X-Rate-Limit-Reset"],
   }),
 );
@@ -154,14 +160,16 @@ const swaggerUiHandler = (req: Request, res: Response, next: NextFunction) => {
     swaggerOptions: { persistAuthorization: true },
   })(req, res, next);
 };
-app.use("/docs", swaggerUi.serve, swaggerUiHandler);
-app.get("/docs.json", (_req, res) => {
+app.use("/docs", swaggerDocsAccess, swaggerUi.serve, swaggerUiHandler);
+app.get("/docs.json", swaggerDocsAccess, (_req, res) => {
   res.setHeader("Content-Type", "application/json");
   res.setHeader("Cache-Control", "no-store");
   res.send(getSwaggerSpec());
 });
-app.get("/api-docs", (_req, res) => res.redirect(301, "/docs"));
-app.get("/api-docs.json", (_req, res) => res.redirect(301, "/docs.json"));
+app.get("/api-docs", swaggerDocsAccess, (_req, res) => res.redirect(301, "/docs"));
+app.get("/api-docs.json", swaggerDocsAccess, (_req, res) =>
+  res.redirect(301, "/docs.json"),
+);
 
 // API routes with versioning
 const API_VERSION = env.API_VERSION || "v1";
