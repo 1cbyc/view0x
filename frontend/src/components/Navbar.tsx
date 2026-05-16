@@ -115,16 +115,16 @@ const Navbar: React.FC = () => {
             className="flex items-center space-x-1.5 sm:space-x-2 flex-shrink-0 min-w-0"
           >
             <img
-              src="/view0x-logo-light.svg"
+              src="/koreshield-shield-light.svg"
               alt=""
               aria-hidden="true"
-              className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0 dark:hidden"
+              className="h-6 w-auto flex-shrink-0 dark:hidden sm:h-7"
             />
             <img
-              src="/view0x-logo-dark.svg"
+              src="/koreshield-shield-dark.svg"
               alt=""
               aria-hidden="true"
-              className="hidden h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0 dark:block"
+              className="hidden h-6 w-auto flex-shrink-0 dark:block sm:h-7"
             />
             <span className="font-bold text-foreground text-sm sm:text-base md:text-lg truncate">
               view0x
