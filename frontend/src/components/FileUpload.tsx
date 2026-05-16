@@ -110,13 +110,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <div className="p-8 text-center">
+        <div className="p-4 text-center sm:p-8">
           {selectedFile ? (
             <div className="space-y-4">
-              <div className="flex items-center justify-center space-x-3">
-                <FileText className="w-8 h-8 text-primary" />
-                <div className="text-left">
-                  <p className="font-medium text-foreground">{selectedFile.name}</p>
+              <div className="flex items-center justify-center gap-3">
+                <FileText className="h-7 w-7 shrink-0 text-primary sm:h-8 sm:w-8" />
+                <div className="min-w-0 text-left">
+                  <p className="truncate font-medium text-foreground">{selectedFile.name}</p>
                   <p className="text-sm text-muted-foreground">
                     {(selectedFile.size / 1024).toFixed(2)} KB
                   </p>
@@ -133,8 +133,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             </div>
           ) : (
             <>
-              <Upload className="w-12 h-12 text-muted-foreground/70 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-foreground mb-2">
+              <Upload className="mx-auto mb-3 h-9 w-9 text-muted-foreground/70 sm:mb-4 sm:h-12 sm:w-12" />
+              <h3 className="mb-2 text-base font-semibold leading-snug text-foreground sm:text-lg">
                 Drag and drop your contract file
               </h3>
               <p className="text-sm text-muted-foreground mb-4">

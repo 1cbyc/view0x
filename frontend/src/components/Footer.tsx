@@ -3,10 +3,10 @@ import { Twitter, Github } from 'lucide-react';
 
 const Footer: React.FC = () => {
   return (
-    <footer className="bg-background border-t border-border mt-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
-          <div className="flex items-center space-x-2 text-muted-foreground">
+    <footer className="mt-10 border-t border-border bg-background sm:mt-16">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+        <div className="flex flex-col items-center justify-between gap-5 md:flex-row">
+          <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
             <span>© {new Date().getFullYear()} </span>
             <span className="font-bold text-foreground">view0x</span>
             <span>by</span>
@@ -20,29 +20,28 @@ const Footer: React.FC = () => {
             </a>
           </div>
 
-          <div className="flex items-center space-x-6">
+          <div className="flex w-full flex-col items-stretch gap-3 min-[420px]:w-auto min-[420px]:flex-row min-[420px]:items-center">
             <a
               href="https://x.com/1cbyc"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center space-x-2 text-muted-foreground hover:text-foreground transition-colors"
+              className="inline-flex items-center justify-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
             >
               <Twitter className="w-5 h-5" />
-              <span className="hidden sm:inline">Twitter</span>
+              <span>Twitter</span>
             </a>
 
             <a
               href="https://github.com/1cbyc/view0x"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center space-x-2 bg-primary text-primary-foreground px-4 py-2 rounded-full hover:opacity-90 transition-opacity font-medium"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-4 py-2 font-medium text-primary-foreground transition-opacity hover:opacity-90"
             >
               <Github className="w-5 h-5" />
               <span>Star on GitHub</span>
             </a>
           </div>
         </div>
-
       </div>
     </footer>
   );

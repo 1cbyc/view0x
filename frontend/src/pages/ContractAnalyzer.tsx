@@ -576,9 +576,9 @@ const ContractAnalyzer: React.FC = () => {
             <CardHeader>
                   <CardTitle className="text-base sm:text-lg">Analysis Summary</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 sm:gap-3 md:gap-4 text-center px-2 sm:px-4">
+            <CardContent className="grid grid-cols-2 gap-2.5 px-3 text-center sm:grid-cols-3 sm:gap-3 sm:px-4 md:grid-cols-5 md:gap-4 [&>div]:min-w-0">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">
+                <p className="text-xs font-medium leading-snug text-muted-foreground sm:text-sm">
                   High Risk
                 </p>
                 <p className="text-xl sm:text-2xl font-bold text-destructive">
@@ -586,7 +586,7 @@ const ContractAnalyzer: React.FC = () => {
                 </p>
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">
+                <p className="text-xs font-medium leading-snug text-muted-foreground sm:text-sm">
                   Medium Risk
                 </p>
                 <p className="text-xl sm:text-2xl font-bold text-yellow-500">
@@ -594,7 +594,7 @@ const ContractAnalyzer: React.FC = () => {
                 </p>
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">
+                <p className="text-xs font-medium leading-snug text-muted-foreground sm:text-sm">
                   Low Risk
                 </p>
                 <p className="text-xl sm:text-2xl font-bold text-blue-500">
@@ -603,7 +603,7 @@ const ContractAnalyzer: React.FC = () => {
               </div>
               {summary.gasOptimizations !== undefined && (
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-xs font-medium leading-snug text-muted-foreground sm:text-sm">
                     Gas Optimizations
                   </p>
                   <p className="text-xl sm:text-2xl font-bold text-purple-500">
@@ -613,7 +613,7 @@ const ContractAnalyzer: React.FC = () => {
               )}
               {summary.codeQualityIssues !== undefined && (
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-xs font-medium leading-snug text-muted-foreground sm:text-sm">
                     Code Quality
                   </p>
                   <p className="text-xl sm:text-2xl font-bold text-orange-500">
@@ -642,9 +642,9 @@ const ContractAnalyzer: React.FC = () => {
                     </p>
                     <div className="text-xs font-mono text-muted-foreground">
                       {vuln.elements.map((el, i) => (
-                        <div
-                          key={i}
-                        >{`${el.type} "${el.name}" (Lines: ${el.source_mapping.lines.join(", ")})`}</div>
+                        <div className="break-words" key={i}>
+                          {`${el.type} "${el.name}" (Lines: ${el.source_mapping.lines.join(", ")})`}
+                        </div>
                       ))}
                     </div>
                   </AccordionContent>
@@ -652,9 +652,9 @@ const ContractAnalyzer: React.FC = () => {
               ))}
             </Accordion>
           ) : (
-            <Card className="text-center p-8">
-              <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold">
+            <Card className="p-5 text-center sm:p-8">
+              <CheckCircle className="mx-auto mb-4 h-12 w-12 text-green-500 sm:h-16 sm:w-16" />
+              <h3 className="text-lg font-semibold sm:text-xl">
                 No Vulnerabilities Found
               </h3>
               <p className="mt-2 text-muted-foreground">
@@ -675,21 +675,21 @@ const ContractAnalyzer: React.FC = () => {
                       key={index}
                       className="p-3 rounded-md border border-border bg-card/50 hover:bg-card/80 transition-colors"
                     >
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div className="flex items-center gap-2">
+                      <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="flex min-w-0 items-center gap-2">
                           <Badge variant="outline" className="text-purple-500 border-purple-500 text-xs">
                             Gas
                           </Badge>
-                          <span className="text-sm font-medium">{opt.type}</span>
+                          <span className="min-w-0 break-words text-sm font-medium">{opt.type}</span>
                         </div>
                         {opt.potentialSavings && (
-                          <span className="text-xs text-purple-400 font-medium whitespace-nowrap">
+                          <span className="text-xs font-medium text-purple-400 sm:whitespace-nowrap">
                             {opt.potentialSavings}
                           </span>
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground mb-2">{opt.description}</p>
-                      <p className="text-sm font-medium text-foreground mb-1">
+                      <p className="mb-1 break-words text-sm font-medium text-foreground">
                         Recommendation: <span className="text-primary">{opt.recommendation}</span>
                       </p>
                       {opt.lineNumber && (
@@ -727,7 +727,7 @@ const ContractAnalyzer: React.FC = () => {
                       </AccordionTrigger>
                       <AccordionContent className="space-y-2">
                         <p className="text-sm text-muted-foreground">{issue.description}</p>
-                        <p className="text-sm font-medium text-foreground">
+                        <p className="break-words text-sm font-medium text-foreground">
                           Recommendation: {issue.recommendation}
                         </p>
                         {issue.lineNumber && (
@@ -747,9 +747,9 @@ const ContractAnalyzer: React.FC = () => {
     }
 
     return (
-      <Card className="text-center p-8 border-2 border-dashed border-border bg-muted/40">
-        <FileText className="w-16 h-16 text-muted-foreground/70 mx-auto mb-4" />
-        <h3 className="text-xl font-semibold text-foreground">Ready to Analyze</h3>
+      <Card className="border-2 border-dashed border-border bg-muted/40 p-5 text-center sm:p-8">
+        <FileText className="mx-auto mb-4 h-12 w-12 text-muted-foreground/70 sm:h-16 sm:w-16" />
+        <h3 className="text-lg font-semibold text-foreground sm:text-xl">Ready to Analyze</h3>
         <p className="mt-2 text-muted-foreground">
           Paste your contract code to get started.
         </p>
@@ -782,7 +782,7 @@ const ContractAnalyzer: React.FC = () => {
         defaultValue={defaultTab}
         className="w-full"
       >
-        <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-4">
+        <TabsList className="mx-auto mb-4 grid h-10 w-full max-w-md grid-cols-2">
           <TabsTrigger value="source">Paste source</TabsTrigger>
           <TabsTrigger value="address">Scan address</TabsTrigger>
         </TabsList>
@@ -790,7 +790,7 @@ const ContractAnalyzer: React.FC = () => {
           <AddressScanPanel initialScanId={scanIdFromUrl} />
         </TabsContent>
         <TabsContent value="source" className="mt-0">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-8">
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2 lg:gap-8">
         <div className="space-y-3 sm:space-y-4">
           <Card className="overflow-hidden">
             <CardHeader className="pb-3 sm:pb-4">
@@ -803,7 +803,7 @@ const ContractAnalyzer: React.FC = () => {
                     <div className="border border-border rounded-md overflow-hidden">
                       <CodeMirror
                         value={contractCode}
-                        height="180px"
+                        height="clamp(220px, 45vh, 360px)"
                         className="text-xs sm:text-sm"
                         theme={editorDark ? oneDark : "light"}
                         extensions={[javascript({ jsx: false })]}
@@ -827,7 +827,7 @@ const ContractAnalyzer: React.FC = () => {
                     />
                   </CardContent>
                   <CardFooter className="flex flex-col sm:flex-row justify-between gap-2 pt-3 sm:pt-4">
-              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+              <div className="grid w-full grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:flex sm:w-auto sm:flex-wrap">
                 <ContractExamplesDialog
                   open={showExamplesDialog}
                   onOpenChange={setShowExamplesDialog}
@@ -838,6 +838,7 @@ const ContractAnalyzer: React.FC = () => {
                 />
                 <Button
                   variant="ghost"
+                  className="w-full sm:w-auto"
                   onClick={() => {
                     resetState();
                     setContractCode("");

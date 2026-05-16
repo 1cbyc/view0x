@@ -288,7 +288,7 @@ export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto w-full max-w-3xl space-y-4 lg:max-w-none">
       <Card>
         <CardHeader>
           <CardTitle className="text-base sm:text-lg">Scan by address</CardTitle>
@@ -311,7 +311,13 @@ export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
           </div>
           <div className="grid gap-2">
             <Label htmlFor="scan-address">Contract address</Label>
-            <Input id="scan-address" placeholder="0x..." value={address} onChange={(e) => setAddress(e.target.value)} />
+            <Input
+              id="scan-address"
+              placeholder="0x..."
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              className="font-mono text-sm"
+            />
           </div>
           <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
             <input
@@ -345,7 +351,7 @@ export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
             </span>
           </label>
         </CardContent>
-        <CardFooter>
+        <CardFooter className="pt-2">
           <Button className="w-full" onClick={handleScan} disabled={loading || !address.trim()}>
             {loading ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" />Scanning</>) : ("Scan address")}
           </Button>
@@ -365,7 +371,7 @@ export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
               <CardTitle className="text-base">Risk report</CardTitle>
               <Badge variant={riskVariant(result.riskLevel)}>{result.riskLevel} · {result.reputationScore}/100</Badge>
             </div>
-            <CardDescription>
+            <CardDescription className="break-words">
               {result.chainName} · {result.contractType} · {result.explorer.contractName || "Unnamed"}
             </CardDescription>
           </CardHeader>
@@ -373,7 +379,7 @@ export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
             <a href={result.explorer.explorerUrl} target="_blank" rel="noreferrer" className="text-sm text-primary inline-flex items-center gap-1">
               View on explorer <ExternalLink className="w-3 h-3" />
             </a>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:flex sm:flex-wrap">
               <Button type="button" variant="outline" size="sm" onClick={exportCsvFile}>
                 Export CSV
               </Button>
@@ -401,8 +407,8 @@ export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
               <ul className="space-y-2">
                 {result.heuristics.map((f) => (
                   <li key={f.id} className="text-sm border border-border rounded-md p-2 sm:p-3">
-                    <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                      <span className="font-medium">{f.title}</span>
+                    <div className="mb-1 flex flex-wrap items-center gap-1.5">
+                      <span className="min-w-0 break-words font-medium">{f.title}</span>
                       <Badge variant="outline" className="text-[10px] capitalize">
                         {formatSeverity(f.severity)}
                       </Badge>
@@ -436,7 +442,7 @@ export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
               <div className="text-xs space-y-2 rounded-md border border-border p-3 bg-muted/20">
                 <p className="font-medium text-foreground">Wallet tooling (external)</p>
                 <p className="text-muted-foreground">{walletLinks.note}</p>
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1 break-words">
                   <a href={walletLinks.revokeCash} className="text-primary underline" target="_blank" rel="noreferrer">
                     revoke.cash
                   </a>
