@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { authApi } from '../services/api';
 import { clearDashboardCache, getGuestSessionId } from '@/lib/guestSession';
 import { Loader2, AlertTriangle } from 'lucide-react';
@@ -7,6 +7,7 @@ import { PasswordInput } from '@/components/PasswordInput';
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -54,8 +55,14 @@ const Register: React.FC = () => {
         // Trigger storage event so Navbar can update
         window.dispatchEvent(new Event('storage'));
         
-        // Redirect to dashboard
-        navigate('/dashboard', { replace: true });
+        const redirectTo =
+          (location.state as { from?: string } | null)?.from || '/dashboard';
+        navigate(redirectTo, {
+          replace: true,
+          state: (location.state as { tab?: string } | null)?.tab
+            ? { tab: (location.state as { tab: string }).tab }
+            : undefined,
+        });
       } else {
         // Otherwise redirect to login page with a success message
         navigate('/login', { state: { message: 'Registration successful! Please log in.' } });

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Loader2,
   AlertTriangle,
@@ -186,9 +186,12 @@ const useTypingAnimation = (text: string, speed: number = 100) => {
 
 const ContractAnalyzer: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const scanIdFromUrl = searchParams.get("scanId") ?? undefined;
-  const defaultTab = scanIdFromUrl ? "address" : "source";
+  const tabFromLogin = (location.state as { tab?: string } | null)?.tab;
+  const defaultTab =
+    scanIdFromUrl || tabFromLogin === "address" ? "address" : "source";
   const [contractCode, setContractCode] = useState<string>("");
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [showExamplesDialog, setShowExamplesDialog] = useState<boolean>(false);

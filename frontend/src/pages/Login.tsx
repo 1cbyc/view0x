@@ -63,8 +63,14 @@ const Login: React.FC = () => {
         // Trigger storage event so Navbar can update
         window.dispatchEvent(new Event('storage'));
 
-        // Redirect to dashboard on successful login
-        navigate('/dashboard', { replace: true });
+        const redirectTo =
+          (location.state as { from?: string } | null)?.from || '/dashboard';
+        navigate(redirectTo, {
+          replace: true,
+          state: (location.state as { tab?: string } | null)?.tab
+            ? { tab: (location.state as { tab: string }).tab }
+            : undefined,
+        });
       } else {
         throw new Error('Invalid response from server');
       }

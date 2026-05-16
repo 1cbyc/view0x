@@ -21,6 +21,18 @@ export const scanAddress = async (req: Request, res: Response) => {
   try {
     const { address, chainId, runSlither } = req.body;
     const userId = req.user?.userId;
+    const wantsSlither = Boolean(runSlither);
+
+    if (wantsSlither && !userId) {
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: "UNAUTHORIZED",
+          message: "Sign in to queue a full Slither analysis for verified contracts.",
+        },
+      });
+    }
+
     const guestSessionId = userId
       ? undefined
       : getGuestSessionIdFromRequest(req);
@@ -29,7 +41,7 @@ export const scanAddress = async (req: Request, res: Response) => {
       {
         address,
         chainId: Number(chainId),
-        runSlither: Boolean(runSlither),
+        runSlither: wantsSlither,
       },
       userId,
       guestSessionId,

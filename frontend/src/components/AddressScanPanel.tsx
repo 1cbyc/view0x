@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Loader2, ExternalLink, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -78,13 +79,26 @@ function riskVariant(risk: AddressScanResult["riskLevel"]) {
   }
 }
 
+const PENDING_SCAN_KEY = "view0x_pending_address_scan";
+
+type PendingAddressScan = {
+  address: string;
+  chainId: string;
+  runSlither: boolean;
+};
+
 type AddressScanPanelProps = {
   initialScanId?: string;
 };
 
+function isAuthenticated(): boolean {
+  return typeof localStorage !== "undefined" && !!localStorage.getItem("accessToken");
+}
+
 export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
   initialScanId,
 }) => {
+  const navigate = useNavigate();
   const [address, setAddress] = useState("");
   const [chainId, setChainId] = useState("1");
   const [loading, setLoading] = useState(false);
@@ -94,6 +108,40 @@ export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
   const [runSlither, setRunSlither] = useState(false);
   const [result, setResult] = useState<AddressScanResult | null>(null);
   const [walletLinks, setWalletLinks] = useState<WalletRiskLinks | null>(null);
+
+  const redirectToSignIn = useCallback(
+    (message: string) => {
+      const pending: PendingAddressScan = {
+        address: address.trim(),
+        chainId,
+        runSlither: true,
+      };
+      sessionStorage.setItem(PENDING_SCAN_KEY, JSON.stringify(pending));
+      navigate("/login", {
+        state: {
+          from: "/analyze",
+          tab: "address",
+          message,
+        },
+      });
+    },
+    [address, chainId, navigate],
+  );
+
+  useEffect(() => {
+    if (!isAuthenticated()) return;
+    try {
+      const raw = sessionStorage.getItem(PENDING_SCAN_KEY);
+      if (!raw) return;
+      const pending = JSON.parse(raw) as PendingAddressScan;
+      sessionStorage.removeItem(PENDING_SCAN_KEY);
+      if (pending.address) setAddress(pending.address);
+      if (pending.chainId) setChainId(pending.chainId);
+      if (pending.runSlither) setRunSlither(true);
+    } catch {
+      sessionStorage.removeItem(PENDING_SCAN_KEY);
+    }
+  }, []);
 
   useEffect(() => {
     if (!initialScanId) return;
@@ -131,6 +179,11 @@ export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
   }, [initialScanId]);
 
   const handleScan = async () => {
+    if (runSlither && !isAuthenticated()) {
+      redirectToSignIn("Sign in to queue a full Slither scan for verified contracts.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setSharing(false);
@@ -163,10 +216,21 @@ export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
     }
   };
 
-  const authenticated =
-    typeof localStorage !== "undefined" && !!localStorage.getItem("accessToken");
+  const authenticated = isAuthenticated();
+
+  const handleSlitherToggle = (checked: boolean) => {
+    if (checked && !authenticated) {
+      redirectToSignIn("Sign in to enable Slither scans on verified contracts.");
+      return;
+    }
+    setRunSlither(checked);
+  };
 
   const createShareLink = async () => {
+    if (!authenticated) {
+      redirectToSignIn("Sign in to create share links for your scans.");
+      return;
+    }
     if (!result?.scanId) return;
     setSharing(true);
     try {
@@ -249,14 +313,36 @@ export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
             <Label htmlFor="scan-address">Contract address</Label>
             <Input id="scan-address" placeholder="0x..." value={address} onChange={(e) => setAddress(e.target.value)} />
           </div>
-          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+          <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
             <input
               type="checkbox"
-              checked={runSlither}
-              onChange={(e) => setRunSlither(e.target.checked)}
-              className="rounded border-border"
+              checked={runSlither && authenticated}
+              disabled={!authenticated}
+              onChange={(e) => handleSlitherToggle(e.target.checked)}
+              className="rounded border-border mt-0.5 shrink-0"
             />
-            Queue full Slither scan if verified (requires sign-in)
+            <span>
+              Queue full Slither scan if verified{" "}
+              {authenticated ? (
+                <span className="text-white/50">(signed in)</span>
+              ) : (
+                <>
+                  —{" "}
+                  <Link
+                    to="/login"
+                    state={{
+                      from: "/analyze",
+                      tab: "address",
+                      message: "Sign in to queue Slither on verified contracts.",
+                    }}
+                    className="text-primary underline"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    sign in required
+                  </Link>
+                </>
+              )}
+            </span>
           </label>
         </CardContent>
         <CardFooter>
