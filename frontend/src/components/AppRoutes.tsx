@@ -1,7 +1,6 @@
-import React, { lazy, Suspense } from "react";
+import React, { lazy } from "react";
 import { Routes, Route } from "react-router-dom";
-import { Loader2 } from "lucide-react";
-import { RouteErrorBoundary } from "./RouteErrorBoundary";
+import { SafeRoute } from "./SafeRoute";
 
 const ContractAnalyzer = lazy(() => import("../pages/ContractAnalyzer"));
 const Login = lazy(() => import("../pages/Login"));
@@ -17,32 +16,25 @@ const RepositoryAnalyzer = lazy(() => import("../pages/RepositoryAnalyzer"));
 const AnalyticsDashboard = lazy(() => import("../pages/AnalyticsDashboard"));
 const SharedAddressScan = lazy(() => import("../pages/SharedAddressScan"));
 const Notifications = lazy(() => import("../pages/Notifications"));
-
-const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-[40vh] bg-background">
-    <Loader2 className="w-8 h-8 animate-spin text-accent" />
-  </div>
-);
+const NotFound = lazy(() => import("../pages/NotFound"));
 
 export const AppRoutes: React.FC = () => (
-  <RouteErrorBoundary>
-    <Suspense fallback={<PageLoader />}>
-      <Routes>
-        <Route path="/" element={<ContractAnalyzer />} />
-        <Route path="/shared/scan/:token" element={<SharedAddressScan />} />
-        <Route path="/analyze" element={<ContractAnalyzer />} />
-        <Route path="/analytics" element={<AnalyticsDashboard />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/verify-email" element={<VerifyEmail />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/webhooks" element={<Webhooks />} />
-        <Route path="/notifications" element={<Notifications />} />
-        <Route path="/analysis/:id" element={<AnalysisDetailPage />} />
-      </Routes>
-    </Suspense>
-  </RouteErrorBoundary>
+  <Routes>
+    <Route path="/" element={<SafeRoute><ContractAnalyzer /></SafeRoute>} />
+    <Route path="/shared/scan/:token" element={<SafeRoute><SharedAddressScan /></SafeRoute>} />
+    <Route path="/analyze" element={<SafeRoute><ContractAnalyzer /></SafeRoute>} />
+    <Route path="/analytics" element={<SafeRoute><AnalyticsDashboard /></SafeRoute>} />
+    <Route path="/login" element={<SafeRoute><Login /></SafeRoute>} />
+    <Route path="/register" element={<SafeRoute><Register /></SafeRoute>} />
+    <Route path="/forgot-password" element={<SafeRoute><ForgotPassword /></SafeRoute>} />
+    <Route path="/reset-password" element={<SafeRoute><ResetPassword /></SafeRoute>} />
+    <Route path="/verify-email" element={<SafeRoute><VerifyEmail /></SafeRoute>} />
+    <Route path="/dashboard" element={<SafeRoute><Dashboard /></SafeRoute>} />
+    <Route path="/profile" element={<SafeRoute><Profile /></SafeRoute>} />
+    <Route path="/webhooks" element={<SafeRoute><Webhooks /></SafeRoute>} />
+    <Route path="/notifications" element={<SafeRoute><Notifications /></SafeRoute>} />
+    <Route path="/analysis/:id" element={<SafeRoute><AnalysisDetailPage /></SafeRoute>} />
+    <Route path="/repository" element={<SafeRoute><RepositoryAnalyzer /></SafeRoute>} />
+    <Route path="*" element={<SafeRoute><NotFound /></SafeRoute>} />
+  </Routes>
 );

@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Download, RefreshCw, Calendar } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Download, RefreshCw, Calendar, Loader2 } from 'lucide-react';
 import { api } from '@/services/api';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { ensureArray, getApiErrorMessage, isAuthError } from '@/lib/apiHelpers';
 import {
     LineChart,
     Line,
@@ -36,28 +39,51 @@ interface AnalyticsData {
 
 const COLORS = ['#22c55e', '#eab308', '#ef4444', '#3b82f6', '#8b5cf6', '#ec4899'];
 
+const emptySummary: AnalyticsSummary = {
+    totalRequests: 0,
+    errorCount: 0,
+    errorRate: 0,
+    avgResponseTime: 0,
+};
+
 export default function AnalyticsDashboard() {
+    const { ready, isAuthenticated } = useRequireAuth();
     const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
     const [loading, setLoading] = useState(true);
-    const [dateRange, setDateRange] = useState('7d'); // 7d, 30d, 90d
+    const [error, setError] = useState<string | null>(null);
+    const [dateRange, setDateRange] = useState('7d');
 
-    const fetchAnalytics = async () => {
+    const fetchAnalytics = useCallback(async () => {
         setLoading(true);
+        setError(null);
         try {
             const response = await api.get('/analytics/dashboard', {
                 params: { dateRange },
             });
-            setAnalytics(response.data.data);
-        } catch (error) {
-            console.error('Error fetching analytics:', error);
+            const raw = response.data?.data ?? {};
+            setAnalytics({
+                summary: raw.summary ?? emptySummary,
+                requestsByStatus: ensureArray(raw.requestsByStatus),
+                requestsByEndpoint: ensureArray(raw.requestsByEndpoint),
+                requestsOverTime: ensureArray(raw.requestsOverTime),
+            });
+        } catch (err: unknown) {
+            if (isAuthError(err)) {
+                setAnalytics(null);
+                return;
+            }
+            setError(getApiErrorMessage(err, 'Could not load analytics.'));
+            setAnalytics(null);
         } finally {
             setLoading(false);
         }
-    };
+    }, [dateRange]);
 
     useEffect(() => {
-        fetchAnalytics();
-    }, [dateRange]);
+        if (isAuthenticated) {
+            void fetchAnalytics();
+        }
+    }, [isAuthenticated, fetchAnalytics]);
 
     const handleExport = async (format: 'csv' | 'json') => {
         try {
@@ -72,15 +98,41 @@ export default function AnalyticsDashboard() {
             document.body.appendChild(link);
             link.click();
             link.remove();
-        } catch (error) {
-            console.error('Error exporting analytics:', error);
+        } catch (err: unknown) {
+            setError(getApiErrorMessage(err, 'Export failed.'));
         }
     };
 
-    if (loading || !analytics) {
+    if (!ready || !isAuthenticated) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500" />
+            <div className="flex items-center justify-center min-h-[40vh]">
+                <Loader2 className="h-10 w-10 animate-spin text-accent" />
+            </div>
+        );
+    }
+
+    if (loading) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[40vh] gap-3">
+                <Loader2 className="h-10 w-10 animate-spin text-accent" />
+                <p className="text-sm text-muted-foreground">Loading analytics...</p>
+            </div>
+        );
+    }
+
+    if (error || !analytics) {
+        return (
+            <div className="container mx-auto max-w-lg p-6">
+                <Alert variant="destructive">
+                    <AlertTitle>Analytics unavailable</AlertTitle>
+                    <AlertDescription className="space-y-3">
+                        <p>{error || 'No analytics data returned.'}</p>
+                        <Button variant="outline" size="sm" onClick={() => void fetchAnalytics()}>
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                            Retry
+                        </Button>
+                    </AlertDescription>
+                </Alert>
             </div>
         );
     }
@@ -99,39 +151,28 @@ export default function AnalyticsDashboard() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={fetchAnalytics}
-                    >
+                    <Button variant="outline" size="sm" onClick={() => void fetchAnalytics()}>
                         <RefreshCw className="h-4 w-4 mr-2" />
                         Refresh
                     </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleExport('csv')}
-                    >
+                    <Button variant="outline" size="sm" onClick={() => handleExport('csv')}>
                         <Download className="h-4 w-4 mr-2" />
                         Export CSV
                     </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleExport('json')}
-                    >
+                    <Button variant="outline" size="sm" onClick={() => handleExport('json')}>
                         <Download className="h-4 w-4 mr-2" />
                         Export JSON
                     </Button>
                 </div>
             </div>
 
-            {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card>
                     <CardHeader className="pb-2">
                         <CardDescription>Total Requests</CardDescription>
-                        <CardTitle className="text-3xl">{analytics.summary.totalRequests.toLocaleString()}</CardTitle>
+                        <CardTitle className="text-3xl">
+                            {(analytics.summary.totalRequests ?? 0).toLocaleString()}
+                        </CardTitle>
                     </CardHeader>
                 </Card>
 
@@ -139,7 +180,7 @@ export default function AnalyticsDashboard() {
                     <CardHeader className="pb-2">
                         <CardDescription>Error Count</CardDescription>
                         <CardTitle className="text-3xl text-red-500">
-                            {analytics.summary.errorCount.toLocaleString()}
+                            {(analytics.summary.errorCount ?? 0).toLocaleString()}
                         </CardTitle>
                     </CardHeader>
                 </Card>
@@ -148,7 +189,7 @@ export default function AnalyticsDashboard() {
                     <CardHeader className="pb-2">
                         <CardDescription>Error Rate</CardDescription>
                         <CardTitle className="text-3xl">
-                            {analytics.summary.errorRate.toFixed(2)}%
+                            {(analytics.summary.errorRate ?? 0).toFixed(2)}%
                         </CardTitle>
                     </CardHeader>
                 </Card>
@@ -157,13 +198,12 @@ export default function AnalyticsDashboard() {
                     <CardHeader className="pb-2">
                         <CardDescription>Avg Response Time</CardDescription>
                         <CardTitle className="text-3xl">
-                            {analytics.summary.avgResponseTime}ms
+                            {analytics.summary.avgResponseTime ?? 0}ms
                         </CardTitle>
                     </CardHeader>
                 </Card>
             </div>
 
-            {/* Date Range Selector */}
             <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
                 <Tabs value={dateRange} onValueChange={setDateRange} className="w-auto">
@@ -175,9 +215,7 @@ export default function AnalyticsDashboard() {
                 </Tabs>
             </div>
 
-            {/* Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Requests Over Time */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Requests Over Time</CardTitle>
@@ -203,64 +241,69 @@ export default function AnalyticsDashboard() {
                     </CardContent>
                 </Card>
 
-                {/* Status Code Distribution */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Status Code Distribution</CardTitle>
                         <CardDescription>Breakdown by HTTP status code</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <ResponsiveContainer width="100%" height={300}>
-                            <PieChart>
-                                <Pie
-                                    data={statusCodeData}
-                                    cx="50%"
-                                    cy="50%"
-                                    labelLine={false}
-                                    label={(entry) => `${entry.name}: ${entry.value}`}
-                                    outerRadius={80}
-                                    fill="#8884d8"
-                                    dataKey="value"
-                                >
-                                    {statusCodeData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip />
-                            </PieChart>
-                        </ResponsiveContainer>
+                        {statusCodeData.length === 0 ? (
+                            <p className="text-sm text-muted-foreground py-12 text-center">No status data yet.</p>
+                        ) : (
+                            <ResponsiveContainer width="100%" height={300}>
+                                <PieChart>
+                                    <Pie
+                                        data={statusCodeData}
+                                        cx="50%"
+                                        cy="50%"
+                                        labelLine={false}
+                                        label={(entry) => `${entry.name}: ${entry.value}`}
+                                        outerRadius={80}
+                                        fill="#8884d8"
+                                        dataKey="value"
+                                    >
+                                        {statusCodeData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        )}
                     </CardContent>
                 </Card>
 
-                {/* Top Endpoints */}
                 <Card className="lg:col-span-2">
                     <CardHeader>
                         <CardTitle>Top Endpoints</CardTitle>
                         <CardDescription>Most frequently accessed endpoints</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={analytics.requestsByEndpoint.slice(0, 10)}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="endpoint" angle={-45} textAnchor="end" height={100} />
-                                <YAxis yAxisId="left" orientation="left" stroke="#22c55e" />
-                                <YAxis yAxisId="right" orientation="right" stroke="#3b82f6" />
-                                <Tooltip />
-                                <Legend />
-                                <Bar yAxisId="left" dataKey="count" fill="#22c55e" name="Request Count" />
-                                <Bar
-                                    yAxisId="right"
-                                    dataKey="avgResponseTime"
-                                    fill="#3b82f6"
-                                    name="Avg Response Time (ms)"
-                                />
-                            </BarChart>
-                        </ResponsiveContainer>
+                        {analytics.requestsByEndpoint.length === 0 ? (
+                            <p className="text-sm text-muted-foreground py-12 text-center">No endpoint data yet.</p>
+                        ) : (
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={analytics.requestsByEndpoint.slice(0, 10)}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="endpoint" angle={-45} textAnchor="end" height={100} />
+                                    <YAxis yAxisId="left" orientation="left" stroke="#22c55e" />
+                                    <YAxis yAxisId="right" orientation="right" stroke="#3b82f6" />
+                                    <Tooltip />
+                                    <Legend />
+                                    <Bar yAxisId="left" dataKey="count" fill="#22c55e" name="Request Count" />
+                                    <Bar
+                                        yAxisId="right"
+                                        dataKey="avgResponseTime"
+                                        fill="#3b82f6"
+                                        name="Avg Response Time (ms)"
+                                    />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        )}
                     </CardContent>
                 </Card>
             </div>
 
-            {/* Endpoint Table */}
             <Card>
                 <CardHeader>
                     <CardTitle>Endpoint Details</CardTitle>

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { webhookApi } from "@/services/api";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
+import { getApiErrorMessage } from "@/lib/apiHelpers";
 import {
   Plus,
   Trash2,
@@ -54,6 +56,7 @@ const WEBHOOK_EVENTS = [
 ];
 
 const Webhooks: React.FC = () => {
+  const { ready, isAuthenticated } = useRequireAuth();
   const [webhooks, setWebhooks] = useState<Webhook[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -66,8 +69,10 @@ const Webhooks: React.FC = () => {
   });
 
   useEffect(() => {
-    fetchWebhooks();
-  }, []);
+    if (isAuthenticated) {
+      void fetchWebhooks();
+    }
+  }, [isAuthenticated]);
 
   const fetchWebhooks = async () => {
     try {
@@ -75,8 +80,8 @@ const Webhooks: React.FC = () => {
       setError(null);
       const response = await webhookApi.getWebhooks();
       setWebhooks(response.data.data || []);
-    } catch (err: any) {
-      setError(err.response?.data?.error?.message || "Failed to fetch webhooks");
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, "Failed to fetch webhooks"));
     } finally {
       setIsLoading(false);
     }
@@ -158,6 +163,23 @@ const Webhooks: React.FC = () => {
     navigator.clipboard.writeText(secret);
     alert("Secret copied to clipboard!");
   };
+
+  if (!ready || !isAuthenticated) {
+    return (
+      <div className="container mx-auto py-8 text-center">
+        <Loader2 className="w-10 h-10 animate-spin text-accent mx-auto" />
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-8 text-center">
+        <Loader2 className="w-10 h-10 animate-spin text-accent mx-auto" />
+        <p className="mt-4 text-muted-foreground">Loading webhooks...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-8 space-y-6">
@@ -271,11 +293,7 @@ const Webhooks: React.FC = () => {
         </Alert>
       )}
 
-      {isLoading ? (
-        <div className="text-center py-10">
-          <Loader2 className="w-12 h-12 animate-spin text-accent mx-auto" />
-        </div>
-      ) : webhooks.length === 0 ? (
+      {webhooks.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center">
             <p className="text-muted-foreground">No webhooks configured</p>

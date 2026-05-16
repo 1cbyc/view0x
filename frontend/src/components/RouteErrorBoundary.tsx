@@ -1,22 +1,26 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 
 type Props = { children: React.ReactNode };
 
-type State = { error: Error | null };
+type State = { error: Error | null; resetKey: number };
 
 class RouteErrorBoundaryInner extends React.Component<Props, State> {
-  state: State = { error: null };
+  state: State = { error: null, resetKey: 0 };
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return { error };
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error("[view0x] Route error:", error, info.componentStack);
   }
+
+  handleRetry = () => {
+    this.setState((s) => ({ error: null, resetKey: s.resetKey + 1 }));
+  };
 
   render() {
     if (this.state.error) {
@@ -27,11 +31,7 @@ class RouteErrorBoundaryInner extends React.Component<Props, State> {
             <AlertDescription className="space-y-4">
               <p className="text-sm">{this.state.error.message}</p>
               <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => this.setState({ error: null })}
-                >
+                <Button variant="outline" size="sm" onClick={this.handleRetry}>
                   Try again
                 </Button>
                 <Button variant="secondary" size="sm" asChild>
@@ -43,19 +43,13 @@ class RouteErrorBoundaryInner extends React.Component<Props, State> {
         </div>
       );
     }
-    return this.props.children;
+    return (
+      <React.Fragment key={this.state.resetKey}>{this.props.children}</React.Fragment>
+    );
   }
 }
 
-/**
- * Remounts the error boundary when the URL changes so a crash on one page
- * does not leave the rest of the app stuck until a full refresh.
- */
-export const RouteErrorBoundary: React.FC<Props> = ({ children }) => {
-  const location = useLocation();
-  return (
-    <RouteErrorBoundaryInner key={location.pathname}>
-      {children}
-    </RouteErrorBoundaryInner>
-  );
-};
+/** Per-route boundary: unmounting the route clears errors on navigation. */
+export const RouteErrorBoundary: React.FC<Props> = ({ children }) => (
+  <RouteErrorBoundaryInner>{children}</RouteErrorBoundaryInner>
+);

@@ -89,11 +89,11 @@ export default function SharedAddressScanPage() {
           >
             View on explorer <ExternalLink className="w-3 h-3" />
           </a>
-          {!data.heuristics.length ? (
+          {!(data.heuristics ?? []).length ? (
             <p className="text-sm text-muted-foreground">No risk flags detected.</p>
           ) : (
             <ul className="space-y-3">
-              {data.heuristics.map((f) => (
+              {(data.heuristics ?? []).map((f) => (
                 <li key={f.id} className="text-sm border border-border rounded-md p-3">
                   <span className="font-medium">{f.title}</span>
                   <p className="text-muted-foreground mt-1">{f.description}</p>

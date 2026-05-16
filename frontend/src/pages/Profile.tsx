@@ -121,7 +121,20 @@ const Profile: React.FC = () => {
   }
 
   if (!user) {
-    return null;
+    return (
+      <div className="container mx-auto py-8">
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Could not load profile</AlertTitle>
+          <AlertDescription>
+            {error || "Your session may have expired. Please sign in again."}
+          </AlertDescription>
+          <Button className="mt-4" onClick={() => navigate("/login", { replace: true })}>
+            Sign in
+          </Button>
+        </Alert>
+      </div>
+    );
   }
 
   return (

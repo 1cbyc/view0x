@@ -122,7 +122,7 @@ const VulnerabilityAccordionItem: React.FC<{ vuln: Vulnerability }> = ({
       <AccordionContent className="space-y-2">
         <p className="text-sm text-muted-foreground">{vuln.description}</p>
         <div className="text-xs font-mono text-muted-foreground">
-          {vuln.elements.map((el, i) => (
+          {(vuln.elements ?? []).map((el, i) => (
             <div key={i}>
               {`${el.type} "${el.name}" (${formatLines(el.source_mapping.lines)})`}
             </div>
@@ -193,7 +193,23 @@ const AnalysisResultPage: React.FC = () => {
   }
 
   if (!analysis) {
-    return null;
+    return (
+      <div className="container mx-auto max-w-lg px-4 py-12">
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Analysis not found</AlertTitle>
+          <AlertDescription>
+            No analysis data is available for this ID.
+          </AlertDescription>
+          <Button asChild variant="link" className="p-0 h-auto mt-4">
+            <Link to="/dashboard">
+              <ArrowLeft className="w-4 h-4 mr-2 inline" />
+              Back to Dashboard
+            </Link>
+          </Button>
+        </Alert>
+      </div>
+    );
   }
 
   const { contractInfo, result, status, createdAt } = analysis;
@@ -344,16 +360,16 @@ const AnalysisResultPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {result && result.vulnerabilities.length > 0 && (
+      {result && (result.vulnerabilities?.length ?? 0) > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>
-              Vulnerabilities Found ({result.vulnerabilities.length})
+              Vulnerabilities Found ({result.vulnerabilities?.length ?? 0})
             </CardTitle>
           </CardHeader>
           <CardContent>
             <Accordion type="single" collapsible className="w-full">
-              {result.vulnerabilities.map((vuln, index) => (
+              {(result.vulnerabilities ?? []).map((vuln, index) => (
                 <VulnerabilityAccordionItem key={index} vuln={vuln} />
               ))}
             </Accordion>
@@ -361,7 +377,7 @@ const AnalysisResultPage: React.FC = () => {
         </Card>
       )}
 
-      {result && result.vulnerabilities.length === 0 && (
+      {result && (result.vulnerabilities?.length ?? 0) === 0 && (
         <div className="text-center py-12 border-2 border-dashed border-border rounded-lg bg-muted/40">
           <ShieldCheck className="w-16 h-16 text-green-500 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-foreground">No Vulnerabilities Found</h3>
