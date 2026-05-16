@@ -3,6 +3,8 @@ import {
   scanContractAddress,
   getAddressScanById,
   getSupportedChains,
+  createAddressScanShareToken,
+  getAddressScanByShareToken,
 } from "../services/addressScan/addressScanService";
 import { logger } from "../utils/logger";
 
@@ -45,6 +47,38 @@ export const scanAddress = async (req: Request, res: Response) => {
     res.status(status).json({
       success: false,
       error: { code: "SCAN_FAILED", message },
+    });
+  }
+};
+
+export const createShareForScan = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: { code: "UNAUTHORIZED", message: "Sign in to create a share link." },
+      });
+    }
+    const { token } = await createAddressScanShareToken(req.params.id, userId);
+    const appBase =
+      process.env.APP_PUBLIC_URL?.replace(/\/$/, "") || "https://view0x.com";
+    const shareUrl = `${appBase}/shared/scan/${token}`;
+    res.json({ success: true, data: { token, shareUrl } });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Share failed";
+    res.status(400).json({ success: false, error: { code: "SHARE_FAILED", message } });
+  }
+};
+
+export const getSharedScanResult = async (req: Request, res: Response) => {
+  try {
+    const data = await getAddressScanByShareToken(req.params.token);
+    res.json({ success: true, data });
+  } catch (error: unknown) {
+    res.status(404).json({
+      success: false,
+      error: { code: "NOT_FOUND", message: error instanceof Error ? error.message : "Not found" },
     });
   }
 };

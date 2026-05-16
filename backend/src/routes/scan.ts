@@ -4,9 +4,12 @@ import {
   listScanChains,
   scanAddress,
   getScanResult,
+  createShareForScan,
+  getSharedScanResult,
 } from "../controllers/addressScanController";
 import { validateScanAddress } from "../middleware/validation";
 import { optionalAuth } from "../middleware/auth";
+import { auth } from "../middleware/auth";
 import { addressScanRateLimiter } from "../middleware/rateLimit";
 
 const router = Router();
@@ -19,10 +22,12 @@ router.post(
   validateScanAddress,
   asyncHandler(scanAddress),
 );
+router.get("/shared/:token", asyncHandler(getSharedScanResult));
 router.get(
   "/address/:id",
   optionalAuth,
   asyncHandler(getScanResult),
 );
+router.post("/address/:id/share", auth, asyncHandler(createShareForScan));
 
 export default router;

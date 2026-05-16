@@ -7,6 +7,7 @@ import { ActivityLog } from "./ActivityLog";
 import { AnalysisTemplate } from "./AnalysisTemplate";
 import ApiAnalytics from "./ApiAnalytics";
 import { AddressScan } from "./AddressScan";
+import { Notification } from "./Notification";
 import { logger } from "../utils/logger";
 
 // 1. Initialize all models
@@ -19,6 +20,7 @@ const models = {
   ActivityLog,
   AnalysisTemplate,
   ApiAnalytics,
+  Notification,
 };
 
 // 2. Define associations (relationships) between models
@@ -53,6 +55,16 @@ function defineAssociations() {
   Analysis.hasOne(AddressScan, {
     foreignKey: "analysisId",
     as: "addressScan",
+  });
+
+  User.hasMany(Notification, {
+    foreignKey: "userId",
+    as: "notifications",
+    onDelete: "CASCADE",
+  });
+  Notification.belongsTo(User, {
+    foreignKey: "userId",
+    as: "user",
   });
 
   // Analysis <-> Vulnerability (One-to-Many)
@@ -145,6 +157,6 @@ export const syncModels = async () => {
 };
 
 // 4. Export all models and the sequelize instance
-export { sequelize, User, Analysis, Vulnerability };
+export { sequelize, User, Analysis, Vulnerability, Notification };
 
 export default models;

@@ -22,6 +22,7 @@ export class AddressScan extends Model<
   declare chainId: number;
   declare result: AddressScanResult;
   declare analysisId: ForeignKey<Analysis["id"]> | null;
+  declare shareToken: CreationOptional<string | null>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
 
@@ -72,6 +73,11 @@ AddressScan.init(
       allowNull: true,
       references: { model: Analysis, key: "id" },
       onDelete: "SET NULL",
+    },
+    shareToken: {
+      type: DataTypes.STRING(80),
+      allowNull: true,
+      unique: true,
     },
     createdAt: DataTypes.DATE,
     updatedAt: DataTypes.DATE,

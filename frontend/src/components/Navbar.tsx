@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ShieldCheck } from "lucide-react";
+import { Bell, ShieldCheck } from "lucide-react";
 import { Button } from "./ui/button";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -83,6 +83,15 @@ const Navbar: React.FC = () => {
                   className="text-white/60 hover:text-white text-xs sm:text-sm px-2 sm:px-4"
                 >
                   Profile
+                </Button>
+              </Link>
+              <Link to="/notifications">
+                <Button
+                  variant="ghost"
+                  className="text-white/60 hover:text-white text-xs sm:text-sm px-2 sm:px-3"
+                  aria-label="Notifications"
+                >
+                  <Bell className="h-4 w-4" />
                 </Button>
               </Link>
               <Button 

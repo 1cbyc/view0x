@@ -1,10 +1,12 @@
 import "./config/loadEnv";
 import { server, initializeApp } from "./app";
 import { env } from "./config/environment";
+import { initializeSentry, captureException } from "./config/sentry";
 import { logger } from "./utils/logger";
 
 const startServer = async () => {
   try {
+    initializeSentry();
     logger.info("----------------------------------------------------");
     logger.info("[SERVER STARTUP] Beginning server startup process...");
     logger.info(`[SERVER STARTUP] Environment: ${env.NODE_ENV}`);
@@ -58,6 +60,7 @@ const startServer = async () => {
       }
     });
   } catch (error) {
+    captureException(error, { phase: "server_startup" });
     logger.error(
       "[SERVER] A critical error occurred during startup:",
       error,

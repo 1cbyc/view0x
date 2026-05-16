@@ -14,6 +14,8 @@ const Profile = lazy(() => import("./pages/Profile"));
 const Webhooks = lazy(() => import("./pages/Webhooks"));
 const RepositoryAnalyzer = lazy(() => import("./pages/RepositoryAnalyzer"));
 const AnalyticsDashboard = lazy(() => import("./pages/AnalyticsDashboard"));
+const SharedAddressScan = lazy(() => import("./pages/SharedAddressScan"));
+const Notifications = lazy(() => import("./pages/Notifications"));
 
 // Layout Components
 import Navbar from "./components/Navbar";
@@ -52,8 +54,8 @@ const App: React.FC = () => {
             <Routes>
               {/* Main analysis page */}
               <Route path="/" element={<ContractAnalyzer />} />
+              <Route path="/shared/scan/:token" element={<SharedAddressScan />} />
               <Route path="/analyze" element={<ContractAnalyzer />} />
-              <Route path="/repository" element={<RepositoryAnalyzer />} />
               <Route path="/analytics" element={<AnalyticsDashboard />} />
 
               {/* Authentication pages */}
@@ -67,6 +69,7 @@ const App: React.FC = () => {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/webhooks" element={<Webhooks />} />
+              <Route path="/notifications" element={<Notifications />} />
               <Route path="/analysis/:id" element={<AnalysisDetailPage />} />
             </Routes>
           </Suspense>

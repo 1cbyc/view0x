@@ -61,6 +61,8 @@ export interface EnvironmentConfig {
   // Monitoring
   LOG_LEVEL: string;
   ENABLE_REQUEST_LOGGING: boolean;
+  SENTRY_DSN?: string;
+  SENTRY_TRACES_SAMPLE_RATE: number;
 }
 
 // Default values
@@ -88,6 +90,7 @@ const defaults: Partial<EnvironmentConfig> = {
   BCRYPT_ROUNDS: 12,
   LOG_LEVEL: 'info',
   ENABLE_REQUEST_LOGGING: true,
+  SENTRY_TRACES_SAMPLE_RATE: 0,
 };
 
 // Required environment variables
@@ -181,6 +184,10 @@ function parseEnvironmentConfig(): EnvironmentConfig {
     // Monitoring
     LOG_LEVEL: process.env.LOG_LEVEL || defaults.LOG_LEVEL!,
     ENABLE_REQUEST_LOGGING: process.env.ENABLE_REQUEST_LOGGING !== 'false',
+    SENTRY_DSN: process.env.SENTRY_DSN,
+    SENTRY_TRACES_SAMPLE_RATE:
+      parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE || '') ||
+      defaults.SENTRY_TRACES_SAMPLE_RATE!,
   };
 
   // Validate configuration

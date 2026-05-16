@@ -10,6 +10,8 @@ export interface HeuristicFlag {
   title: string;
   description: string;
   severity: HeuristicSeverity;
+  /** User-facing remediation / Token-Sniffer style advice */
+  guidance?: string;
 }
 
 export interface ExplorerContractInfo {

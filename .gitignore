@@ -119,10 +119,6 @@ backend/uploads/
 *.db
 CopilotIndices/
 
-# Markdown — local only, never push
-*.md
-docs/
-
 # Shell scripts (but keep test scripts)
 *.sh
 !scripts/*.sh

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { logger } from "../utils/logger";
 import { env } from "../config/environment";
+import { captureException } from "../config/sentry";
 
 export interface APIError extends Error {
   statusCode?: number;
@@ -135,6 +136,11 @@ export const errorHandler = (
 
   // Log based on severity
   if (statusCode >= 500) {
+    captureException(error, {
+      method: req.method,
+      url: req.originalUrl,
+      requestId: (req as any).id || "unknown",
+    });
     logger.error("Server error:", errorLog);
   } else if (statusCode >= 400) {
     logger.warn("Client error:", errorLog);

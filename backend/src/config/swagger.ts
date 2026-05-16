@@ -256,6 +256,63 @@ const documentedPaths: swaggerJsdoc.OAS3Definition["paths"] = {
       },
     },
   },
+  "/api/scan/address/{id}/share": {
+    post: {
+      tags: ["Address scan"],
+      summary: "Create or return share link for a scan (authenticated owner)",
+      security: [{ bearerAuth: [] }],
+      parameters: [
+        { name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+      ],
+      responses: {
+        "200": { description: "shareUrl + token" },
+        "401": { description: "Unauthorized" },
+      },
+    },
+  },
+  "/api/scan/shared/{token}": {
+    get: {
+      tags: ["Address scan"],
+      summary: "Load a publicly shared scan by token",
+      parameters: [{ name: "token", in: "path", required: true, schema: { type: "string" } }],
+      responses: { "200": { description: "Scan snapshot" }, "404": { description: "Expired or invalid" } },
+    },
+  },
+  "/api/wallet/risk-resources": {
+    get: {
+      tags: ["Wallet risk"],
+      summary: "Curated revoke / approval / portfolio URLs (Phase 5 light)",
+      parameters: [
+        { name: "address", in: "query", schema: { type: "string" } },
+        { name: "chainId", in: "query", schema: { type: "integer", enum: [1, 56] } },
+      ],
+      responses: { "200": { description: "Outbound tool links" } },
+    },
+  },
+  "/api/notifications": {
+    get: {
+      tags: ["Notifications"],
+      summary: "List authenticated user's notifications",
+      security: [{ bearerAuth: [] }],
+      responses: { "200": { description: "Notifications and unread count" } },
+    },
+  },
+  "/api/notifications/{id}/read": {
+    patch: {
+      tags: ["Notifications"],
+      summary: "Mark one notification as read",
+      security: [{ bearerAuth: [] }],
+      responses: { "200": { description: "Notification marked read" } },
+    },
+  },
+  "/api/notifications/read-all": {
+    patch: {
+      tags: ["Notifications"],
+      summary: "Mark all notifications as read",
+      security: [{ bearerAuth: [] }],
+      responses: { "200": { description: "Notifications marked read" } },
+    },
+  },
 };
 
 function swaggerApiGlobs(): string[] {
@@ -356,6 +413,7 @@ export function getSwaggerSpec(): ReturnType<typeof swaggerJsdoc> {
         { name: "Authentication", description: "Registration, login, email verification" },
         { name: "Analysis", description: "Contract analysis jobs and results" },
         { name: "Address scan", description: "On-chain address reputation and explorer fetch" },
+        { name: "Wallet risk", description: "Allowance tooling links (indexed allowance graph later)" },
       ],
     },
     apis: swaggerApiGlobs(),

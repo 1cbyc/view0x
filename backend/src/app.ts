@@ -34,6 +34,10 @@ import repositoryRoutes from "./routes/repository";
 import analyticsRoutes from "./routes/analytics";
 import userRoutes from "./routes/users";
 import scanRoutes from "./routes/scan";
+import notificationRoutes from "./routes/notifications";
+import { Analysis } from "./models/Analysis";
+import { notificationService } from "./services/notificationService";
+import walletRoutes from "./routes/wallet";
 
 // Initialize Express app
 const app = express();
@@ -167,6 +171,8 @@ app.use(`/api/${API_VERSION}/vulnerabilities`, vulnerabilityRoutes);
 app.use(`/api/${API_VERSION}/templates`, templateRoutes);
 app.use(`/api/${API_VERSION}/webhooks`, webhookRoutes);
 app.use(`/api/${API_VERSION}/scan`, scanRoutes);
+app.use(`/api/${API_VERSION}/notifications`, notificationRoutes);
+app.use(`/api/${API_VERSION}/wallet`, walletRoutes);
 
 // Legacy routes (backward compatibility)
 app.use("/api/auth", authRoutes);
@@ -180,6 +186,8 @@ app.use("/api/repository", repositoryRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/scan", scanRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/wallet", walletRoutes);
 
 // Root endpoint with API information
 app.get("/", (req, res) => {
@@ -236,6 +244,39 @@ onAnalysisUpdate((payload: AnalysisUpdatePayload) => {
     progress: payload.progress,
   });
   io.to(room).emit("analysis:update", payload);
+});
+
+onAnalysisUpdate(async (payload: AnalysisUpdatePayload) => {
+  if (payload.status !== "completed" && payload.status !== "failed") return;
+
+  try {
+    const analysis = await Analysis.findByPk(payload.analysisId, {
+      attributes: ["id", "userId", "contractName", "status"],
+    });
+    if (!analysis?.userId) return;
+
+    await notificationService.create({
+      userId: analysis.userId,
+      type:
+        payload.status === "completed"
+          ? "analysis.completed"
+          : "analysis.failed",
+      title:
+        payload.status === "completed"
+          ? "Analysis completed"
+          : "Analysis failed",
+      message:
+        payload.status === "completed"
+          ? `${analysis.contractName || "Contract"} analysis is ready.`
+          : `${analysis.contractName || "Contract"} analysis failed.`,
+      metadata: {
+        analysisId: analysis.id,
+        status: payload.status,
+      },
+    });
+  } catch (error) {
+    logger.warn("[NOTIFICATIONS] Failed to create analysis notification:", error);
+  }
 });
 
 // 404 handler for API routes

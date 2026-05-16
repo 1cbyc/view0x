@@ -2,6 +2,9 @@
   "name": "view0x",
   "version": "1.0.0",
   "description": "view0x - Smart Contract Security Analysis Platform",
+  "bin": {
+    "view0x": "scripts/view0x-cli.mjs"
+  },
   "scripts": {
     "up": "docker compose up -d --build",
     "up:vps": "docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d --build",
@@ -11,6 +14,7 @@
     "logs": "docker compose logs -f --tail=100",
     "health": "curl -fsS http://localhost:${WEB_PORT:-18088}/health",
     "smoke": "bash scripts/smoke-test.sh",
+    "cli": "node scripts/view0x-cli.mjs",
     "build:backend": "npm --prefix backend run build",
     "build:frontend": "npm --prefix frontend run build",
     "build": "npm run build:backend && npm run build:frontend",

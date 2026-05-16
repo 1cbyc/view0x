@@ -161,6 +161,7 @@ export interface AddressScanFlag {
   title: string;
   description: string;
   severity: string;
+  guidance?: string;
 }
 
 export interface AddressScanResult {
@@ -193,6 +194,32 @@ export const scanApi = {
     runSlither?: boolean;
   }) => api.post("/scan/address", data, { timeout: 90000 }),
   getScan: (scanId: string) => api.get(`/scan/address/${scanId}`),
+  getSharedScan: (token: string) => api.get(`/scan/shared/${token}`),
+  createShareLink: (scanId: string) => api.post(`/scan/address/${scanId}/share`),
+};
+
+export interface NotificationItem {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  metadata?: Record<string, unknown> | null;
+  readAt?: string | null;
+  createdAt: string;
+}
+
+export const notificationApi = {
+  list: (params?: { unread?: boolean; limit?: number }) =>
+    api.get("/notifications", { params }),
+  markRead: (id: string) => api.patch(`/notifications/${id}/read`),
+  markAllRead: () => api.patch("/notifications/read-all"),
+};
+
+export const walletApi = {
+  getRiskResources: (address: string, chainId: number) =>
+    api.get("/wallet/risk-resources", {
+      params: { address: address.trim(), chainId },
+    }),
 };
 
 // --- Vulnerability Comments API Endpoints ---

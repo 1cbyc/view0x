@@ -1,0 +1,50 @@
+{
+  "epic": "Address & reputation scanning",
+  "issue": 100,
+  "status": "mvp-implemented",
+  "scope": {
+    "chains": [
+      {
+        "chainId": 1,
+        "name": "Ethereum",
+        "explorer": "Etherscan",
+        "apiKeyEnv": "ETHERSCAN_API_KEY"
+      },
+      {
+        "chainId": 56,
+        "name": "BNB Smart Chain",
+        "explorer": "BscScan",
+        "apiKeyEnv": "BSCSCAN_API_KEY"
+      }
+    ],
+    "endpoints": [
+      "GET /api/scan/chains",
+      "POST /api/scan/address",
+      "GET /api/scan/address/:id"
+    ],
+    "ui": [
+      "Address vs source-code scan mode",
+      "Ethereum/BSC chain selector",
+      "Optional Slither queue for signed-in users when verified source exists"
+    ]
+  },
+  "implemented": [
+    "Explorer bytecode lookup",
+    "Explorer verified source lookup",
+    "Verified source unwrapping for single-file and multi-file sources",
+    "EOA vs contract classification",
+    "Proxy metadata capture",
+    "Token Sniffer style source heuristics",
+    "Reputation score and risk level",
+    "24-hour address scan cache",
+    "Authenticated Slither queue handoff from verified source",
+    "Stored scan result retrieval"
+  ],
+  "future": [
+    "On-chain liquidity lock checks",
+    "Honeypot buy/sell simulation",
+    "Holder concentration analysis",
+    "Wallet allowance/exposure graph",
+    "Additional chains"
+  ]
+}

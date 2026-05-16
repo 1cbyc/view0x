@@ -20,7 +20,47 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { scanApi, type AddressScanResult } from "@/services/api";
+import { scanApi, walletApi, type AddressScanResult } from "@/services/api";
+
+function csvEscape(s: string) {
+  if (s.includes('"') || s.includes(",") || s.includes("\n")) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+}
+
+function buildAddressScanCsv(d: AddressScanResult) {
+  const parts: string[] = [
+    `${csvEscape("address")},${csvEscape(d.address)}`,
+    `${csvEscape("chainId")},${csvEscape(String(d.chainId))}`,
+    `${csvEscape("chainName")},${csvEscape(d.chainName)}`,
+    `${csvEscape("riskLevel")},${csvEscape(d.riskLevel)}`,
+    `${csvEscape("reputationScore")},${csvEscape(String(d.reputationScore))}`,
+    `${csvEscape("explorerUrl")},${csvEscape(d.explorer.explorerUrl)}`,
+    "",
+    ["id", "category", "severity", "title", "description", "guidance"].map(csvEscape).join(","),
+  ];
+  for (const h of d.heuristics) {
+    parts.push(
+      [
+        csvEscape(h.id),
+        csvEscape(h.category),
+        csvEscape(h.severity),
+        csvEscape(h.title),
+        csvEscape(h.description),
+        csvEscape(h.guidance || ""),
+      ].join(","),
+    );
+  }
+  return parts.join("\n");
+}
+
+type WalletRiskLinks = {
+  revokeCash: string;
+  explorerApprovalScanner: string;
+  walletPortfolioAggregator: string;
+  note?: string;
+};
 
 function riskVariant(risk: AddressScanResult["riskLevel"]) {
   switch (risk) {
@@ -41,13 +81,18 @@ export const AddressScanPanel: React.FC = () => {
   const [chainId, setChainId] = useState("1");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sharing, setSharing] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
   const [runSlither, setRunSlither] = useState(false);
   const [result, setResult] = useState<AddressScanResult | null>(null);
+  const [walletLinks, setWalletLinks] = useState<WalletRiskLinks | null>(null);
 
   const handleScan = async () => {
     setLoading(true);
     setError(null);
-    setResult(null);
+    setSharing(false);
+    setShareCopied(false);
+    setWalletLinks(null);
     try {
       const res = await scanApi.scanAddress({
         address: address.trim(),
@@ -64,6 +109,53 @@ export const AddressScanPanel: React.FC = () => {
       setError(msg);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const authenticated =
+    typeof localStorage !== "undefined" && !!localStorage.getItem("accessToken");
+
+  const createShareLink = async () => {
+    if (!result?.scanId) return;
+    setSharing(true);
+    try {
+      const r = await scanApi.createShareLink(result.scanId);
+      const url = r.data.data.shareUrl as string;
+      await navigator.clipboard.writeText(url);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2500);
+    } catch {
+      setError(
+        "Sign in and run scans while logged in to create share links tied to your account.",
+      );
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const exportCsvFile = () => {
+    if (!result) return;
+    const csv = buildAddressScanCsv(result);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `view0x-scan-${result.address.slice(2, 10)}-${result.chainId}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const loadWalletTools = async () => {
+    if (!address.trim()) {
+      setError("Enter an address above (contract or wallet) for revoke / approval links.");
+      return;
+    }
+    try {
+      setError(null);
+      const r = await walletApi.getRiskResources(address.trim(), Number(chainId));
+      setWalletLinks(r.data.data);
+    } catch {
+      setError("Could not load wallet risk resources.");
     }
   };
 
@@ -131,6 +223,25 @@ export const AddressScanPanel: React.FC = () => {
             <a href={result.explorer.explorerUrl} target="_blank" rel="noreferrer" className="text-sm text-primary inline-flex items-center gap-1">
               View on explorer <ExternalLink className="w-3 h-3" />
             </a>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={exportCsvFile}>
+                Export CSV
+              </Button>
+              {authenticated && result.scanId ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={sharing}
+                  onClick={createShareLink}
+                >
+                  {sharing ? "Creating…" : shareCopied ? "Link copied!" : "Copy share link"}
+                </Button>
+              ) : null}
+              <Button type="button" variant="outline" size="sm" onClick={loadWalletTools}>
+                Wallet / allowance links
+              </Button>
+            </div>
             {result.heuristics.length === 0 ? (
               <p className="text-sm text-muted-foreground">No risk flags detected.</p>
             ) : (
@@ -139,6 +250,12 @@ export const AddressScanPanel: React.FC = () => {
                   <li key={f.id} className="text-sm border border-border rounded-md p-2">
                     <span className="font-medium">{f.title}</span>
                     <p className="text-muted-foreground mt-1">{f.description}</p>
+                    {f.guidance ? (
+                      <p className="text-xs text-muted-foreground mt-2 border-t border-border pt-2">
+                        <span className="font-medium text-foreground">Tip: </span>
+                        {f.guidance}
+                      </p>
+                    ) : null}
                   </li>
                 ))}
               </ul>
@@ -153,6 +270,33 @@ export const AddressScanPanel: React.FC = () => {
               <p className="text-xs text-muted-foreground">
                 Verified source on explorer — enable Slither above when signed in.
               </p>
+            )}
+            {walletLinks && (
+              <div className="text-xs space-y-2 rounded-md border border-border p-3 bg-muted/20">
+                <p className="font-medium text-foreground">Wallet tooling (external)</p>
+                <p className="text-muted-foreground">{walletLinks.note}</p>
+                <div className="flex flex-col gap-1">
+                  <a href={walletLinks.revokeCash} className="text-primary underline" target="_blank" rel="noreferrer">
+                    revoke.cash
+                  </a>
+                  <a
+                    href={walletLinks.explorerApprovalScanner}
+                    className="text-primary underline"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Explorer token approval checker
+                  </a>
+                  <a
+                    href={walletLinks.walletPortfolioAggregator}
+                    className="text-primary underline"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Portfolio overview
+                  </a>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>
