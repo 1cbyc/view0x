@@ -26,7 +26,7 @@ import { Loader2 } from "lucide-react";
 
 // Loading component for lazy-loaded routes
 const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-screen bg-black">
+  <div className="flex items-center justify-center min-h-screen bg-background">
     <Loader2 className="w-8 h-8 animate-spin text-accent" />
   </div>
 );
@@ -47,7 +47,7 @@ const App: React.FC = () => {
 
   return (
     <Router>
-      <div className="min-h-screen bg-black text-white selection:bg-accent/30 flex flex-col">
+      <div className="min-h-screen bg-background text-foreground selection:bg-accent/30 flex flex-col">
         <Navbar />
         <main className="flex-1 w-full min-w-0 overflow-x-hidden">
           <Suspense fallback={<PageLoader />}>

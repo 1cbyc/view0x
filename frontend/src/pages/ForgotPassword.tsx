@@ -43,8 +43,8 @@ const ForgotPassword: React.FC = () => {
     <div className="flex justify-center items-center min-h-[calc(100vh-200px)] py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-white">Reset Password</CardTitle>
-          <CardDescription className="text-white/60">
+          <CardTitle className="text-2xl font-bold text-foreground">Reset Password</CardTitle>
+          <CardDescription className="text-muted-foreground">
             Enter your email address and we'll send you a link to reset your password.
           </CardDescription>
         </CardHeader>
@@ -73,7 +73,7 @@ const ForgotPassword: React.FC = () => {
               )}
 
               <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium text-white">
+                <label htmlFor="email" className="text-sm font-medium text-foreground">
                   Email Address
                 </label>
                 <Input

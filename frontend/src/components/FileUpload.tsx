@@ -103,7 +103,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         className={`border-2 border-dashed transition-colors ${
           isDragging
             ? 'border-primary bg-primary/10'
-            : 'border-white/10 bg-black/50 hover:border-white/20'
+            : 'border-border bg-muted/40 hover:border-white/20'
         }`}
         onDragEnter={handleDragEnter}
         onDragOver={handleDragOver}
@@ -116,7 +116,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               <div className="flex items-center justify-center space-x-3">
                 <FileText className="w-8 h-8 text-primary" />
                 <div className="text-left">
-                  <p className="font-medium text-white">{selectedFile.name}</p>
+                  <p className="font-medium text-foreground">{selectedFile.name}</p>
                   <p className="text-sm text-muted-foreground">
                     {(selectedFile.size / 1024).toFixed(2)} KB
                   </p>
@@ -125,7 +125,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                   variant="ghost"
                   size="sm"
                   onClick={handleClear}
-                  className="text-muted-foreground hover:text-white"
+                  className="text-muted-foreground hover:text-foreground"
                 >
                   <X className="w-4 h-4" />
                 </Button>
@@ -133,11 +133,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             </div>
           ) : (
             <>
-              <Upload className="w-12 h-12 text-white/40 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-white mb-2">
+              <Upload className="w-12 h-12 text-muted-foreground/70 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">
                 Drag and drop your contract file
               </h3>
-              <p className="text-sm text-white/60 mb-4">
+              <p className="text-sm text-muted-foreground mb-4">
                 or click to browse
               </p>
               <input
@@ -157,7 +157,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                   <span>Select File</span>
                 </Button>
               </label>
-              <p className="text-xs text-white/40 mt-4">
+              <p className="text-xs text-muted-foreground/70 mt-4">
                 Supported: {accept.replace(/\./g, '').replace(/,/g, ', ')} (Max {maxSize / 1024 / 1024}MB)
               </p>
             </>

@@ -163,8 +163,8 @@ const Webhooks: React.FC = () => {
     <div className="container mx-auto py-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Webhooks</h1>
-          <p className="text-sm text-white/60 mt-1">
+          <h1 className="text-3xl font-bold text-foreground">Webhooks</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Configure webhooks to receive real-time notifications
           </p>
         </div>
@@ -278,8 +278,8 @@ const Webhooks: React.FC = () => {
       ) : webhooks.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center">
-            <p className="text-white/60">No webhooks configured</p>
-            <p className="text-sm text-white/40 mt-2">
+            <p className="text-muted-foreground">No webhooks configured</p>
+            <p className="text-sm text-muted-foreground/70 mt-2">
               Create your first webhook to receive real-time notifications
             </p>
           </CardContent>
@@ -325,7 +325,7 @@ const Webhooks: React.FC = () => {
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell className="text-sm text-white/60">
+                    <TableCell className="text-sm text-muted-foreground">
                       {new Date(webhook.createdAt).toLocaleDateString()}
                     </TableCell>
                     <TableCell>

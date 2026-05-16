@@ -11,6 +11,9 @@ import {
   SheetTrigger,
 } from "./ui/sheet";
 
+const linkClass =
+  "block py-2 text-sm font-medium text-muted-foreground hover:text-foreground md:py-0 transition-colors";
+
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<{ name: string } | null>(null);
@@ -47,34 +50,18 @@ const Navbar: React.FC = () => {
 
   const navLinks = (
     <>
-      <Link
-        to="/analyze"
-        className="block py-2 text-sm font-medium text-white/80 hover:text-white md:py-0"
-        onClick={() => setMenuOpen(false)}
-      >
+      <Link to="/analyze" className={linkClass} onClick={() => setMenuOpen(false)}>
         Scanner
       </Link>
       {user ? (
         <>
-          <Link
-            to="/dashboard"
-            className="block py-2 text-sm font-medium text-white/80 hover:text-white md:py-0"
-            onClick={() => setMenuOpen(false)}
-          >
+          <Link to="/dashboard" className={linkClass} onClick={() => setMenuOpen(false)}>
             Dashboard
           </Link>
-          <Link
-            to="/profile"
-            className="block py-2 text-sm font-medium text-white/80 hover:text-white md:py-0"
-            onClick={() => setMenuOpen(false)}
-          >
+          <Link to="/profile" className={linkClass} onClick={() => setMenuOpen(false)}>
             Profile
           </Link>
-          <Link
-            to="/notifications"
-            className="block py-2 text-sm font-medium text-white/80 hover:text-white md:py-0"
-            onClick={() => setMenuOpen(false)}
-          >
+          <Link to="/notifications" className={linkClass} onClick={() => setMenuOpen(false)}>
             Notifications
           </Link>
         </>
@@ -83,7 +70,7 @@ const Navbar: React.FC = () => {
   );
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-black/60">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <nav className="container flex h-14 max-w-screen-2xl items-center justify-between px-3 sm:px-4 md:px-6 gap-2">
         <div className="flex items-center min-w-0 flex-shrink gap-2">
           <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
@@ -91,23 +78,20 @@ const Navbar: React.FC = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="md:hidden text-white shrink-0"
+                className="md:hidden shrink-0"
                 aria-label="Open menu"
               >
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[min(100vw-2rem,20rem)] bg-black border-white/10">
+            <SheetContent side="left" className="w-[min(100vw-2rem,20rem)]">
               <SheetHeader>
-                <SheetTitle className="text-white text-left">view0x</SheetTitle>
+                <SheetTitle className="text-left">view0x</SheetTitle>
               </SheetHeader>
               <div className="mt-6 flex flex-col gap-1">{navLinks}</div>
-              <div className="mt-6 pt-4 border-t border-white/10 flex flex-col gap-2">
+              <div className="mt-6 pt-4 border-t border-border flex flex-col gap-2">
                 {user ? (
-                  <Button
-                    onClick={handleLogout}
-                    className="w-full bg-white text-black hover:bg-gray-200"
-                  >
+                  <Button onClick={handleLogout} className="w-full">
                     Logout
                   </Button>
                 ) : (
@@ -118,9 +102,7 @@ const Navbar: React.FC = () => {
                       </Button>
                     </Link>
                     <Link to="/register" onClick={() => setMenuOpen(false)}>
-                      <Button className="w-full bg-white text-black hover:bg-gray-200">
-                        Sign Up
-                      </Button>
+                      <Button className="w-full">Sign Up</Button>
                     </Link>
                   </>
                 )}
@@ -133,7 +115,7 @@ const Navbar: React.FC = () => {
             className="flex items-center space-x-1.5 sm:space-x-2 flex-shrink-0 min-w-0"
           >
             <ShieldCheck className="h-5 w-5 sm:h-6 sm:w-6 text-accent flex-shrink-0" />
-            <span className="font-bold text-white text-sm sm:text-base md:text-lg truncate">
+            <span className="font-bold text-foreground text-sm sm:text-base md:text-lg truncate">
               view0x
             </span>
           </Link>
@@ -147,32 +129,23 @@ const Navbar: React.FC = () => {
           {user ? (
             <div className="hidden md:flex items-center space-x-2">
               <Link to="/notifications">
-                <Button
-                  variant="ghost"
-                  className="text-white/60 hover:text-white px-2"
-                  aria-label="Notifications"
-                >
+                <Button variant="ghost" size="icon" aria-label="Notifications">
                   <Bell className="h-4 w-4" />
                 </Button>
               </Link>
-              <Button
-                onClick={handleLogout}
-                className="bg-white text-black hover:bg-gray-200 text-sm px-4"
-              >
+              <Button onClick={handleLogout} size="sm">
                 Logout
               </Button>
             </div>
           ) : (
             <div className="hidden md:flex items-center space-x-2">
               <Link to="/login">
-                <Button variant="ghost" className="text-white/60 hover:text-white text-sm">
+                <Button variant="ghost" size="sm">
                   Sign In
                 </Button>
               </Link>
               <Link to="/register">
-                <Button className="bg-white text-black hover:bg-gray-200 text-sm">
-                  Sign Up
-                </Button>
+                <Button size="sm">Sign Up</Button>
               </Link>
             </div>
           )}

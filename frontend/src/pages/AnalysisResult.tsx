@@ -169,7 +169,7 @@ const AnalysisResultPage: React.FC = () => {
     return (
       <div className="text-center py-20">
         <Loader2 className="w-12 h-12 animate-spin text-accent mx-auto" />
-        <p className="mt-4 text-white/60">
+        <p className="mt-4 text-muted-foreground">
           Loading analysis results...
         </p>
       </div>
@@ -230,7 +230,7 @@ const AnalysisResultPage: React.FC = () => {
   return (
     <div className="container mx-auto py-8 space-y-6">
       <div>
-        <Button asChild variant="ghost" className="mb-4 -ml-4 text-white/60 hover:text-white">
+        <Button asChild variant="ghost" className="mb-4 -ml-4 text-muted-foreground hover:text-foreground">
           <Link to="/dashboard">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
@@ -238,10 +238,10 @@ const AnalysisResultPage: React.FC = () => {
         </Button>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-white">
+            <h1 className="text-3xl font-bold text-foreground">
               {contractInfo.name || "Analysis Details"}
             </h1>
-            <p className="text-sm text-white/60 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               Analyzed on {formatDate(createdAt)}
             </p>
           </div>
@@ -250,7 +250,7 @@ const AnalysisResultPage: React.FC = () => {
               <Button
                 variant="outline"
                 onClick={() => handleExportReport('json')}
-                className="text-white/60 hover:text-white"
+                className="text-muted-foreground hover:text-foreground"
               >
                 <Download className="w-4 h-4 mr-2" />
                 JSON
@@ -258,7 +258,7 @@ const AnalysisResultPage: React.FC = () => {
               <Button
                 variant="outline"
                 onClick={() => handleExportReport('markdown')}
-                className="text-white/60 hover:text-white"
+                className="text-muted-foreground hover:text-foreground"
               >
                 <Download className="w-4 h-4 mr-2" />
                 Markdown
@@ -266,7 +266,7 @@ const AnalysisResultPage: React.FC = () => {
               <Button
                 variant="outline"
                 onClick={() => handleExportReport('pdf')}
-                className="text-white/60 hover:text-white"
+                className="text-muted-foreground hover:text-foreground"
               >
                 <Download className="w-4 h-4 mr-2" />
                 PDF
@@ -362,10 +362,10 @@ const AnalysisResultPage: React.FC = () => {
       )}
 
       {result && result.vulnerabilities.length === 0 && (
-        <div className="text-center py-12 border-2 border-dashed border-white/10 rounded-lg bg-black/50">
+        <div className="text-center py-12 border-2 border-dashed border-border rounded-lg bg-muted/40">
           <ShieldCheck className="w-16 h-16 text-green-500 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-white">No Vulnerabilities Found</h3>
-          <p className="mt-2 text-white/60">
+          <h3 className="text-xl font-semibold text-foreground">No Vulnerabilities Found</h3>
+          <p className="mt-2 text-muted-foreground">
             Our scanner did not find any issues in this contract.
           </p>
         </div>

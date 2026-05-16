@@ -79,10 +79,10 @@ const Register: React.FC = () => {
     <div className="flex justify-center items-center min-h-[calc(100vh-200px)] py-12 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-md space-y-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-white">
+          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-foreground">
             Create your account
           </h2>
-          <p className="mt-2 text-center text-sm text-white/60">
+          <p className="mt-2 text-center text-sm text-muted-foreground">
             Or{' '}
             <Link to="/login" className="font-medium text-accent hover:text-accent/80">
               sign in to your existing account
@@ -113,7 +113,7 @@ const Register: React.FC = () => {
                 type="text"
                 autoComplete="name"
                 required
-                className="relative block w-full appearance-none rounded-none rounded-t-md border border-white/10 bg-white/5 px-3 py-2 text-white placeholder-white/40 focus:z-10 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent sm:text-sm"
+                className="relative block w-full appearance-none rounded-none rounded-t-md border border-border bg-input/30 px-3 py-2 text-foreground placeholder:text-muted-foreground focus:z-10 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent sm:text-sm"
                 placeholder="Full Name"
                 value={formData.name}
                 onChange={handleChange}
@@ -128,7 +128,7 @@ const Register: React.FC = () => {
                 type="email"
                 autoComplete="email"
                 required
-                className="relative block w-full appearance-none rounded-none border border-white/10 bg-white/5 px-3 py-2 text-white placeholder-white/40 focus:z-10 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent sm:text-sm"
+                className="relative block w-full appearance-none rounded-none border border-border bg-input/30 px-3 py-2 text-foreground placeholder:text-muted-foreground focus:z-10 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent sm:text-sm"
                 placeholder="Email address"
                 value={formData.email}
                 onChange={handleChange}
@@ -142,7 +142,7 @@ const Register: React.FC = () => {
                 name="password"
                 autoComplete="new-password"
                 required
-                className="relative block w-full appearance-none rounded-none border border-white/10 bg-white/5 px-3 py-2 text-white placeholder-white/40 focus:z-10 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent sm:text-sm"
+                className="relative block w-full appearance-none rounded-none border border-border bg-input/30 px-3 py-2 text-foreground placeholder:text-muted-foreground focus:z-10 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent sm:text-sm"
                 placeholder="Password (min. 8 characters)"
                 value={formData.password}
                 onChange={handleChange}
@@ -156,7 +156,7 @@ const Register: React.FC = () => {
                 name="company"
                 type="text"
                 autoComplete="organization"
-                className="relative block w-full appearance-none rounded-none rounded-b-md border border-white/10 bg-white/5 px-3 py-2 text-white placeholder-white/40 focus:z-10 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent sm:text-sm"
+                className="relative block w-full appearance-none rounded-none rounded-b-md border border-border bg-input/30 px-3 py-2 text-foreground placeholder:text-muted-foreground focus:z-10 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent sm:text-sm"
                 placeholder="Company (Optional)"
                 value={formData.company}
                 onChange={handleChange}
@@ -169,7 +169,7 @@ const Register: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative flex w-full justify-center rounded-full border border-transparent bg-white text-black py-3 px-4 text-sm font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-black disabled:bg-white/50 disabled:cursor-not-allowed transition-all"
+              className="group relative flex w-full justify-center rounded-full border border-transparent bg-primary text-primary-foreground py-3 px-4 text-sm font-medium hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {isLoading ? (
                 <>

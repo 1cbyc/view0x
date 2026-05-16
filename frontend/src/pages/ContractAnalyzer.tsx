@@ -192,6 +192,28 @@ const ContractAnalyzer: React.FC = () => {
   const tabFromLogin = (location.state as { tab?: string } | null)?.tab;
   const defaultTab =
     scanIdFromUrl || tabFromLogin === "address" ? "address" : "source";
+
+  const [editorDark, setEditorDark] = useState(() =>
+    typeof document !== "undefined"
+      ? document.documentElement.classList.contains("dark")
+      : true,
+  );
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const sync = () => setEditorDark(root.classList.contains("dark"));
+    sync();
+    const obs = new MutationObserver(sync);
+    obs.observe(root, { attributes: true, attributeFilter: ["class"] });
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "theme") sync();
+    };
+    window.addEventListener("storage", onStorage);
+    return () => {
+      obs.disconnect();
+      window.removeEventListener("storage", onStorage);
+    };
+  }, []);
   const [contractCode, setContractCode] = useState<string>("");
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [showExamplesDialog, setShowExamplesDialog] = useState<boolean>(false);
@@ -725,10 +747,10 @@ const ContractAnalyzer: React.FC = () => {
     }
 
     return (
-      <Card className="text-center p-8 border-2 border-dashed border-white/10 bg-black/50">
-        <FileText className="w-16 h-16 text-white/40 mx-auto mb-4" />
-        <h3 className="text-xl font-semibold text-white">Ready to Analyze</h3>
-        <p className="mt-2 text-white/60">
+      <Card className="text-center p-8 border-2 border-dashed border-border bg-muted/40">
+        <FileText className="w-16 h-16 text-muted-foreground/70 mx-auto mb-4" />
+        <h3 className="text-xl font-semibold text-foreground">Ready to Analyze</h3>
+        <p className="mt-2 text-muted-foreground">
           Paste your contract code to get started.
         </p>
       </Card>
@@ -738,13 +760,13 @@ const ContractAnalyzer: React.FC = () => {
   return (
     <div className="container mx-auto py-3 sm:py-4 md:py-8 px-3 sm:px-4 md:px-6 max-w-7xl">
       <div className="text-center mb-4 sm:mb-6 md:mb-12">
-        <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold tracking-tight text-white leading-tight px-1">
+        <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold tracking-tight text-foreground leading-tight px-1">
           Smart Contract Security Scanner
         </h1>
-        <p className="text-sm sm:text-base md:text-lg text-white/60 mt-2 sm:mt-4 max-w-2xl mx-auto px-2">
+        <p className="text-sm sm:text-base md:text-lg text-muted-foreground mt-2 sm:mt-4 max-w-2xl mx-auto px-2">
           Paste Solidity source or scan a deployed contract address. No login required.
         </p>
-        <p className="text-xs sm:text-sm text-white/40 mt-1 sm:mt-2 px-2">
+        <p className="text-xs sm:text-sm text-muted-foreground/70 mt-1 sm:mt-2 px-2">
           <Link 
             to="/login" 
             className="text-primary hover:text-primary/80 underline"
@@ -783,7 +805,7 @@ const ContractAnalyzer: React.FC = () => {
                         value={contractCode}
                         height="180px"
                         className="text-xs sm:text-sm"
-                        theme={oneDark}
+                        theme={editorDark ? oneDark : "light"}
                         extensions={[javascript({ jsx: false })]}
                         onChange={(value) => setContractCode(value)}
                         placeholder={contractCode ? "" : animatedPlaceholder}

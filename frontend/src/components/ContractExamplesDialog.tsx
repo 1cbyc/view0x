@@ -48,7 +48,7 @@ function ExampleList({
       {examples.map((example) => (
         <Card
           key={example.id}
-          className="cursor-pointer hover:bg-white/5 transition-colors bg-card border-border active:scale-[0.99]"
+          className="cursor-pointer hover:bg-muted/50 transition-colors bg-card border-border active:scale-[0.99]"
           onClick={() => onSelect(example)}
         >
           <CardHeader className="p-4 sm:p-6">

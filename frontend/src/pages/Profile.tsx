@@ -114,7 +114,7 @@ const Profile: React.FC = () => {
       <div className="container mx-auto py-8">
         <div className="text-center py-20">
           <Loader2 className="w-12 h-12 animate-spin text-accent mx-auto" />
-          <p className="mt-4 text-white/60">Loading profile...</p>
+          <p className="mt-4 text-muted-foreground">Loading profile...</p>
         </div>
       </div>
     );
@@ -127,8 +127,8 @@ const Profile: React.FC = () => {
   return (
     <div className="container mx-auto py-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white">User Profile</h1>
-        <p className="text-sm text-white/60 mt-1">Manage your account settings and preferences</p>
+        <h1 className="text-3xl font-bold text-foreground">User Profile</h1>
+        <p className="text-sm text-muted-foreground mt-1">Manage your account settings and preferences</p>
       </div>
 
       {error && (
@@ -156,7 +156,7 @@ const Profile: React.FC = () => {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="name" className="text-sm font-medium text-white">
+                <label htmlFor="name" className="text-sm font-medium text-foreground">
                   Name
                 </label>
                 <Input
@@ -170,7 +170,7 @@ const Profile: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium text-white flex items-center gap-2">
+                <label htmlFor="email" className="text-sm font-medium text-foreground flex items-center gap-2">
                   <Mail className="w-4 h-4" />
                   Email
                 </label>
@@ -209,7 +209,7 @@ const Profile: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="company" className="text-sm font-medium text-white flex items-center gap-2">
+                <label htmlFor="company" className="text-sm font-medium text-foreground flex items-center gap-2">
                   <Building className="w-4 h-4" />
                   Company
                 </label>
@@ -248,28 +248,28 @@ const Profile: React.FC = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-white">Plan</span>
+              <span className="text-sm font-medium text-foreground">Plan</span>
               <Badge variant={user.plan === 'enterprise' ? 'default' : user.plan === 'pro' ? 'secondary' : 'outline'}>
                 {user.plan.charAt(0).toUpperCase() + user.plan.slice(1)}
               </Badge>
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-white">Email Status</span>
+              <span className="text-sm font-medium text-foreground">Email Status</span>
               <Badge variant={user.emailVerified ? 'default' : 'destructive'}>
                 {user.emailVerified ? 'Verified' : 'Unverified'}
               </Badge>
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-white">Member Since</span>
-              <span className="text-sm text-white/60">
+              <span className="text-sm font-medium text-foreground">Member Since</span>
+              <span className="text-sm text-muted-foreground">
                 {new Date(user.createdAt).toLocaleDateString()}
               </span>
             </div>
 
-            <div className="pt-4 border-t border-white/10">
-              <h3 className="text-sm font-medium text-white mb-2 flex items-center gap-2">
+            <div className="pt-4 border-t border-border">
+              <h3 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
                 <Shield className="w-4 h-4" />
                 Account Security
               </h3>
@@ -277,7 +277,7 @@ const Profile: React.FC = () => {
                 <Button
                   variant="outline"
                   onClick={() => navigate('/forgot-password')}
-                  className="w-full text-white/60 hover:text-white"
+                  className="w-full text-muted-foreground hover:text-foreground"
                 >
                   Change Password
                 </Button>

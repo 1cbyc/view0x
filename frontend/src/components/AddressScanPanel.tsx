@@ -324,7 +324,7 @@ export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
             <span>
               Queue full Slither scan if verified{" "}
               {authenticated ? (
-                <span className="text-white/50">(signed in)</span>
+                <span className="text-foreground/50">(signed in)</span>
               ) : (
                 <>
                   —{" "}

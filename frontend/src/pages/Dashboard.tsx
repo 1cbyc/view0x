@@ -408,7 +408,7 @@ const Dashboard: React.FC = () => {
     return (
       <div className="container mx-auto py-8 space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-white">Analysis History</h1>
+          <h1 className="text-3xl font-bold text-foreground">Analysis History</h1>
         </div>
         <DashboardSkeleton />
       </div>
@@ -420,7 +420,7 @@ const Dashboard: React.FC = () => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl sm:text-3xl font-bold text-white">Analysis Dashboard</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Analysis Dashboard</h1>
             {isConnected && (
               <Badge variant="outline" className="text-green-500 border-green-500">
                 <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse" />
@@ -428,7 +428,7 @@ const Dashboard: React.FC = () => {
               </Badge>
             )}
           </div>
-          <p className="text-xs sm:text-sm text-white/60 mt-1">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             View and manage your smart contract analyses
             {isConnected && " • Real-time updates enabled"}
           </p>
@@ -436,7 +436,7 @@ const Dashboard: React.FC = () => {
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <Button 
             asChild 
-            className="bg-white text-black hover:bg-gray-200 flex-1 sm:flex-initial text-sm sm:text-base"
+            className="bg-primary text-primary-foreground hover:opacity-90 flex-1 sm:flex-initial text-sm sm:text-base"
           >
             <Link to="/analyze">
               <ShieldAlert className="w-4 h-4 mr-2" />
@@ -620,18 +620,18 @@ const Dashboard: React.FC = () => {
 
       {/* Analysis Table */}
       {filteredAndSortedAnalyses.length === 0 ? (
-        <div className="text-center py-20 border-2 border-dashed border-white/10 rounded-lg bg-black/50">
-          <FileText className="w-16 h-16 text-white/40 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-white">
+        <div className="text-center py-20 border-2 border-dashed border-border rounded-lg bg-muted/40">
+          <FileText className="w-16 h-16 text-muted-foreground/70 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-foreground">
             {searchTerm || statusFilter !== "all" ? "No Results Found" : "No Analyses Found"}
           </h3>
-          <p className="mt-2 text-white/60">
+          <p className="mt-2 text-muted-foreground">
             {searchTerm || statusFilter !== "all"
               ? "Try adjusting your filters or search terms."
               : "You haven't analyzed any contracts yet."}
           </p>
           {(!searchTerm && statusFilter === "all") && (
-            <Button asChild className="mt-6 bg-white text-black hover:bg-gray-200">
+            <Button asChild className="mt-6 bg-primary text-primary-foreground hover:opacity-90">
               <Link to="/analyze">Start Your First Analysis</Link>
             </Button>
           )}
