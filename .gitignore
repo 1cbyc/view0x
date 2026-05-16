@@ -124,5 +124,10 @@ CopilotIndices/
 !scripts/*.sh
 !python/start.sh
 
+# Local roadmap / planning (never push)
+roadmap/
+docs/
+*.md
+
 # sample-ui-web (reference only, not part of project)
 sample-ui-web/roadmap/
