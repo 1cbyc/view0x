@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { getAddress } from "ethers";
 import { walletRiskResources } from "../../controllers/walletResourcesController";
 
 describe("walletRiskResources", () => {
@@ -33,7 +34,7 @@ describe("walletRiskResources", () => {
 
   it("embeds checksum address in links when provided", () => {
     const addr = "0xd8da6bf26964af9d7eed9e03e53415dd37aa60fb";
-    const checksumAddr = "0xd8Da6bf26964Af9D7eED9e03E53415dd37AA60FB";
+    const checksum = getAddress(addr);
     mockReq.query = { chainId: "1", address: addr };
 
     walletRiskResources(mockReq as Request, mockRes as Response);
@@ -42,9 +43,9 @@ describe("walletRiskResources", () => {
       expect.objectContaining({
         success: true,
         data: expect.objectContaining({
-          address: checksumAddr,
-          revokeCash: `https://revoke.cash/ethereum/${checksumAddr}`,
-          explorerApprovalScanner: expect.stringContaining("tokenapprovalchecker"),
+          address: checksum,
+          revokeCash: `https://revoke.cash/ethereum/${checksum}`,
+          explorerApprovalScanner: `https://etherscan.io/tokenapprovalchecker?search=${checksum}`,
         }),
       }),
     );
