@@ -12,10 +12,20 @@ export const listNotifications = async (req: Request, res: Response) => {
   const userId = requireUserId(req);
   const unreadOnly = req.query.unread === "true";
   const limit = Number(req.query.limit) || 50;
-  const [notifications, unreadCount] = await Promise.all([
+  const [rows, unreadCount] = await Promise.all([
     notificationService.list(userId, { unreadOnly, limit }),
     notificationService.unreadCount(userId),
   ]);
+
+  const notifications = rows.map((n) => ({
+    id: n.id,
+    type: n.type,
+    title: n.title,
+    message: n.message,
+    metadata: n.metadata ?? null,
+    readAt: n.readAt,
+    createdAt: n.createdAt,
+  }));
 
   res.json({
     success: true,

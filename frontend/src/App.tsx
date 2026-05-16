@@ -21,6 +21,7 @@ const Notifications = lazy(() => import("./pages/Notifications"));
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import { CommandPalette } from "./components/CommandPalette";
+import { RouteErrorBoundary } from "./components/RouteErrorBoundary";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { Loader2 } from "lucide-react";
 
@@ -51,6 +52,7 @@ const App: React.FC = () => {
         <Navbar />
         <main className="flex-1 w-full min-w-0 overflow-x-hidden">
           <Suspense fallback={<PageLoader />}>
+            <RouteErrorBoundary>
             <Routes>
               {/* Main analysis page */}
               <Route path="/" element={<ContractAnalyzer />} />
@@ -72,6 +74,7 @@ const App: React.FC = () => {
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/analysis/:id" element={<AnalysisDetailPage />} />
             </Routes>
+            </RouteErrorBoundary>
           </Suspense>
         </main>
         <Footer />
