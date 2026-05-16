@@ -70,6 +70,11 @@ jobs:
             WEB_PORT="\$(grep -E '^WEB_PORT=' .env | cut -d= -f2- | tr -d '\r' || echo 18088)"
             API_PORT="\$(grep -E '^API_PORT=' .env | cut -d= -f2- | tr -d '\r' || echo 18091)"
             docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d --build
+            POSTGRES_USER="\$(grep -E '^POSTGRES_USER=' .env | cut -d= -f2- | tr -d '\r')"
+            POSTGRES_DB="\$(grep -E '^POSTGRES_DB=' .env | cut -d= -f2- | tr -d '\r')"
+            docker compose -f docker-compose.yml -f docker-compose.vps.yml exec -T postgres \
+              psql -U "\${POSTGRES_USER}" -d "\${POSTGRES_DB}" \
+              < deploy/sql/migrate_production.sql
             EDGE_B64=$VIEW0X_EDGE_SCRIPT_B64
             printf '%s' "\$EDGE_B64" | base64 -d | \
               EDGE_CONTAINER=koreshield-caddy \

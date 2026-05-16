@@ -101,10 +101,15 @@ export const AddressScanPanel: React.FC = () => {
       });
       setResult(res.data.data);
     } catch (err: unknown) {
+      const apiErr = err as {
+        error?: { message?: string };
+        response?: { data?: { error?: { message?: string } } };
+        message?: string;
+      };
       const msg =
-        (err as { response?: { data?: { error?: { message?: string } } } })
-          ?.response?.data?.error?.message ||
-        (err as Error).message ||
+        apiErr.error?.message ||
+        apiErr.response?.data?.error?.message ||
+        apiErr.message ||
         "Scan failed";
       setError(msg);
     } finally {
