@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { clearDashboardCache } from "@/lib/guestSession";
+import { formatCategory, formatSeverity } from "@/lib/scanLabels";
 import { scanApi, walletApi, type AddressScanResult } from "@/services/api";
 
 function csvEscape(s: string) {
@@ -195,6 +196,19 @@ export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
     URL.revokeObjectURL(url);
   };
 
+  const exportJsonFile = () => {
+    if (!result) return;
+    const blob = new Blob([JSON.stringify(result, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `view0x-scan-${result.address.slice(2, 10)}-${result.chainId}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const loadWalletTools = async () => {
     if (!address.trim()) {
       setError("Enter an address above (contract or wallet) for revoke / approval links.");
@@ -277,6 +291,9 @@ export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
               <Button type="button" variant="outline" size="sm" onClick={exportCsvFile}>
                 Export CSV
               </Button>
+              <Button type="button" variant="outline" size="sm" onClick={exportJsonFile}>
+                Export JSON
+              </Button>
               {authenticated && result.scanId ? (
                 <Button
                   type="button"
@@ -297,9 +314,17 @@ export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
             ) : (
               <ul className="space-y-2">
                 {result.heuristics.map((f) => (
-                  <li key={f.id} className="text-sm border border-border rounded-md p-2">
-                    <span className="font-medium">{f.title}</span>
-                    <p className="text-muted-foreground mt-1">{f.description}</p>
+                  <li key={f.id} className="text-sm border border-border rounded-md p-2 sm:p-3">
+                    <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                      <span className="font-medium">{f.title}</span>
+                      <Badge variant="outline" className="text-[10px] capitalize">
+                        {formatSeverity(f.severity)}
+                      </Badge>
+                      <Badge variant="secondary" className="text-[10px]">
+                        {formatCategory(f.category)}
+                      </Badge>
+                    </div>
+                    <p className="text-muted-foreground mt-1 text-xs sm:text-sm">{f.description}</p>
                     {f.guidance ? (
                       <p className="text-xs text-muted-foreground mt-2 border-t border-border pt-2">
                         <span className="font-medium text-foreground">Tip: </span>

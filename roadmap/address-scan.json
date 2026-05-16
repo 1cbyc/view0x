@@ -1,7 +1,7 @@
 {
   "epic": "Address & reputation scanning",
   "issue": 100,
-  "status": "mvp-implemented",
+  "status": "complete",
   "scope": {
     "chains": [
       {
@@ -19,32 +19,38 @@
     ],
     "endpoints": [
       "GET /api/scan/chains",
+      "GET /api/scan/history",
       "POST /api/scan/address",
-      "GET /api/scan/address/:id"
+      "GET /api/scan/address/:id",
+      "GET /api/wallet/risk-resources"
     ],
     "ui": [
       "Address vs source-code scan mode",
       "Ethereum/BSC chain selector",
-      "Optional Slither queue for signed-in users when verified source exists"
+      "Human-readable heuristic labels and guidance",
+      "CSV/JSON export and share links",
+      "Wallet revoke / approval / portfolio links",
+      "Dashboard history (contracts + address scans)",
+      "Mobile-responsive layout"
     ]
   },
   "implemented": [
-    "Explorer bytecode lookup",
-    "Explorer verified source lookup",
-    "Verified source unwrapping for single-file and multi-file sources",
-    "EOA vs contract classification",
-    "Proxy metadata capture",
-    "Token Sniffer style source heuristics",
+    "Explorer bytecode and verified source lookup",
+    "EOA vs contract classification and proxy metadata",
+    "Token Sniffer style heuristics with guidance copy",
     "Reputation score and risk level",
-    "24-hour address scan cache",
-    "Authenticated Slither queue handoff from verified source",
-    "Stored scan result retrieval"
+    "24-hour address scan cache and user history",
+    "Guest session claim on login",
+    "Slither queue from verified source",
+    "Share tokens for address scans",
+    "Wallet risk resource links (Phase 5 light)",
+    "VPS deploy, migrations, Caddy edge routes"
   ],
   "future": [
     "On-chain liquidity lock checks",
     "Honeypot buy/sell simulation",
     "Holder concentration analysis",
-    "Wallet allowance/exposure graph",
+    "Indexed ERC-20 allowance listing",
     "Additional chains"
   ]
 }

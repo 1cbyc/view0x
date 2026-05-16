@@ -639,7 +639,52 @@ const Dashboard: React.FC = () => {
       ) : (
         <Card>
           <CardContent className="p-0">
-            <Table>
+            {/* Mobile: card list */}
+            <div className="md:hidden divide-y divide-border">
+              {filteredAndSortedAnalyses.map((analysis) => (
+                <div key={analysis.id} className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-sm truncate">
+                        {analysis.contractName || "Untitled Contract"}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {formatDate(analysis.createdAt)}
+                        {analysis.kind === "address" ? " · Address scan" : ""}
+                      </p>
+                    </div>
+                    {getStatusIndicator(analysis.status)}
+                  </div>
+                  {analysis.status === "completed" && analysis.summary && (
+                    <div className="flex gap-3 text-xs">
+                      <span className="text-destructive font-semibold">
+                        {analysis.summary.highSeverity} high
+                      </span>
+                      <span className="text-yellow-500 font-semibold">
+                        {analysis.summary.mediumSeverity} med
+                      </span>
+                      <span className="text-blue-500 font-semibold">
+                        {analysis.summary.lowSeverity} low
+                      </span>
+                    </div>
+                  )}
+                  <Button asChild variant="outline" size="sm" className="w-full">
+                    <Link
+                      to={
+                        analysis.kind === "address"
+                          ? `/analyze?scanId=${analysis.id}`
+                          : `/analysis/${analysis.id}`
+                      }
+                    >
+                      View details
+                      <ChevronRight className="w-4 h-4 ml-1" />
+                    </Link>
+                  </Button>
+                </div>
+              ))}
+            </div>
+            {/* Desktop: table */}
+            <Table className="hidden md:table">
               <TableHeader>
                 <TableRow>
                   <TableHead>

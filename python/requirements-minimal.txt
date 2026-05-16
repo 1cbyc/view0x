@@ -1,4 +1,4 @@
-# Minimal requirements for Railway deployment (faster builds)
+# Minimal requirements for production Docker images (faster builds)
 # Core analysis tools - Slither only (most important)
 slither-analyzer==0.10.0
 

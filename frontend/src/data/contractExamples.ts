@@ -3,6 +3,8 @@
  * A collection of example Solidity contracts for users to learn from and test with
  */
 
+import { vulnerableContractExamples } from "./vulnerableExamples";
+
 export interface ContractExample {
   id: string;
   name: string;
@@ -240,7 +242,8 @@ contract BasicNFT is IERC721 {
         _balances[to]++;
     }
 }`
-  }
+  },
+  ...vulnerableContractExamples,
 ];
 
 export const getExampleByCategory = (category: ContractExample['category']): ContractExample[] => {

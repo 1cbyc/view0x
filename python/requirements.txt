@@ -1,7 +1,7 @@
 # Core analysis tools
 slither-analyzer==0.10.0
 # Note: Mythril and Semgrep have very complex dependency trees that cause build timeouts
-# For Railway deployment, use requirements-minimal.txt instead
+# For slim Docker images, use requirements-minimal.txt instead
 # For local development with all tools, uncomment below:
 # mythril>=0.24.0
 # semgrep>=1.40.0

@@ -49,7 +49,7 @@ const App: React.FC = () => {
     <Router>
       <div className="min-h-screen bg-black text-white selection:bg-accent/30 flex flex-col">
         <Navbar />
-        <main className="flex-1 w-full">
+        <main className="flex-1 w-full min-w-0 overflow-x-hidden">
           <Suspense fallback={<PageLoader />}>
             <Routes>
               {/* Main analysis page */}

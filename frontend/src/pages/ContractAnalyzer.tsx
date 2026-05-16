@@ -13,7 +13,8 @@ import CodeMirror from "@uiw/react-codemirror";
 import { javascript } from "@codemirror/lang-javascript";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { FileUpload } from "@/components/FileUpload";
-import { contractExamples, ContractExample } from "@/data/contractExamples";
+import type { ContractExample } from "@/data/contractExamples";
+import { ContractExamplesDialog } from "@/components/ContractExamplesDialog";
 
 // UI Components from the new theme
 import { Button } from "@/components/ui/button";
@@ -34,16 +35,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Services and Types
 import { analysisApi, authApi } from "@/services/api";
@@ -811,155 +803,14 @@ const ContractAnalyzer: React.FC = () => {
                   </CardContent>
                   <CardFooter className="flex flex-col sm:flex-row justify-between gap-2 pt-3 sm:pt-4">
               <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-                <Dialog open={showExamplesDialog} onOpenChange={setShowExamplesDialog}>
-                  <DialogTrigger asChild>
-                    <Button variant="ghost" size="sm" className="text-xs sm:text-sm">
-                      <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                      Load Example
-                    </Button>
-                  </DialogTrigger>
-                    <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[90vh] sm:max-h-[85vh] flex flex-col m-2 sm:m-4">
-                    <DialogHeader>
-                      <DialogTitle>Contract Examples Library</DialogTitle>
-                      <DialogDescription>
-                        Browse and load example smart contracts to analyze. These examples demonstrate various patterns and vulnerabilities.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <Tabs defaultValue="vulnerable" className="flex-1 flex flex-col overflow-hidden mt-4">
-                      <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="vulnerable">Vulnerable</TabsTrigger>
-                        <TabsTrigger value="basic">Basic</TabsTrigger>
-                        <TabsTrigger value="best-practice">Best Practice</TabsTrigger>
-                      </TabsList>
-                      <TabsContent value="vulnerable" className="flex-1 overflow-hidden mt-4">
-                        <ScrollArea className="h-full pr-4">
-                          <div className="space-y-3">
-                            {contractExamples
-                              .filter((e) => e.category === "vulnerable")
-                              .map((example) => (
-                                <Card
-                                  key={example.id}
-                                  className="cursor-pointer hover:bg-white/5 transition-colors bg-card border-border"
-                                  onClick={() => {
-                                    resetState();
-                                    setContractCode(example.code);
-                                    setShowExamplesDialog(false);
-                                  }}
-                                >
-                                  <CardHeader>
-                                    <div className="flex items-start justify-between">
-                                      <div className="flex-1">
-                                        <CardTitle className="text-lg text-foreground">{example.name}</CardTitle>
-                                        <CardDescription className="mt-1 text-muted-foreground">
-                                          {example.description}
-                                        </CardDescription>
-                                      </div>
-                                      <Badge variant="outline" className="ml-2">
-                                        {example.difficulty}
-                                      </Badge>
-                                    </div>
-                                  </CardHeader>
-                                  <CardContent>
-                                    <div className="flex flex-wrap gap-2">
-                                      {example.tags.map((tag) => (
-                                        <Badge key={tag} variant="secondary" className="text-xs">
-                                          {tag}
-                                        </Badge>
-                                      ))}
-                                    </div>
-                                  </CardContent>
-                                </Card>
-                              ))}
-                          </div>
-                        </ScrollArea>
-                      </TabsContent>
-                      <TabsContent value="basic" className="flex-1 overflow-hidden mt-4">
-                        <ScrollArea className="h-full pr-4">
-                          <div className="space-y-3">
-                            {contractExamples
-                              .filter((e) => e.category === "basic" || e.category === "erc20" || e.category === "erc721")
-                              .map((example) => (
-                                <Card
-                                  key={example.id}
-                                  className="cursor-pointer hover:bg-white/5 transition-colors bg-card border-border"
-                                  onClick={() => {
-                                    resetState();
-                                    setContractCode(example.code);
-                                    setShowExamplesDialog(false);
-                                  }}
-                                >
-                                  <CardHeader>
-                                    <div className="flex items-start justify-between">
-                                      <div className="flex-1">
-                                        <CardTitle className="text-lg text-foreground">{example.name}</CardTitle>
-                                        <CardDescription className="mt-1 text-muted-foreground">
-                                          {example.description}
-                                        </CardDescription>
-                                      </div>
-                                      <Badge variant="outline" className="ml-2">
-                                        {example.difficulty}
-                                      </Badge>
-                                    </div>
-                                  </CardHeader>
-                                  <CardContent>
-                                    <div className="flex flex-wrap gap-2">
-                                      {example.tags.map((tag) => (
-                                        <Badge key={tag} variant="secondary" className="text-xs">
-                                          {tag}
-                                        </Badge>
-                                      ))}
-                                    </div>
-                                  </CardContent>
-                                </Card>
-                              ))}
-                          </div>
-                        </ScrollArea>
-                      </TabsContent>
-                      <TabsContent value="best-practice" className="flex-1 overflow-hidden mt-4">
-                        <ScrollArea className="h-full pr-4">
-                          <div className="space-y-3">
-                            {contractExamples
-                              .filter((e) => e.category === "best-practice")
-                              .map((example) => (
-                                <Card
-                                  key={example.id}
-                                  className="cursor-pointer hover:bg-white/5 transition-colors bg-card border-border"
-                                  onClick={() => {
-                                    resetState();
-                                    setContractCode(example.code);
-                                    setShowExamplesDialog(false);
-                                  }}
-                                >
-                                  <CardHeader>
-                                    <div className="flex items-start justify-between">
-                                      <div className="flex-1">
-                                        <CardTitle className="text-lg text-foreground">{example.name}</CardTitle>
-                                        <CardDescription className="mt-1 text-muted-foreground">
-                                          {example.description}
-                                        </CardDescription>
-                                      </div>
-                                      <Badge variant="outline" className="ml-2">
-                                        {example.difficulty}
-                                      </Badge>
-                                    </div>
-                                  </CardHeader>
-                                  <CardContent>
-                                    <div className="flex flex-wrap gap-2">
-                                      {example.tags.map((tag) => (
-                                        <Badge key={tag} variant="secondary" className="text-xs">
-                                          {tag}
-                                        </Badge>
-                                      ))}
-                                    </div>
-                                  </CardContent>
-                                </Card>
-                              ))}
-                          </div>
-                        </ScrollArea>
-                      </TabsContent>
-                    </Tabs>
-                  </DialogContent>
-                </Dialog>
+                <ContractExamplesDialog
+                  open={showExamplesDialog}
+                  onOpenChange={setShowExamplesDialog}
+                  onSelect={(example: ContractExample) => {
+                    resetState();
+                    setContractCode(example.code);
+                  }}
+                />
                 <Button
                   variant="ghost"
                   onClick={() => {

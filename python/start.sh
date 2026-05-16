@@ -1,6 +1,5 @@
 #!/bin/bash
-# Startup script for Railway deployment
-# Handles PORT environment variable properly
+# Python worker entrypoint (Docker / VPS). Honors PORT from the environment.
 
 set -e
 
