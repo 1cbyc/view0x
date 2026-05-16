@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { authApi } from '../services/api';
-import { getGuestSessionId } from '@/lib/guestSession';
+import { clearDashboardCache, getGuestSessionId } from '@/lib/guestSession';
 import { Loader2, AlertTriangle, CheckCircle } from 'lucide-react';
 import { PasswordInput } from '@/components/PasswordInput';
 
@@ -58,6 +58,7 @@ const Login: React.FC = () => {
         localStorage.setItem('accessToken', tokens.accessToken);
         localStorage.setItem('refreshToken', tokens.refreshToken);
         localStorage.setItem('user', JSON.stringify(user));
+        clearDashboardCache();
 
         // Trigger storage event so Navbar can update
         window.dispatchEvent(new Event('storage'));

@@ -215,6 +215,8 @@ export const scanApi = {
     runSlither?: boolean;
   }) => api.post("/scan/address", data, { timeout: 90000 }),
   getScan: (scanId: string) => api.get(`/scan/address/${scanId}`),
+  getHistory: (limit = 50) =>
+    api.get("/scan/history", { params: { limit } }),
   getSharedScan: (token: string) => api.get(`/scan/shared/${token}`),
   createShareLink: (scanId: string) => api.post(`/scan/address/${scanId}/share`),
 };

@@ -255,7 +255,7 @@ export const getUserAnalyses = async (req: Request, res: Response) => {
 
   res.status(200).json({
     success: true,
-    data: rows.map((a) => a.toSummary()),
+    data: rows.map((a) => ({ ...a.toSummary(), kind: "contract" as const })),
     meta: {
       pagination: {
         page,

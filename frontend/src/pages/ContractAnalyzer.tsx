@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Loader2,
   AlertTriangle,
@@ -47,7 +47,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Services and Types
 import { analysisApi, authApi } from "@/services/api";
-import { getGuestSessionId } from "@/lib/guestSession";
+import { clearDashboardCache, getGuestSessionId } from "@/lib/guestSession";
 import { AddressScanPanel } from "@/components/AddressScanPanel";
 import { socketService, AnalysisUpdatePayload } from "@/services/socketService";
 
@@ -194,6 +194,9 @@ const useTypingAnimation = (text: string, speed: number = 100) => {
 
 const ContractAnalyzer: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const scanIdFromUrl = searchParams.get("scanId") ?? undefined;
+  const defaultTab = scanIdFromUrl ? "address" : "source";
   const [contractCode, setContractCode] = useState<string>("");
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [showExamplesDialog, setShowExamplesDialog] = useState<boolean>(false);
@@ -343,9 +346,12 @@ const ContractAnalyzer: React.FC = () => {
   // After sign-in, attach any scans done while logged out
   useEffect(() => {
     if (!isAuthenticated) return;
-    authApi.claimGuestWork(getGuestSessionId()).catch(() => {
-      /* non-fatal */
-    });
+    authApi
+      .claimGuestWork(getGuestSessionId())
+      .then(() => clearDashboardCache())
+      .catch(() => {
+        /* non-fatal */
+      });
   }, [isAuthenticated]);
 
   const resetState = () => {
@@ -754,13 +760,17 @@ const ContractAnalyzer: React.FC = () => {
         </p>
       </div>
 
-      <Tabs defaultValue="source" className="w-full">
+      <Tabs
+        key={scanIdFromUrl || "analyze-tabs"}
+        defaultValue={defaultTab}
+        className="w-full"
+      >
         <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-4">
           <TabsTrigger value="source">Paste source</TabsTrigger>
           <TabsTrigger value="address">Scan address</TabsTrigger>
         </TabsList>
         <TabsContent value="address" className="mt-0">
-          <AddressScanPanel />
+          <AddressScanPanel initialScanId={scanIdFromUrl} />
         </TabsContent>
         <TabsContent value="source" className="mt-0">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-8">

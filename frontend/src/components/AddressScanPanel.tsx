@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Loader2, ExternalLink, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { clearDashboardCache } from "@/lib/guestSession";
 import { scanApi, walletApi, type AddressScanResult } from "@/services/api";
 
 function csvEscape(s: string) {
@@ -76,7 +77,13 @@ function riskVariant(risk: AddressScanResult["riskLevel"]) {
   }
 }
 
-export const AddressScanPanel: React.FC = () => {
+type AddressScanPanelProps = {
+  initialScanId?: string;
+};
+
+export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
+  initialScanId,
+}) => {
   const [address, setAddress] = useState("");
   const [chainId, setChainId] = useState("1");
   const [loading, setLoading] = useState(false);
@@ -86,6 +93,41 @@ export const AddressScanPanel: React.FC = () => {
   const [runSlither, setRunSlither] = useState(false);
   const [result, setResult] = useState<AddressScanResult | null>(null);
   const [walletLinks, setWalletLinks] = useState<WalletRiskLinks | null>(null);
+
+  useEffect(() => {
+    if (!initialScanId) return;
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await scanApi.getScan(initialScanId);
+        if (cancelled) return;
+        const data = res.data.data;
+        setResult(data);
+        setAddress(data.address);
+        setChainId(String(data.chainId));
+      } catch (err: unknown) {
+        if (cancelled) return;
+        const apiErr = err as {
+          error?: { message?: string };
+          response?: { data?: { error?: { message?: string } } };
+          message?: string;
+        };
+        setError(
+          apiErr.error?.message ||
+            apiErr.response?.data?.error?.message ||
+            apiErr.message ||
+            "Could not load scan",
+        );
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [initialScanId]);
 
   const handleScan = async () => {
     setLoading(true);
@@ -100,6 +142,9 @@ export const AddressScanPanel: React.FC = () => {
         runSlither,
       });
       setResult(res.data.data);
+      if (localStorage.getItem("accessToken")) {
+        clearDashboardCache();
+      }
     } catch (err: unknown) {
       const apiErr = err as {
         error?: { message?: string };

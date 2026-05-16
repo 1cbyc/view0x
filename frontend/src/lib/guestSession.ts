@@ -1,5 +1,11 @@
 const GUEST_SESSION_KEY = "view0x_guest_session";
 
+export function clearDashboardCache(): void {
+  if (typeof localStorage !== "undefined") {
+    localStorage.removeItem("view0x_dashboard_cache");
+  }
+}
+
 export function getGuestSessionId(): string {
   if (typeof localStorage === "undefined") {
     return "";

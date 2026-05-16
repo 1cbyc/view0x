@@ -2,6 +2,7 @@ import { Router } from "express";
 import { asyncHandler } from "../middleware/errorHandler";
 import {
   listScanChains,
+  listScanHistory,
   scanAddress,
   getScanResult,
   createShareForScan,
@@ -15,6 +16,7 @@ import { addressScanRateLimiter } from "../middleware/rateLimit";
 const router = Router();
 
 router.get("/chains", asyncHandler(listScanChains));
+router.get("/history", auth, asyncHandler(listScanHistory));
 router.post(
   "/address",
   addressScanRateLimiter,

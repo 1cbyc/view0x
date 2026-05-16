@@ -107,9 +107,6 @@ export async function scanContractAddress(
     CACHE_HOURS,
   );
   if (cached) {
-    if (!userId && guestSessionId && !cached.userId && !cached.guestSessionId) {
-      await cached.update({ guestSessionId });
-    }
     const payload = ensureGuidance({ ...(cached.result as AddressScanResult) });
     if (wantsSlither && payload.sourceAvailable && !payload.slitherJobId) {
       const slitherJobId = await queueSlitherIfRequested(payload, userId, true);
@@ -124,7 +121,13 @@ export async function scanContractAddress(
       });
       return { ...resultWithSlither, scanId: record.id };
     }
-    return { ...payload, scanId: cached.id };
+    const record = await persistCachedScanForRequester(
+      cached,
+      payload,
+      userId,
+      guestSessionId,
+    );
+    return { ...payload, scanId: record.id };
   }
 
   const result = await buildScanResult(input);
@@ -155,6 +158,49 @@ function ensureGuidance(r: AddressScanResult): AddressScanResult {
     ...r,
     heuristics: withHeuristicGuidance(r.heuristics),
   };
+}
+
+async function persistCachedScanForRequester(
+  cached: AddressScan,
+  payload: AddressScanResult,
+  userId?: string,
+  guestSessionId?: string,
+): Promise<AddressScan> {
+  if (userId) {
+    if (cached.userId === userId) {
+      return cached;
+    }
+    return AddressScan.create({
+      userId,
+      guestSessionId: null,
+      address: payload.address.toLowerCase(),
+      chainId: payload.chainId,
+      result: payload,
+      analysisId: null,
+    });
+  }
+
+  if (!guestSessionId) {
+    return cached;
+  }
+
+  if (!cached.userId && cached.guestSessionId === guestSessionId) {
+    return cached;
+  }
+
+  if (!cached.userId && !cached.guestSessionId) {
+    await cached.update({ guestSessionId });
+    return cached;
+  }
+
+  return AddressScan.create({
+    userId: null,
+    guestSessionId,
+    address: payload.address.toLowerCase(),
+    chainId: payload.chainId,
+    result: payload,
+    analysisId: null,
+  });
 }
 
 export async function createAddressScanShareToken(
@@ -202,6 +248,47 @@ export async function getAddressScanByShareToken(
     scanId: row.id,
     analysisStatus,
   };
+}
+
+export function addressScanToDashboardSummary(row: AddressScan) {
+  const payload = ensureGuidance(row.result as AddressScanResult);
+  const highSeverity = payload.heuristics.filter(
+    (h) => h.severity === "high" || h.severity === "critical",
+  ).length;
+  const mediumSeverity = payload.heuristics.filter(
+    (h) => h.severity === "medium",
+  ).length;
+  const lowSeverity = payload.heuristics.filter(
+    (h) => h.severity === "low" || h.severity === "info",
+  ).length;
+  const shortAddr = `${row.address.slice(0, 6)}…${row.address.slice(-4)}`;
+
+  return {
+    id: row.id,
+    kind: "address" as const,
+    contractName: `${shortAddr} (${payload.chainName})`,
+    address: row.address,
+    chainId: row.chainId,
+    status: "completed" as const,
+    riskLevel: payload.riskLevel,
+    reputationScore: payload.reputationScore,
+    createdAt: row.createdAt,
+    completedAt: row.createdAt,
+    duration: null,
+    summary: { highSeverity, mediumSeverity, lowSeverity },
+  };
+}
+
+export async function listUserAddressScans(
+  userId: string,
+  limit = 50,
+): Promise<ReturnType<typeof addressScanToDashboardSummary>[]> {
+  const rows = await AddressScan.findAll({
+    where: { userId },
+    order: [["createdAt", "DESC"]],
+    limit: Math.min(100, Math.max(1, limit)),
+  });
+  return rows.map(addressScanToDashboardSummary);
 }
 
 export async function getAddressScanById(

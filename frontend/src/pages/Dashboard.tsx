@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { analysisApi } from "@/services/api";
+import { analysisApi, scanApi } from "@/services/api";
 import { socketService, AnalysisUpdatePayload } from "@/services/socketService";
 import {
   Loader2,
@@ -52,11 +52,13 @@ import { DashboardSkeleton } from "@/components/DashboardSkeleton";
 // This type should match the summary object from the backend Analysis model
 interface AnalysisSummary {
   id: string;
+  kind?: "contract" | "address";
   contractName: string | null;
   status: "queued" | "processing" | "completed" | "failed";
   createdAt: string;
   completedAt: string | null;
   duration: number | null;
+  riskLevel?: string;
   summary: {
     highSeverity: number;
     mediumSeverity: number;
@@ -104,35 +106,49 @@ const Dashboard: React.FC = () => {
         setIsLoading(true);
         setError(null);
         // Optimistic update: show cached data if available while fetching
-        const cached = localStorage.getItem("dashboard_cache");
+        const cached = localStorage.getItem("view0x_dashboard_cache");
         if (cached) {
           try {
             const cachedData = JSON.parse(cached);
             const cacheTime = new Date(cachedData.timestamp);
             const now = new Date();
             // Use cache if less than 30 seconds old
-            if (now.getTime() - cacheTime.getTime() < 30000) {
-              setAnalyses(cachedData.data || []);
-              setIsLoading(false); // Clear loading state to show cached data
+            const cachedList = cachedData.data || [];
+            if (
+              cachedList.length > 0 &&
+              now.getTime() - cacheTime.getTime() < 30000
+            ) {
+              setAnalyses(cachedList);
+              setIsLoading(false);
             }
           } catch (e) {
             // Ignore cache parse errors
           }
         }
-        const response = await analysisApi.getHistory();
-        const data = response.data.data || [];
-        setAnalyses(data);
-        // Cache the data
-        localStorage.setItem("dashboard_cache", JSON.stringify({
-          data,
-          timestamp: new Date().toISOString(),
-        }));
+        const [contractRes, scanRes] = await Promise.all([
+          analysisApi.getHistory({ limit: 50, sortOrder: "DESC" }),
+          scanApi.getHistory(50).catch(() => ({ data: { data: [] as AnalysisSummary[] } })),
+        ]);
+        const contracts: AnalysisSummary[] = contractRes.data.data || [];
+        const scans: AnalysisSummary[] = scanRes.data.data || [];
+        const merged = [...contracts, ...scans].sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        );
+        setAnalyses(merged);
+        localStorage.setItem(
+          "view0x_dashboard_cache",
+          JSON.stringify({
+            data: merged,
+            timestamp: new Date().toISOString(),
+          }),
+        );
       } catch (err: any) {
         if (err.status === 401 || err.status === 403 || err.response?.status === 401 || err.response?.status === 403) {
           localStorage.removeItem("accessToken");
           localStorage.removeItem("refreshToken");
           localStorage.removeItem("user");
-          localStorage.removeItem("dashboard_cache");
+          localStorage.removeItem("view0x_dashboard_cache");
           navigate("/login", { replace: true });
           return;
         }
@@ -147,6 +163,11 @@ const Dashboard: React.FC = () => {
     };
 
     fetchHistory();
+
+    const onFocus = () => {
+      void fetchHistory();
+    };
+    window.addEventListener("focus", onFocus);
 
     // Connect to WebSocket for real-time updates
     if (token) {
@@ -183,10 +204,12 @@ const Dashboard: React.FC = () => {
       // Subscribe to all user analyses for real-time updates
       socketService.socketInstance?.on("analysis:update", handleAnalysisUpdate);
 
-      return () => {
-        socketService.socketInstance?.off("analysis:update", handleAnalysisUpdate);
-      };
     }
+
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      socketService.socketInstance?.off("analysis:update", handleAnalysisUpdate);
+    };
   }, [navigate]);
 
   // Filtered and sorted analyses
@@ -711,7 +734,13 @@ const Dashboard: React.FC = () => {
                         size="sm"
                         className="text-xs sm:text-sm"
                       >
-                        <Link to={`/analysis/${analysis.id}`}>
+                        <Link
+                          to={
+                            analysis.kind === "address"
+                              ? `/analyze?scanId=${analysis.id}`
+                              : `/analysis/${analysis.id}`
+                          }
+                        >
                           <span className="hidden sm:inline">View Details</span>
                           <span className="sm:hidden">View</span>
                           <ChevronRight className="w-4 h-4 ml-1" />
