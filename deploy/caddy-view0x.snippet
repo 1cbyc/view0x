@@ -1,10 +1,12 @@
-# Add to koreshield Caddy (adjust upstream IP if Docker bridge differs).
-# DNS: view0x.com, www.view0x.com -> A record; api.view0x.com -> same A record.
+# Add to the shared edge Caddy on the VPS.
+# The edge container must be connected to the view0x_default Docker network.
 
 view0x.com, www.view0x.com {
-	reverse_proxy 172.17.0.1:18088
+    encode gzip
+    reverse_proxy 172.17.0.1:18088
 }
 
 api.view0x.com {
-	reverse_proxy 172.17.0.1:18091
+    encode gzip
+    reverse_proxy view0x-api-1:3001
 }

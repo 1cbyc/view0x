@@ -1,5 +1,4 @@
-# Host Caddy (e.g. koreshield-caddy on 80/443) — proxy to view0x Docker web port.
-# From inside Caddy container on Linux, use docker bridge gateway (often 172.17.0.1).
+# Host Caddy (e.g. shared edge Caddy on 80/443) routes view0x web traffic.
 view0x.com, www.view0x.com {
   encode gzip
   reverse_proxy 172.17.0.1:18088

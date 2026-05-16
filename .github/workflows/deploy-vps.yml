@@ -64,9 +64,15 @@ jobs:
             test -f .env
             export WEB_PORT API_PORT
             WEB_PORT="$(grep -E '^WEB_PORT=' .env | cut -d= -f2- | tr -d '\r' || echo 18088)"
-            API_PORT="$(grep -E '^API_PORT=' .env | cut -d= -f2- | tr -d '\r' || echo 13001)"
+            API_PORT="$(grep -E '^API_PORT=' .env | cut -d= -f2- | tr -d '\r' || echo 18091)"
             docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d --build
+            EDGE_CONTAINER=koreshield-caddy \
+              VIEW0X_NETWORK=view0x_default \
+              VIEW0X_WEB_UPSTREAM="172.17.0.1:${WEB_PORT}" \
+              VIEW0X_API_UPSTREAM="view0x-api-1:3001" \
+              sh scripts/ensure-vps-edge.sh
             docker compose -f docker-compose.yml -f docker-compose.vps.yml ps
             curl -fsS "http://127.0.0.1:${WEB_PORT}/health"
             curl -fsS "http://127.0.0.1:${API_PORT}/health"
+            curl -fsS "https://api.view0x.com/health"
           EOF
