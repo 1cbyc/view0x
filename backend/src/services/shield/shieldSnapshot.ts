@@ -99,7 +99,12 @@ export async function runShieldScan(
     scannedAt: new Date().toISOString(),
   };
 
-  const payload: ShieldScanResult = { snapshot, approvals };
+  const payload: ShieldScanResult = {
+    snapshot,
+    approvals,
+    nftApprovals: nftEnriched,
+    holdings,
+  };
   await cacheRedis.setex(cacheKey, CACHE_TTL_SEC, JSON.stringify(payload));
   return payload;
 }

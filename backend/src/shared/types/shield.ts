@@ -51,4 +51,6 @@ export interface ShieldSnapshot {
 export interface ShieldScanResult {
   snapshot: ShieldSnapshot;
   approvals: ShieldErc20Approval[];
+  nftApprovals: ShieldNftApproval[];
+  holdings: ShieldHolding[];
 }

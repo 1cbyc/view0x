@@ -314,9 +314,26 @@ export type ShieldApproval = {
   tokenRisk: ContractRiskBrief | null;
 };
 
+export type ShieldNftApproval = {
+  collection: string;
+  operator: string;
+  approved: boolean;
+  standard: "erc721" | "erc1155";
+  operatorRisk: ContractRiskBrief | null;
+};
+
+export type ShieldHolding = {
+  token: string;
+  tokenSymbol: string | null;
+  balance: string;
+  tokenRisk: ContractRiskBrief | null;
+};
+
 export type ShieldScanResult = {
   snapshot: ShieldSnapshot;
   approvals: ShieldApproval[];
+  nftApprovals: ShieldNftApproval[];
+  holdings: ShieldHolding[];
 };
 
 export const shieldApi = {
@@ -345,12 +362,28 @@ export const shieldApi = {
       timeout: 120000,
     }),
   getNftApprovals: (address: string, chainId: number) =>
-    api.get("/shield/nft-approvals", {
+    api.get<{
+      success: boolean;
+      data: {
+        address: string;
+        chainId: number;
+        nftApprovals: ShieldNftApproval[];
+        indexerNote: string;
+      };
+    }>("/shield/nft-approvals", {
       params: { address: address.trim(), chainId },
       timeout: 120000,
     }),
   getHoldings: (address: string, chainId: number) =>
-    api.get("/shield/holdings", {
+    api.get<{
+      success: boolean;
+      data: {
+        address: string;
+        chainId: number;
+        holdings: ShieldHolding[];
+        indexerNote: string;
+      };
+    }>("/shield/holdings", {
       params: { address: address.trim(), chainId },
       timeout: 120000,
     }),

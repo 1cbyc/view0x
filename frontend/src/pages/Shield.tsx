@@ -34,9 +34,23 @@ import {
   shieldApi,
   type ShieldApproval,
   type ShieldChain,
+  type ShieldNftApproval,
   type ShieldSnapshot,
 } from "@/services/api";
 import { pushShieldHistory } from "@/lib/shieldHistory";
+
+const SET_APPROVAL_FOR_ALL_ABI = [
+  {
+    type: "function",
+    name: "setApprovalForAll",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "operator", type: "address" },
+      { name: "approved", type: "bool" },
+    ],
+    outputs: [],
+  },
+] as const;
 
 function riskVariant(risk: string) {
   switch (risk) {
@@ -70,6 +84,10 @@ const ShieldPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [snapshot, setSnapshot] = useState<ShieldSnapshot | null>(null);
   const [approvals, setApprovals] = useState<ShieldApproval[]>([]);
+  const [nftApprovals, setNftApprovals] = useState<ShieldNftApproval[]>([]);
+  const [scanAddress, setScanAddress] = useState(
+    () => searchParams.get("address") || "",
+  );
   const [advancedMode, setAdvancedMode] = useState(false);
   const [severityFilter, setSeverityFilter] = useState<string>("all");
   const [revokingKey, setRevokingKey] = useState<string | null>(null);
@@ -89,24 +107,35 @@ const ShieldPage: React.FC = () => {
   useEffect(() => {
     const fromUrl = searchParams.get("chainId");
     if (fromUrl) setChainId(fromUrl);
+    const addressFromUrl = searchParams.get("address");
+    if (addressFromUrl) setScanAddress(addressFromUrl);
   }, [searchParams]);
 
   useEffect(() => {
     if (isConnected && connectedChainId) {
       setChainId(String(connectedChainId));
     }
-  }, [isConnected, connectedChainId]);
+    if (isConnected && address && !scanAddress) {
+      setScanAddress(address);
+    }
+  }, [address, connectedChainId, isConnected, scanAddress]);
+
+  const activeScanAddress = (scanAddress || address || "").trim();
+  const canRevoke =
+    Boolean(address && activeScanAddress) &&
+    address?.toLowerCase() === activeScanAddress.toLowerCase();
 
   const loadShield = useCallback(async () => {
-    if (!address) return;
+    if (!activeScanAddress) return;
     const cid = Number(chainId);
     setLoading(true);
     setError(null);
     try {
-      const scanRes = await shieldApi.scan(address, cid);
-      const { snapshot: snap, approvals: list } = scanRes.data.data;
+      const scanRes = await shieldApi.scan(activeScanAddress, cid);
+      const { snapshot: snap, approvals: list, nftApprovals: nftList } = scanRes.data.data;
       setSnapshot(snap);
       setApprovals(list || []);
+      setNftApprovals(nftList || []);
       pushShieldHistory(snap);
     } catch (err: unknown) {
       const apiErr = err as {
@@ -127,13 +156,18 @@ const ShieldPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [address, chainId]);
+  }, [activeScanAddress, chainId]);
 
   useEffect(() => {
-    if (isConnected && address) {
+    if (
+      isConnected &&
+      address &&
+      activeScanAddress &&
+      activeScanAddress.toLowerCase() === address.toLowerCase()
+    ) {
       loadShield();
     }
-  }, [isConnected, address, chainId, loadShield]);
+  }, [activeScanAddress, address, isConnected, chainId, loadShield]);
 
   useEffect(() => {
     if (revokeHash && !revokeConfirming) {
@@ -172,9 +206,26 @@ const ShieldPage: React.FC = () => {
     return list;
   }, [approvals, advancedMode, severityFilter]);
 
+  const filteredNftApprovals = useMemo(() => {
+    let list = nftApprovals;
+    if (!advancedMode) {
+      list = list.filter((a) => isHighRiskLevel(a.operatorRisk?.riskLevel));
+    }
+    if (severityFilter !== "all") {
+      list = list.filter((a) => {
+        const level = a.operatorRisk?.riskLevel;
+        if (severityFilter === "high") return level === "HIGH" || level === "CRITICAL";
+        if (severityFilter === "medium") return level === "MEDIUM";
+        if (severityFilter === "low") return level === "LOW";
+        return true;
+      });
+    }
+    return list;
+  }, [advancedMode, nftApprovals, severityFilter]);
+
   const handleRevoke = (approval: ShieldApproval) => {
-    if (!address) return;
-    const key = `${approval.token}:${approval.spender}`;
+    if (!address || !canRevoke) return;
+    const key = `erc20:${approval.token}:${approval.spender}`;
     setRevokingKey(key);
     const targetChainId = Number(chainId);
     if (connectedChainId !== targetChainId) {
@@ -188,6 +239,25 @@ const ShieldPage: React.FC = () => {
       chainId: targetChainId,
     });
   };
+
+  const handleNftRevoke = (approval: ShieldNftApproval) => {
+    if (!address || !canRevoke) return;
+    const key = `nft:${approval.collection}:${approval.operator}`;
+    setRevokingKey(key);
+    const targetChainId = Number(chainId);
+    if (connectedChainId !== targetChainId) {
+      switchChain({ chainId: targetChainId });
+    }
+    writeContract({
+      address: approval.collection as `0x${string}`,
+      abi: SET_APPROVAL_FOR_ALL_ABI,
+      functionName: "setApprovalForAll",
+      args: [approval.operator as `0x${string}`, false],
+      chainId: targetChainId,
+    });
+  };
+
+  const shortAddress = (value: string) => `${value.slice(0, 8)}…${value.slice(-6)}`;
 
   return (
     <div className="container max-w-4xl py-6 px-3 sm:px-4 md:px-6 space-y-6">
@@ -217,35 +287,55 @@ const ShieldPage: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Network</CardTitle>
-          <CardDescription>Scan must match the chain you revoke on.</CardDescription>
+          <CardDescription>Scan any wallet, then connect that same wallet to revoke on-chain.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid gap-2 max-w-xs">
-            <Label htmlFor="shield-chain">Chain</Label>
-            <Select value={chainId} onValueChange={setChainId}>
-              <SelectTrigger id="shield-chain">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {chains.map((c) => (
-                  <SelectItem key={c.chainId} value={String(c.chainId)}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-                {chains.length === 0 ? (
-                  <>
-                    <SelectItem value="1">Ethereum</SelectItem>
-                    <SelectItem value="56">BNB Smart Chain</SelectItem>
-                    <SelectItem value="8453">Base</SelectItem>
-                    <SelectItem value="42161">Arbitrum</SelectItem>
-                    <SelectItem value="137">Polygon</SelectItem>
-                    <SelectItem value="10">Optimism</SelectItem>
-                    <SelectItem value="43114">Avalanche</SelectItem>
-                  </>
-                ) : null}
-              </SelectContent>
-            </Select>
+          <div className="grid gap-3 sm:grid-cols-[1fr_16rem]">
+            <div className="grid gap-2">
+              <Label htmlFor="shield-address">Wallet address</Label>
+              <input
+                id="shield-address"
+                value={scanAddress}
+                onChange={(e) => setScanAddress(e.target.value)}
+                placeholder={address || "0x…"}
+                className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="shield-chain">Chain</Label>
+              <Select value={chainId} onValueChange={setChainId}>
+                <SelectTrigger id="shield-chain">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {chains.map((c) => (
+                    <SelectItem key={c.chainId} value={String(c.chainId)}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                  {chains.length === 0 ? (
+                    <>
+                      <SelectItem value="1">Ethereum</SelectItem>
+                      <SelectItem value="56">BNB Smart Chain</SelectItem>
+                      <SelectItem value="8453">Base</SelectItem>
+                      <SelectItem value="42161">Arbitrum</SelectItem>
+                      <SelectItem value="137">Polygon</SelectItem>
+                      <SelectItem value="10">Optimism</SelectItem>
+                      <SelectItem value="43114">Avalanche</SelectItem>
+                    </>
+                  ) : null}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+          {isConnected && activeScanAddress && !canRevoke ? (
+            <Alert>
+              <AlertTitle>Read-only scan</AlertTitle>
+              <AlertDescription>
+                You are viewing {shortAddress(activeScanAddress)}. Connect that wallet to revoke approvals.
+              </AlertDescription>
+            </Alert>
+          ) : null}
           <div className="flex items-center gap-2">
             <Switch
               id="advanced"
@@ -274,14 +364,14 @@ const ShieldPage: React.FC = () => {
           ) : null}
         </CardContent>
         <CardFooter>
-          <Button onClick={loadShield} disabled={!isConnected || loading}>
+          <Button onClick={loadShield} disabled={!activeScanAddress || loading}>
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 Scanning wallet…
               </>
             ) : (
-              "Refresh Shield scan"
+              "Scan approvals"
             )}
           </Button>
         </CardFooter>
@@ -320,6 +410,10 @@ const ShieldPage: React.FC = () => {
               <p className="text-muted-foreground">NFT operators</p>
               <p className="font-medium">{snapshot.counts.nftApprovals}</p>
             </div>
+            <div>
+              <p className="text-muted-foreground">Holdings checked</p>
+              <p className="font-medium">{snapshot.counts.holdings}</p>
+            </div>
           </CardContent>
         </Card>
       ) : null}
@@ -334,7 +428,7 @@ const ShieldPage: React.FC = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             {filteredApprovals.map((a) => {
-              const key = `${a.token}:${a.spender}`;
+              const key = `erc20:${a.token}:${a.spender}`;
               const revoking = revokingKey === key && (revokePending || revokeConfirming);
               return (
                 <div
@@ -366,7 +460,7 @@ const ShieldPage: React.FC = () => {
                     <Button
                       size="sm"
                       variant="destructive"
-                      disabled={!isConnected || revoking}
+                      disabled={!canRevoke || revoking}
                       onClick={() => handleRevoke(a)}
                     >
                       {revoking ? (
@@ -407,6 +501,73 @@ const ShieldPage: React.FC = () => {
             ? "No active ERC-20 approvals found in the recent block window."
             : "No high-risk approvals in the recent window. Enable Advanced mode to see all."}
         </p>
+      ) : null}
+
+      {filteredNftApprovals.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">NFT collection approvals</CardTitle>
+            <CardDescription>
+              Revoke removes operator access for the entire collection.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {filteredNftApprovals.map((a) => {
+              const key = `nft:${a.collection}:${a.operator}`;
+              const revoking = revokingKey === key && (revokePending || revokeConfirming);
+              return (
+                <div
+                  key={key}
+                  className="border border-border rounded-md p-3 space-y-2 text-sm"
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">
+                      Collection{" "}
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {a.collection.slice(0, 10)}…
+                      </span>
+                    </span>
+                    <Badge variant="outline" className="text-[10px]">
+                      {a.standard.toUpperCase()}
+                    </Badge>
+                    {a.operatorRisk ? (
+                      <Badge variant={riskVariant(a.operatorRisk.riskLevel)} className="text-[10px]">
+                        Operator {a.operatorRisk.riskLevel}
+                      </Badge>
+                    ) : null}
+                  </div>
+                  <p className="text-xs text-muted-foreground font-mono break-all">
+                    Operator: {a.operator}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      disabled={!canRevoke || revoking}
+                      onClick={() => handleNftRevoke(a)}
+                    >
+                      {revoking ? (
+                        <>
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                          Revoking…
+                        </>
+                      ) : (
+                        "Revoke operator"
+                      )}
+                    </Button>
+                    <Button size="sm" variant="outline" asChild>
+                      <Link
+                        to={`/analyze?tab=address&address=${a.operator}&chainId=${chainId}`}
+                      >
+                        Scan operator
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
       ) : null}
     </div>
   );
