@@ -1,5 +1,11 @@
 import type { HeuristicFlag, RiskLevel } from "../../shared/types/addressScan";
-import type { ContractRiskBrief, ShieldErc20Approval, ShieldHolding, ShieldNftApproval } from "../../shared/types/shield";
+import type {
+  ContractRiskBrief,
+  ShieldErc20Approval,
+  ShieldHolding,
+  ShieldNftApproval,
+  ShieldPermit2Approval,
+} from "../../shared/types/shield";
 import { getContractRiskBrief } from "../addressScan/addressScanService";
 
 const RISK_ORDER: Record<RiskLevel, number> = {
@@ -87,6 +93,35 @@ export async function enrichNftApprovalRisks(
     } catch {
       out.push({ ...item, operatorRisk: null });
     }
+  }
+  return out;
+}
+
+export async function enrichPermit2ApprovalRisks(
+  chainId: number,
+  items: ShieldPermit2Approval[],
+): Promise<ShieldPermit2Approval[]> {
+  const cache = new Map<string, ContractRiskBrief>();
+
+  async function riskFor(address: string): Promise<ContractRiskBrief | null> {
+    const key = address.toLowerCase();
+    if (cache.has(key)) return cache.get(key)!;
+    try {
+      const r = await getContractRiskBrief(chainId, address);
+      const brief = toBrief(r.reputationScore, r.riskLevel, r.heuristics);
+      cache.set(key, brief);
+      return brief;
+    } catch {
+      return null;
+    }
+  }
+
+  const out: ShieldPermit2Approval[] = [];
+  for (const a of items) {
+    out.push({
+      ...a,
+      spenderRisk: await riskFor(a.spender),
+    });
   }
   return out;
 }

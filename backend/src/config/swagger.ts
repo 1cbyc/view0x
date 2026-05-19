@@ -340,6 +340,335 @@ const documentedPaths: swaggerJsdoc.OAS3Definition["paths"] = {
       responses: { "200": { description: "Holdings list" } },
     },
   },
+  "/api/shield/scan": {
+    get: {
+      tags: ["Shield"],
+      summary: "Full wallet shield scan (snapshot, approvals, NFT, Permit2, history, EIP-7702)",
+      description:
+        "Single-call aggregate used by the Shield UI. Results are cached briefly per address+chain.",
+      parameters: [
+        { name: "address", in: "query", required: true, schema: { type: "string" } },
+        { name: "chainId", in: "query", schema: { type: "integer", example: 1 } },
+      ],
+      responses: {
+        "200": {
+          description: "Shield scan payload",
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  success: { type: "boolean" },
+                  data: { $ref: "#/components/schemas/ShieldScanResult" },
+                },
+              },
+            },
+          },
+        },
+        "429": { description: "RPC rate limit" },
+      },
+    },
+  },
+  "/api/shield/permit2-approvals": {
+    get: {
+      tags: ["Shield"],
+      summary: "Uniswap Permit2 sub-allowances for a wallet",
+      parameters: [
+        { name: "address", in: "query", required: true, schema: { type: "string" } },
+        { name: "chainId", in: "query", schema: { type: "integer" } },
+      ],
+      responses: { "200": { description: "Permit2 allowance list" } },
+    },
+  },
+  "/api/shield/history": {
+    get: {
+      tags: ["Shield"],
+      summary: "Recent approval and revoke events (log-indexed)",
+      parameters: [
+        { name: "address", in: "query", required: true, schema: { type: "string" } },
+        { name: "chainId", in: "query", schema: { type: "integer" } },
+      ],
+      responses: { "200": { description: "Approval activity timeline" } },
+    },
+  },
+  "/api/rekt/stats": {
+    get: {
+      tags: ["Rekt"],
+      summary: "Aggregate hack / incident statistics",
+      responses: { "200": { description: "Stats summary" } },
+    },
+  },
+  "/api/rekt/facets": {
+    get: {
+      tags: ["Rekt"],
+      summary: "Facet counts for filtering the Rekt database",
+      responses: { "200": { description: "Facet map" } },
+    },
+  },
+  "/api/rekt/incidents": {
+    get: {
+      tags: ["Rekt"],
+      summary: "List Rekt incidents (paginated, filterable)",
+      parameters: [
+        { name: "page", in: "query", schema: { type: "integer" } },
+        { name: "limit", in: "query", schema: { type: "integer" } },
+        { name: "q", in: "query", schema: { type: "string" } },
+        { name: "chain", in: "query", schema: { type: "string" } },
+        { name: "category", in: "query", schema: { type: "string" } },
+      ],
+      responses: { "200": { description: "Incident list" } },
+    },
+  },
+  "/api/rekt/incidents/{slug}": {
+    get: {
+      tags: ["Rekt"],
+      summary: "Get a single Rekt incident by slug",
+      parameters: [
+        { name: "slug", in: "path", required: true, schema: { type: "string" } },
+      ],
+      responses: {
+        "200": { description: "Incident detail" },
+        "404": { description: "Not found" },
+      },
+    },
+  },
+  "/api/scan/discovery": {
+    get: {
+      tags: ["Address scan"],
+      summary: "Featured / recent public scans for discovery UI",
+      responses: { "200": { description: "Discovery feed" } },
+    },
+  },
+  "/api/scan/history": {
+    get: {
+      tags: ["Address scan"],
+      summary: "Authenticated user's address scan history",
+      security: [{ bearerAuth: [] }],
+      responses: { "200": { description: "Scan history list" } },
+    },
+  },
+  "/api/analysis/public/{token}": {
+    get: {
+      tags: ["Analysis"],
+      summary: "Load a publicly shared analysis by token",
+      parameters: [{ name: "token", in: "path", required: true, schema: { type: "string" } }],
+      responses: { "200": { description: "Public analysis" }, "404": { description: "Not found" } },
+    },
+  },
+  "/api/analysis/{id}/report": {
+    post: {
+      tags: ["Analysis"],
+      summary: "Generate downloadable report for an analysis",
+      security: [{ bearerAuth: [] }],
+      parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }],
+      responses: { "200": { description: "Report URL or payload" } },
+    },
+  },
+  "/api/analysis/{id}/share": {
+    post: {
+      tags: ["Analysis"],
+      summary: "Create public share link for an analysis",
+      security: [{ bearerAuth: [] }],
+      parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }],
+      responses: { "200": { description: "Share token" } },
+    },
+    delete: {
+      tags: ["Analysis"],
+      summary: "Revoke public share link",
+      security: [{ bearerAuth: [] }],
+      parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }],
+      responses: { "204": { description: "Share revoked" } },
+    },
+  },
+  "/api/analysis/{id}/favorite": {
+    patch: {
+      tags: ["Analysis"],
+      summary: "Toggle analysis bookmark",
+      security: [{ bearerAuth: [] }],
+      parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }],
+      responses: { "200": { description: "Favorite toggled" } },
+    },
+  },
+  "/api/analysis/batch": {
+    post: {
+      tags: ["Analysis"],
+      summary: "Submit multiple analyses in one request",
+      security: [{ bearerAuth: [] }],
+      responses: { "202": { description: "Batch queued" } },
+    },
+  },
+  "/api/analysis/compare": {
+    post: {
+      tags: ["Analysis"],
+      summary: "Compare two or more completed analyses",
+      security: [{ bearerAuth: [] }],
+      responses: { "200": { description: "Comparison result" } },
+    },
+  },
+  "/api/auth/logout": {
+    post: {
+      tags: ["Authentication"],
+      summary: "Logout (invalidate session)",
+      security: [{ bearerAuth: [] }],
+      responses: { "200": { description: "Logged out" } },
+    },
+  },
+  "/api/auth/api-key": {
+    post: {
+      tags: ["Authentication"],
+      summary: "Generate API key",
+      security: [{ bearerAuth: [] }],
+      responses: { "201": { description: "API key created" } },
+    },
+    delete: {
+      tags: ["Authentication"],
+      summary: "Revoke API key",
+      security: [{ bearerAuth: [] }],
+      responses: { "200": { description: "API key revoked" } },
+    },
+  },
+  "/api/auth/claim-guest-work": {
+    post: {
+      tags: ["Authentication"],
+      summary: "Attach guest scans to authenticated account",
+      security: [{ bearerAuth: [] }],
+      responses: { "200": { description: "Guest work claimed" } },
+    },
+  },
+  "/api/vulnerabilities/{vulnerabilityId}/comments": {
+    post: {
+      tags: ["Vulnerabilities"],
+      summary: "Add comment on a vulnerability finding",
+      security: [{ bearerAuth: [] }],
+      parameters: [
+        { name: "vulnerabilityId", in: "path", required: true, schema: { type: "string" } },
+      ],
+      responses: { "201": { description: "Comment created" } },
+    },
+    get: {
+      tags: ["Vulnerabilities"],
+      summary: "List comments for a vulnerability",
+      security: [{ bearerAuth: [] }],
+      parameters: [
+        { name: "vulnerabilityId", in: "path", required: true, schema: { type: "string" } },
+      ],
+      responses: { "200": { description: "Comment list" } },
+    },
+  },
+  "/api/templates": {
+    get: {
+      tags: ["Templates"],
+      summary: "List analysis templates",
+      security: [{ bearerAuth: [] }],
+      responses: { "200": { description: "Template list" } },
+    },
+    post: {
+      tags: ["Templates"],
+      summary: "Create analysis template",
+      security: [{ bearerAuth: [] }],
+      responses: { "201": { description: "Template created" } },
+    },
+  },
+  "/api/templates/{id}": {
+    get: {
+      tags: ["Templates"],
+      summary: "Get template by ID",
+      security: [{ bearerAuth: [] }],
+      parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+      responses: { "200": { description: "Template" } },
+    },
+    put: {
+      tags: ["Templates"],
+      summary: "Update template",
+      security: [{ bearerAuth: [] }],
+      parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+      responses: { "200": { description: "Template updated" } },
+    },
+    delete: {
+      tags: ["Templates"],
+      summary: "Delete template",
+      security: [{ bearerAuth: [] }],
+      parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+      responses: { "204": { description: "Deleted" } },
+    },
+  },
+  "/api/webhooks": {
+    get: {
+      tags: ["Webhooks"],
+      summary: "List webhooks",
+      security: [{ bearerAuth: [] }],
+      responses: { "200": { description: "Webhook list" } },
+    },
+    post: {
+      tags: ["Webhooks"],
+      summary: "Register webhook",
+      security: [{ bearerAuth: [] }],
+      responses: { "201": { description: "Webhook created" } },
+    },
+  },
+  "/api/webhooks/{id}": {
+    delete: {
+      tags: ["Webhooks"],
+      summary: "Delete webhook",
+      security: [{ bearerAuth: [] }],
+      parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+      responses: { "204": { description: "Deleted" } },
+    },
+  },
+  "/api/2fa/generate": {
+    post: {
+      tags: ["Two-factor auth"],
+      summary: "Start 2FA setup (TOTP secret)",
+      security: [{ bearerAuth: [] }],
+      responses: { "200": { description: "QR / secret" } },
+    },
+  },
+  "/api/2fa/enable": {
+    post: {
+      tags: ["Two-factor auth"],
+      summary: "Enable 2FA after verification",
+      security: [{ bearerAuth: [] }],
+      responses: { "200": { description: "2FA enabled" } },
+    },
+  },
+  "/api/repository/analyze": {
+    post: {
+      tags: ["Repository"],
+      summary: "Analyze remote repository (auto-detect host)",
+      security: [{ bearerAuth: [] }],
+      responses: { "202": { description: "Analysis queued" } },
+    },
+  },
+  "/api/analytics/dashboard": {
+    get: {
+      tags: ["Analytics"],
+      summary: "Analytics dashboard metrics",
+      security: [{ bearerAuth: [] }],
+      responses: { "200": { description: "Dashboard data" } },
+    },
+  },
+  "/api/activity-logs": {
+    get: {
+      tags: ["Activity logs"],
+      summary: "List activity logs for current user",
+      security: [{ bearerAuth: [] }],
+      responses: { "200": { description: "Activity log list" } },
+    },
+  },
+  "/api/users/profile": {
+    get: {
+      tags: ["Users"],
+      summary: "Get user profile",
+      security: [{ bearerAuth: [] }],
+      responses: { "200": { description: "Profile" } },
+    },
+    put: {
+      tags: ["Users"],
+      summary: "Update user profile",
+      security: [{ bearerAuth: [] }],
+      responses: { "200": { description: "Profile updated" } },
+    },
+  },
   "/api/notifications": {
     get: {
       tags: ["Notifications"],
@@ -457,6 +786,48 @@ export function getSwaggerSpec(): ReturnType<typeof swaggerJsdoc> {
               createdAt: { type: "string", format: "date-time" },
             },
           },
+          ShieldScanResult: {
+            type: "object",
+            properties: {
+              snapshot: { $ref: "#/components/schemas/ShieldSnapshot" },
+              approvals: { type: "array", items: { type: "object" } },
+              nftApprovals: { type: "array", items: { type: "object" } },
+              holdings: { type: "array", items: { type: "object" } },
+              permit2Approvals: { type: "array", items: { type: "object" } },
+              history: { type: "array", items: { type: "object" } },
+              eip7702: {
+                type: "object",
+                nullable: true,
+                properties: {
+                  hasDelegation: { type: "boolean" },
+                  delegate: { type: "string", nullable: true },
+                },
+              },
+            },
+          },
+          ShieldSnapshot: {
+            type: "object",
+            properties: {
+              address: { type: "string" },
+              chainId: { type: "integer" },
+              chainName: { type: "string" },
+              healthScore: { type: "number" },
+              healthLevel: { type: "string" },
+              counts: {
+                type: "object",
+                properties: {
+                  approvals: { type: "integer" },
+                  highRiskApprovals: { type: "integer" },
+                  holdings: { type: "integer" },
+                  highRiskHoldings: { type: "integer" },
+                  nftApprovals: { type: "integer" },
+                  eip7702Delegations: { type: "integer" },
+                  permit2Approvals: { type: "integer" },
+                },
+              },
+              scannedAt: { type: "string", format: "date-time" },
+            },
+          },
         },
       },
       tags: [
@@ -464,7 +835,18 @@ export function getSwaggerSpec(): ReturnType<typeof swaggerJsdoc> {
         { name: "Authentication", description: "Registration, login, email verification" },
         { name: "Analysis", description: "Contract analysis jobs and results" },
         { name: "Address scan", description: "On-chain address reputation and explorer fetch" },
-        { name: "Wallet risk", description: "Allowance tooling links (indexed allowance graph later)" },
+        { name: "Wallet risk", description: "Allowance tooling links" },
+        { name: "Shield", description: "Wallet approval indexer and revoke helpers (revoke.cash-style)" },
+        { name: "Rekt", description: "Hack and incident database" },
+        { name: "Vulnerabilities", description: "Finding comments" },
+        { name: "Templates", description: "Reusable analysis templates" },
+        { name: "Webhooks", description: "Outbound event hooks" },
+        { name: "Two-factor auth", description: "TOTP 2FA" },
+        { name: "Repository", description: "GitHub/GitLab repo analysis" },
+        { name: "Analytics", description: "Usage analytics" },
+        { name: "Activity logs", description: "Audit trail" },
+        { name: "Users", description: "Profile management" },
+        { name: "Notifications", description: "In-app notifications" },
       ],
     },
     apis: swaggerApiGlobs(),

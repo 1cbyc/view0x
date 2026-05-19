@@ -5,8 +5,10 @@ import { AppError } from "../middleware/errorHandler";
 import {
   buildShieldSnapshot,
   getShieldApprovals,
+  getShieldApprovalHistory,
   getShieldHoldings,
   getShieldNftApprovals,
+  getShieldPermit2Approvals,
   runShieldScan,
 } from "../services/shield/shieldSnapshot";
 function parseAddressChain(req: Request): { address: string; chainId: number } | { error: string } {
@@ -137,6 +139,57 @@ export const getShieldNftApprovalsHandler = async (req: Request, res: Response) 
       nftApprovals,
     },
   });
+};
+
+export const getShieldPermit2ApprovalsHandler = async (req: Request, res: Response) => {
+  const parsed = parseAddressChain(req);
+  if ("error" in parsed) {
+    return res.status(400).json({
+      success: false,
+      error: { code: "BAD_REQUEST", message: parsed.error },
+    });
+  }
+
+  try {
+    const permit2Approvals = await getShieldPermit2Approvals(
+      parsed.chainId,
+      parsed.address,
+    );
+    res.json({
+      success: true,
+      data: {
+        address: parsed.address,
+        chainId: parsed.chainId,
+        permit2Approvals,
+      },
+    });
+  } catch (err) {
+    shieldRpcError(err);
+  }
+};
+
+export const getShieldHistoryHandler = async (req: Request, res: Response) => {
+  const parsed = parseAddressChain(req);
+  if ("error" in parsed) {
+    return res.status(400).json({
+      success: false,
+      error: { code: "BAD_REQUEST", message: parsed.error },
+    });
+  }
+
+  try {
+    const history = await getShieldApprovalHistory(parsed.chainId, parsed.address);
+    res.json({
+      success: true,
+      data: {
+        address: parsed.address,
+        chainId: parsed.chainId,
+        history,
+      },
+    });
+  } catch (err) {
+    shieldRpcError(err);
+  }
 };
 
 export const getShieldHoldingsHandler = async (req: Request, res: Response) => {

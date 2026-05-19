@@ -35,16 +35,28 @@ import { Switch } from "@/components/ui/switch";
 import {
   shieldApi,
   type ShieldApproval,
+  type ShieldApprovalActivity,
   type ShieldChain,
   type ShieldEip7702Delegation,
   type ShieldNftApproval,
+  type ShieldPermit2Approval,
   type ShieldSnapshot,
 } from "@/services/api";
 import { pushShieldHistory } from "@/lib/shieldHistory";
 import {
+  PERMIT2_ABI,
+  PERMIT2_ADDRESS,
   type PendingShieldRevoke,
   revokeEip7702Delegation,
 } from "@/lib/shieldRevoke";
+const TX_EXPLORER_BASE: Record<number, string> = {
+  1: "https://etherscan.io",
+  56: "https://bscscan.com",
+  137: "https://polygonscan.com",
+  42161: "https://arbiscan.io",
+  10: "https://optimistic.etherscan.io",
+  8453: "https://basescan.org",
+};
 
 const SET_APPROVAL_FOR_ALL_ABI = [
   {
@@ -93,7 +105,10 @@ const ShieldPage: React.FC = () => {
   const [snapshot, setSnapshot] = useState<ShieldSnapshot | null>(null);
   const [approvals, setApprovals] = useState<ShieldApproval[]>([]);
   const [nftApprovals, setNftApprovals] = useState<ShieldNftApproval[]>([]);
+  const [permit2Approvals, setPermit2Approvals] = useState<ShieldPermit2Approval[]>([]);
+  const [history, setHistory] = useState<ShieldApprovalActivity[]>([]);
   const [eip7702, setEip7702] = useState<ShieldEip7702Delegation | null>(null);
+  const [batchRevoking, setBatchRevoking] = useState(false);
   const [browseOther, setBrowseOther] = useState(false);
   const [otherAddress, setOtherAddress] = useState(
     () => searchParams.get("address") || "",
@@ -164,11 +179,15 @@ const ShieldPage: React.FC = () => {
         snapshot: snap,
         approvals: list,
         nftApprovals: nftList,
+        permit2Approvals: permit2List,
+        history: activity,
         eip7702: delegation,
       } = scanRes.data.data;
       setSnapshot(snap);
       setApprovals(list || []);
       setNftApprovals(nftList || []);
+      setPermit2Approvals(permit2List || []);
+      setHistory(activity || []);
       setEip7702(delegation ?? null);
       pushShieldHistory(snap);
     } catch (err: unknown) {
@@ -258,6 +277,20 @@ const ShieldPage: React.FC = () => {
         return;
       }
 
+      if (pending.kind === "permit2") {
+        const a = pending.approval;
+        const key = `permit2:${a.token}:${a.spender}`;
+        setRevokingKey(key);
+        writeContract({
+          address: PERMIT2_ADDRESS,
+          abi: PERMIT2_ABI,
+          functionName: "approve",
+          args: [a.token as `0x${string}`, a.spender as `0x${string}`, 0n, 0],
+          chainId: targetChainId,
+        });
+        return;
+      }
+
       const a = pending.approval;
       const key = `nft:${a.collection}:${a.operator}`;
       setRevokingKey(key);
@@ -309,6 +342,10 @@ const ShieldPage: React.FC = () => {
     queueRevoke({ kind: "eip7702" });
   };
 
+  const handlePermit2Revoke = (approval: ShieldPermit2Approval) => {
+    queueRevoke({ kind: "permit2", approval });
+  };
+
   const filteredApprovals = useMemo(() => {
     let list = approvals;
     if (!advancedMode) {
@@ -356,7 +393,82 @@ const ShieldPage: React.FC = () => {
     return list;
   }, [advancedMode, nftApprovals, severityFilter]);
 
+  const filteredPermit2 = useMemo(() => {
+    let list = permit2Approvals;
+    if (!advancedMode) {
+      list = list.filter(
+        (a) => isHighRiskLevel(a.spenderRisk?.riskLevel) || a.isUnlimited,
+      );
+    }
+    return list;
+  }, [advancedMode, permit2Approvals]);
+
+  const revokeQueue = useMemo((): PendingShieldRevoke[] => {
+    const items: PendingShieldRevoke[] = [];
+    for (const a of filteredApprovals) {
+      items.push({ kind: "erc20", approval: a });
+    }
+    for (const a of filteredPermit2) {
+      items.push({ kind: "permit2", approval: a });
+    }
+    for (const a of filteredNftApprovals) {
+      items.push({ kind: "nft", approval: a });
+    }
+    if (eip7702?.hasDelegation) {
+      items.push({ kind: "eip7702" });
+    }
+    return items;
+  }, [eip7702, filteredApprovals, filteredPermit2, filteredNftApprovals]);
+
+  const handleRevokeAll = () => {
+    if (!canRevoke || revokeQueue.length === 0 || batchRevoking) return;
+    const ok = window.confirm(
+      `Revoke ${revokeQueue.length} permission(s)? Your wallet will ask you to confirm each transaction.`,
+    );
+    if (!ok) return;
+    setBatchRevoking(true);
+    setError(null);
+    let index = 0;
+    const step = () => {
+      if (index >= revokeQueue.length) {
+        setBatchRevoking(false);
+        void loadShield();
+        return;
+      }
+      const item = revokeQueue[index];
+      index += 1;
+      if (wrongNetwork) {
+        setPendingRevoke(item);
+        switchChain({ chainId: targetChainId });
+        setBatchRevoking(false);
+        return;
+      }
+      void runPendingRevoke(item);
+      setTimeout(step, item.kind === "eip7702" ? 6000 : 3500);
+    };
+    step();
+  };
+
   const shortAddress = (value: string) => `${value.slice(0, 8)}…${value.slice(-6)}`;
+
+  const activityLabel = (row: ShieldApprovalActivity) => {
+    switch (row.kind) {
+      case "erc20_approve":
+        return "Approved token spender";
+      case "erc20_revoke":
+        return "Revoked token allowance";
+      case "nft_approve":
+        return "NFT operator approved";
+      case "nft_revoke":
+        return "NFT operator revoked";
+      case "permit2_approve":
+        return "Permit2 allowance set";
+      case "permit2_revoke":
+        return "Permit2 allowance cleared";
+      default:
+        return row.kind;
+    }
+  };
   const txBusy =
     revokePending ||
     revokeConfirming ||
@@ -573,6 +685,12 @@ const ShieldPage: React.FC = () => {
               <p className="text-muted-foreground">NFT operators</p>
               <p className="font-medium">{snapshot.counts.nftApprovals}</p>
             </div>
+            {(snapshot.counts.permit2Approvals ?? 0) > 0 ? (
+              <div>
+                <p className="text-muted-foreground">Permit2</p>
+                <p className="font-medium">{snapshot.counts.permit2Approvals}</p>
+              </div>
+            ) : null}
             {(snapshot.counts.eip7702Delegations ?? 0) > 0 ? (
               <div>
                 <p className="text-muted-foreground">EIP-7702</p>
@@ -584,6 +702,25 @@ const ShieldPage: React.FC = () => {
               <p className="font-medium">{snapshot.counts.holdings}</p>
             </div>
           </CardContent>
+          {canRevoke && revokeQueue.length > 0 ? (
+            <CardFooter>
+              <Button
+                variant="destructive"
+                className="w-full sm:w-auto"
+                disabled={txBusy || batchRevoking || loading}
+                onClick={handleRevokeAll}
+              >
+                {batchRevoking ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Revoking batch…
+                  </>
+                ) : (
+                  `Revoke all visible (${revokeQueue.length})`
+                )}
+              </Button>
+            </CardFooter>
+          ) : null}
         </Card>
       ) : null}
 
@@ -626,8 +763,7 @@ const ShieldPage: React.FC = () => {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Requires a wallet that supports EIP-7702 (e.g. MetaMask). Currently detected on
-              Ethereum mainnet only.
+              Requires a wallet that supports EIP-7702 (e.g. MetaMask).
             </p>
           </CardContent>
         </Card>
@@ -660,6 +796,11 @@ const ShieldPage: React.FC = () => {
                     {a.isUnlimited ? (
                       <Badge variant="destructive" className="text-[10px]">
                         Unlimited
+                      </Badge>
+                    ) : null}
+                    {a.spender.toLowerCase() === PERMIT2_ADDRESS.toLowerCase() ? (
+                      <Badge variant="secondary" className="text-[10px]">
+                        Permit2 master
                       </Badge>
                     ) : null}
                     {a.spenderRisk ? (
@@ -773,6 +914,102 @@ const ShieldPage: React.FC = () => {
                 </div>
               );
             })}
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {filteredPermit2.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Permit2 allowances</CardTitle>
+            <CardDescription>
+              Sub-allowances granted via Uniswap Permit2 — revoke.cash-style Permit2 tab.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {filteredPermit2.map((a) => {
+              const key = `permit2:${a.token}:${a.spender}`;
+              const revoking = revokingKey === key && txBusy;
+              return (
+                <div
+                  key={key}
+                  className="border border-border rounded-md p-3 space-y-2 text-sm"
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">
+                      {a.tokenSymbol || "Token"}{" "}
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {a.token.slice(0, 10)}…
+                      </span>
+                    </span>
+                    {a.isUnlimited ? (
+                      <Badge variant="destructive" className="text-[10px]">
+                        Unlimited
+                      </Badge>
+                    ) : null}
+                    {a.spenderRisk ? (
+                      <Badge variant={riskVariant(a.spenderRisk.riskLevel)} className="text-[10px]">
+                        Spender {a.spenderRisk.riskLevel}
+                      </Badge>
+                    ) : null}
+                  </div>
+                  <p className="text-xs text-muted-foreground font-mono break-all">
+                    Spender: {a.spender}
+                  </p>
+                  {a.expiresAt ? (
+                    <p className="text-xs text-muted-foreground">Expires {a.expiresAt}</p>
+                  ) : null}
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="w-full sm:w-auto"
+                    disabled={!canRevoke || revoking}
+                    onClick={() => handlePermit2Revoke(a)}
+                  >
+                    {revoking ? (
+                      <>
+                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                        Confirm in wallet…
+                      </>
+                    ) : (
+                      "Revoke Permit2"
+                    )}
+                  </Button>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {history.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Approval history</CardTitle>
+            <CardDescription>
+              Recent approve and revoke events for this wallet on this chain.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 max-h-80 overflow-y-auto">
+            {history.map((row) => (
+              <div
+                key={`${row.transactionHash}-${row.kind}-${row.blockNumber}`}
+                className="flex flex-col gap-1 border-b border-border pb-2 text-sm last:border-0"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-medium">{activityLabel(row)}</span>
+                  <span className="text-xs text-muted-foreground">Block {row.blockNumber}</span>
+                </div>
+                <a
+                  href={`${TX_EXPLORER_BASE[targetChainId] ?? "https://etherscan.io"}/tx/${row.transactionHash}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs text-primary font-mono break-all hover:underline"
+                >
+                  {row.transactionHash}
+                </a>
+              </div>
+            ))}
           </CardContent>
         </Card>
       ) : null}

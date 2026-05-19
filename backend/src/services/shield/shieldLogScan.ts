@@ -20,11 +20,18 @@ export async function getLogsChunked(
   provider: JsonRpcProvider,
   fromBlock: number,
   toBlock: number,
-  filter: { topics: (string | string[] | null)[] },
+  filter: {
+    address?: string;
+    topics: (string | string[] | null)[];
+  },
 ): Promise<Log[]> {
   if (fromBlock > toBlock) return [];
 
   const out: Log[] = [];
+  const baseFilter = {
+    ...(filter.address ? { address: filter.address } : {}),
+    topics: filter.topics,
+  };
 
   for (let start = fromBlock; start <= toBlock; start += CHUNK_SIZE) {
     const end = Math.min(start + CHUNK_SIZE - 1, toBlock);
@@ -32,7 +39,7 @@ export async function getLogsChunked(
       const chunk = await provider.getLogs({
         fromBlock: start,
         toBlock: end,
-        topics: filter.topics,
+        ...baseFilter,
       });
       out.push(...chunk);
     } catch (err) {
@@ -43,7 +50,7 @@ export async function getLogsChunked(
         const subLogs = await provider.getLogs({
           fromBlock: sub,
           toBlock: subEnd,
-          topics: filter.topics,
+          ...baseFilter,
         });
         out.push(...subLogs);
       }

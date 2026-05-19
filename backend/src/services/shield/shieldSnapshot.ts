@@ -5,23 +5,26 @@ import type {
   ShieldScanResult,
   ShieldSnapshot,
 } from "../../shared/types/shield";
+import { fetchApprovalHistory } from "./shieldApprovalHistory";
 import { fetchEip7702Delegation } from "./shieldEip7702";
 import {
   fetchErc20Approvals,
   fetchNftApprovals,
   fetchTokenHoldings,
 } from "./shieldIndexer";
+import { fetchPermit2Approvals } from "./shieldPermit2";
 import {
   enrichApprovalRisks,
   enrichHoldingRisks,
   enrichNftApprovalRisks,
+  enrichPermit2ApprovalRisks,
   isHighRisk,
 } from "./shieldRisk";
 import { cacheRedis } from "../../config/database";
 import { normalizeAddress } from "../explorer/addressValidation";
 
 const CACHE_TTL_SEC = 30 * 60;
-const SCAN_CACHE_PREFIX = "shield:scan:v3:";
+const SCAN_CACHE_PREFIX = "shield:scan:v4:";
 
 function scoreToHealthLevel(score: number): RiskLevel {
   if (score >= 80) return "LOW";
@@ -36,6 +39,7 @@ function computeHealthScore(params: {
   highRiskHoldings: number;
   nftApprovals: number;
   eip7702Delegations: number;
+  permit2Approvals: number;
 }): number {
   let score = 100;
   score -= params.highRiskApprovals * 15;
@@ -43,6 +47,7 @@ function computeHealthScore(params: {
   score -= params.highRiskHoldings * 10;
   score -= params.nftApprovals * 5;
   score -= params.eip7702Delegations * 20;
+  score -= params.permit2Approvals * 10;
   return Math.max(0, Math.min(100, score));
 }
 
@@ -63,7 +68,7 @@ export async function runShieldScan(
 
   const rawApprovals = await fetchErc20Approvals(chainId, address);
   const approvals = await enrichApprovalRisks(chainId, rawApprovals);
-  const highRiskApprovals = approvals.filter(
+  const erc20HighRisk = approvals.filter(
     (a) => isHighRisk(a.spenderRisk) || isHighRisk(a.tokenRisk),
   ).length;
   const unlimitedApprovals = approvals.filter((a) => a.isUnlimited).length;
@@ -80,12 +85,23 @@ export async function runShieldScan(
   const eip7702 = await fetchEip7702Delegation(chainId, address);
   const eip7702Delegations = eip7702?.hasDelegation ? 1 : 0;
 
+  const rawPermit2 = await fetchPermit2Approvals(chainId, address);
+  const permit2Approvals = await enrichPermit2ApprovalRisks(chainId, rawPermit2);
+  const highRiskPermit2 = permit2Approvals.filter((a) =>
+    isHighRisk(a.spenderRisk),
+  ).length;
+
+  const history = await fetchApprovalHistory(chainId, address);
+
+  const highRiskApprovals = erc20HighRisk + highRiskPermit2;
+
   const healthScore = computeHealthScore({
     highRiskApprovals,
     unlimitedApprovals,
     highRiskHoldings,
     nftApprovals,
     eip7702Delegations,
+    permit2Approvals: permit2Approvals.length,
   });
 
   const snapshot: ShieldSnapshot = {
@@ -101,6 +117,7 @@ export async function runShieldScan(
       highRiskHoldings,
       nftApprovals,
       eip7702Delegations,
+      permit2Approvals: permit2Approvals.length,
     },
     scannedAt: new Date().toISOString(),
   };
@@ -111,6 +128,8 @@ export async function runShieldScan(
     nftApprovals: nftEnriched,
     holdings,
     eip7702,
+    permit2Approvals,
+    history,
   };
   await cacheRedis.setex(cacheKey, CACHE_TTL_SEC, JSON.stringify(payload));
   return payload;
@@ -142,6 +161,16 @@ export async function getShieldNftApprovals(chainId: number, addressInput: strin
   const enriched = await enrichNftApprovalRisks(chainId, raw);
   await cacheRedis.setex(cacheKey, CACHE_TTL_SEC, JSON.stringify(enriched));
   return enriched;
+}
+
+export async function getShieldPermit2Approvals(chainId: number, addressInput: string) {
+  const { permit2Approvals } = await runShieldScan(chainId, addressInput);
+  return permit2Approvals;
+}
+
+export async function getShieldApprovalHistory(chainId: number, addressInput: string) {
+  const { history } = await runShieldScan(chainId, addressInput);
+  return history;
 }
 
 export async function getShieldHoldings(chainId: number, addressInput: string) {

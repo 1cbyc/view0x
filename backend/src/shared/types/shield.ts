@@ -37,6 +37,37 @@ export interface ShieldEip7702Delegation {
   delegate: string | null;
 }
 
+export interface ShieldPermit2Approval {
+  token: string;
+  tokenSymbol: string | null;
+  spender: string;
+  amount: string;
+  expiration: number;
+  expiresAt: string | null;
+  isUnlimited: boolean;
+  spenderRisk: ContractRiskBrief | null;
+}
+
+export type ShieldApprovalActivityKind =
+  | "erc20_approve"
+  | "erc20_revoke"
+  | "nft_approve"
+  | "nft_revoke"
+  | "permit2_approve"
+  | "permit2_revoke";
+
+export interface ShieldApprovalActivity {
+  kind: ShieldApprovalActivityKind;
+  token?: string;
+  collection?: string;
+  spender?: string;
+  operator?: string;
+  amount?: string;
+  expiration?: number;
+  blockNumber: number;
+  transactionHash: string;
+}
+
 export interface ShieldSnapshot {
   address: string;
   chainId: number;
@@ -50,6 +81,7 @@ export interface ShieldSnapshot {
     highRiskHoldings: number;
     nftApprovals: number;
     eip7702Delegations: number;
+    permit2Approvals: number;
   };
   scannedAt: string;
 }
@@ -60,4 +92,6 @@ export interface ShieldScanResult {
   nftApprovals: ShieldNftApproval[];
   holdings: ShieldHolding[];
   eip7702: ShieldEip7702Delegation | null;
+  permit2Approvals: ShieldPermit2Approval[];
+  history: ShieldApprovalActivity[];
 }

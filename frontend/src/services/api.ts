@@ -299,6 +299,7 @@ export type ShieldSnapshot = {
     highRiskHoldings: number;
     nftApprovals: number;
     eip7702Delegations: number;
+    permit2Approvals: number;
   };
   scannedAt: string;
 };
@@ -306,6 +307,35 @@ export type ShieldSnapshot = {
 export type ShieldEip7702Delegation = {
   hasDelegation: boolean;
   delegate: string | null;
+};
+
+export type ShieldPermit2Approval = {
+  token: string;
+  tokenSymbol: string | null;
+  spender: string;
+  amount: string;
+  expiration: number;
+  expiresAt: string | null;
+  isUnlimited: boolean;
+  spenderRisk: ContractRiskBrief | null;
+};
+
+export type ShieldApprovalActivity = {
+  kind:
+    | "erc20_approve"
+    | "erc20_revoke"
+    | "nft_approve"
+    | "nft_revoke"
+    | "permit2_approve"
+    | "permit2_revoke";
+  token?: string;
+  collection?: string;
+  spender?: string;
+  operator?: string;
+  amount?: string;
+  expiration?: number;
+  blockNumber: number;
+  transactionHash: string;
 };
 
 export type ShieldApproval = {
@@ -339,6 +369,8 @@ export type ShieldScanResult = {
   nftApprovals: ShieldNftApproval[];
   holdings: ShieldHolding[];
   eip7702: ShieldEip7702Delegation | null;
+  permit2Approvals: ShieldPermit2Approval[];
+  history: ShieldApprovalActivity[];
 };
 
 export const shieldApi = {
@@ -362,6 +394,30 @@ export const shieldApi = {
         approvals: ShieldApproval[];
       };
     }>("/shield/approvals", {
+      params: { address: address.trim(), chainId },
+      timeout: 120000,
+    }),
+  getPermit2Approvals: (address: string, chainId: number) =>
+    api.get<{
+      success: boolean;
+      data: {
+        address: string;
+        chainId: number;
+        permit2Approvals: ShieldPermit2Approval[];
+      };
+    }>("/shield/permit2-approvals", {
+      params: { address: address.trim(), chainId },
+      timeout: 120000,
+    }),
+  getHistory: (address: string, chainId: number) =>
+    api.get<{
+      success: boolean;
+      data: {
+        address: string;
+        chainId: number;
+        history: ShieldApprovalActivity[];
+      };
+    }>("/shield/history", {
       params: { address: address.trim(), chainId },
       timeout: 120000,
     }),
