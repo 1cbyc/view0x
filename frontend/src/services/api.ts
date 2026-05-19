@@ -349,5 +349,88 @@ export const twoFactorApi = {
     api.post("/2fa/disable", { password }),
 };
 
+export interface RektIncident {
+  id: string;
+  slug: string;
+  projectName: string;
+  title: string;
+  incidentDate: string;
+  amountLostUsd: string | null;
+  amountRecoveredUsd: string | null;
+  severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  status: "confirmed" | "disputed" | "recovered" | "partial_recovery";
+  chains: string[];
+  categories: string[];
+  attackTypes: string[];
+  auditorNames: string[];
+  summary: string;
+  rootCause?: string | null;
+  technicalDetails?: string | null;
+  remediation?: string | null;
+  affectedAddresses: Array<{
+    label: string;
+    address: string;
+    chain?: string;
+    role?: string;
+  }>;
+  transactionHashes: Array<{
+    label: string;
+    hash: string;
+    chain?: string;
+    url?: string;
+  }>;
+  sourceUrls: string[];
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RektStats {
+  summary: {
+    incidentCount: number;
+    totalLostUsd: number;
+    totalRecoveredUsd: number;
+    largestLossUsd: number;
+  };
+  byYear: Array<{ year: number; count: number; lostUsd: number }>;
+  bySeverity: Array<{ severity: string; count: number; lostUsd: number }>;
+  largest: RektIncident[];
+}
+
+export interface RektFacet {
+  value: string;
+  count: number;
+}
+
+export interface RektFacets {
+  chains: RektFacet[];
+  categories: RektFacet[];
+  attackTypes: RektFacet[];
+  auditors: RektFacet[];
+  severities: RektFacet[];
+  statuses: RektFacet[];
+}
+
+export const rektApi = {
+  listIncidents: (params?: {
+    q?: string;
+    chain?: string;
+    category?: string;
+    attackType?: string;
+    auditor?: string;
+    severity?: string;
+    status?: string;
+    from?: string;
+    to?: string;
+    page?: number;
+    limit?: number;
+    sortBy?: "amountLostUsd" | "incidentDate" | "projectName";
+    sortOrder?: "ASC" | "DESC";
+  }) => api.get("/rekt/incidents", { params }),
+  getIncident: (slug: string) => api.get(`/rekt/incidents/${slug}`),
+  getStats: () => api.get("/rekt/stats"),
+  getFacets: () => api.get("/rekt/facets"),
+};
+
 // Export the base API instance for custom requests
 export { api };

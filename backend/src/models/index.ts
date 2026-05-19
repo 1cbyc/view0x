@@ -8,6 +8,7 @@ import { AnalysisTemplate } from "./AnalysisTemplate";
 import ApiAnalytics from "./ApiAnalytics";
 import { AddressScan } from "./AddressScan";
 import { Notification } from "./Notification";
+import { RektIncident } from "./RektIncident";
 import { logger } from "../utils/logger";
 
 // 1. Initialize all models
@@ -15,6 +16,7 @@ const models = {
   User,
   Analysis,
   AddressScan,
+  RektIncident,
   Vulnerability,
   VulnerabilityComment,
   ActivityLog,
@@ -157,6 +159,6 @@ export const syncModels = async () => {
 };
 
 // 4. Export all models and the sequelize instance
-export { sequelize, User, Analysis, Vulnerability, Notification };
+export { sequelize, User, Analysis, Vulnerability, Notification, RektIncident };
 
 export default models;

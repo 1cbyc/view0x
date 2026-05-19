@@ -36,9 +36,11 @@ import analyticsRoutes from "./routes/analytics";
 import userRoutes from "./routes/users";
 import scanRoutes from "./routes/scan";
 import notificationRoutes from "./routes/notifications";
+import rektRoutes from "./routes/rekt";
 import { Analysis } from "./models/Analysis";
 import { notificationService } from "./services/notificationService";
 import walletRoutes from "./routes/wallet";
+import { seedRektIncidents } from "./services/rektIncidentService";
 
 // Initialize Express app
 const app = express();
@@ -181,6 +183,7 @@ app.use(`/api/${API_VERSION}/webhooks`, webhookRoutes);
 app.use(`/api/${API_VERSION}/scan`, scanRoutes);
 app.use(`/api/${API_VERSION}/notifications`, notificationRoutes);
 app.use(`/api/${API_VERSION}/wallet`, walletRoutes);
+app.use(`/api/${API_VERSION}/rekt`, rektRoutes);
 
 // Legacy routes (backward compatibility)
 app.use("/api/auth", authRoutes);
@@ -196,6 +199,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/scan", scanRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/wallet", walletRoutes);
+app.use("/api/rekt", rektRoutes);
 
 // Root endpoint with API information
 app.get("/", (req, res) => {
@@ -312,6 +316,7 @@ export async function initializeApp(): Promise<void> {
     logger.info("Database connections established");
     await syncModels();
     logger.info("Database models synchronized");
+    await seedRektIncidents();
     logger.info("Application initialized successfully");
   } catch (error) {
     logger.error("Failed to initialize application:", error);

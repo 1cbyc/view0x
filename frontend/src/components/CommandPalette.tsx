@@ -4,6 +4,7 @@ import {
   Search,
   FileText,
   ShieldAlert,
+  AlertTriangle,
   User,
   Settings,
   LogOut,
@@ -62,6 +63,17 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         onOpenChange(false);
       },
       keywords: ["dashboard", "home", "main"],
+      category: "navigation",
+    },
+    {
+      id: "rekt",
+      label: "Rekt Database",
+      icon: <AlertTriangle className="w-4 h-4" />,
+      action: () => {
+        navigate("/rekt");
+        onOpenChange(false);
+      },
+      keywords: ["rekt", "database", "hacks", "exploits", "losses"],
       category: "navigation",
     },
     {

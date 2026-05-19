@@ -16,6 +16,8 @@ const RepositoryAnalyzer = lazy(() => import("../pages/RepositoryAnalyzer"));
 const AnalyticsDashboard = lazy(() => import("../pages/AnalyticsDashboard"));
 const SharedAddressScan = lazy(() => import("../pages/SharedAddressScan"));
 const Notifications = lazy(() => import("../pages/Notifications"));
+const RektDatabase = lazy(() => import("../pages/RektDatabase"));
+const RektIncidentDetail = lazy(() => import("../pages/RektIncidentDetail"));
 const NotFound = lazy(() => import("../pages/NotFound"));
 
 export const AppRoutes: React.FC = () => (
@@ -24,6 +26,8 @@ export const AppRoutes: React.FC = () => (
     <Route path="/shared/scan/:token" element={<SafeRoute><SharedAddressScan /></SafeRoute>} />
     <Route path="/analyze" element={<SafeRoute><ContractAnalyzer /></SafeRoute>} />
     <Route path="/analytics" element={<SafeRoute><AnalyticsDashboard /></SafeRoute>} />
+    <Route path="/rekt" element={<SafeRoute><RektDatabase /></SafeRoute>} />
+    <Route path="/rekt/:slug" element={<SafeRoute><RektIncidentDetail /></SafeRoute>} />
     <Route path="/login" element={<SafeRoute><Login /></SafeRoute>} />
     <Route path="/register" element={<SafeRoute><Register /></SafeRoute>} />
     <Route path="/forgot-password" element={<SafeRoute><ForgotPassword /></SafeRoute>} />

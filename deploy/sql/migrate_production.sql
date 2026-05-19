@@ -30,3 +30,54 @@ CREATE INDEX IF NOT EXISTS notifications_user_id_created_at
   ON notifications (user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS notifications_user_id_read_at
   ON notifications (user_id, read_at);
+
+-- Public Rekt Database incidents
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'rekt_incident_severity') THEN
+    CREATE TYPE rekt_incident_severity AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'rekt_incident_status') THEN
+    CREATE TYPE rekt_incident_status AS ENUM ('confirmed', 'disputed', 'recovered', 'partial_recovery');
+  END IF;
+END$$;
+
+CREATE TABLE IF NOT EXISTS rekt_incidents (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug VARCHAR(160) NOT NULL UNIQUE,
+  project_name VARCHAR(160) NOT NULL,
+  title VARCHAR(220) NOT NULL,
+  incident_date DATE NOT NULL,
+  disclosed_at TIMESTAMPTZ,
+  amount_lost_usd NUMERIC(20, 2),
+  amount_recovered_usd NUMERIC(20, 2),
+  severity rekt_incident_severity NOT NULL DEFAULT 'HIGH',
+  status rekt_incident_status NOT NULL DEFAULT 'confirmed',
+  chains TEXT[] NOT NULL DEFAULT '{}',
+  categories TEXT[] NOT NULL DEFAULT '{}',
+  attack_types TEXT[] NOT NULL DEFAULT '{}',
+  auditor_names TEXT[] NOT NULL DEFAULT '{}',
+  summary TEXT NOT NULL,
+  root_cause TEXT,
+  technical_details TEXT,
+  remediation TEXT,
+  affected_addresses JSONB NOT NULL DEFAULT '[]'::jsonb,
+  transaction_hashes JSONB NOT NULL DEFAULT '[]'::jsonb,
+  source_urls TEXT[] NOT NULL DEFAULT '{}',
+  tags TEXT[] NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS rekt_incidents_incident_date
+  ON rekt_incidents (incident_date DESC);
+CREATE INDEX IF NOT EXISTS rekt_incidents_amount_lost_usd
+  ON rekt_incidents (amount_lost_usd DESC);
+CREATE INDEX IF NOT EXISTS rekt_incidents_severity
+  ON rekt_incidents (severity);
+CREATE INDEX IF NOT EXISTS rekt_incidents_chains_gin
+  ON rekt_incidents USING GIN (chains);
+CREATE INDEX IF NOT EXISTS rekt_incidents_categories_gin
+  ON rekt_incidents USING GIN (categories);
+CREATE INDEX IF NOT EXISTS rekt_incidents_attack_types_gin
+  ON rekt_incidents USING GIN (attack_types);
