@@ -7,6 +7,7 @@ import {
   getAddressScanByShareToken,
   listUserAddressScans,
 } from "../services/addressScan/addressScanService";
+import { getScannerDiscovery } from "../services/scanDiscoveryService";
 import { logger } from "../utils/logger";
 import { getGuestSessionIdFromRequest } from "../utils/guestSession";
 
@@ -15,6 +16,11 @@ export const listScanChains = async (_req: Request, res: Response) => {
     success: true,
     data: { chains: getSupportedChains() },
   });
+};
+
+export const getScanDiscovery = async (_req: Request, res: Response) => {
+  const data = await getScannerDiscovery();
+  res.json({ success: true, data });
 };
 
 export const scanAddress = async (req: Request, res: Response) => {

@@ -103,23 +103,26 @@ const ShieldPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const [snapRes, appRes] = await Promise.all([
-        shieldApi.getSnapshot(address, cid),
-        shieldApi.getApprovals(address, cid),
-      ]);
-      const snap = snapRes.data.data;
+      const scanRes = await shieldApi.scan(address, cid);
+      const { snapshot: snap, approvals: list } = scanRes.data.data;
       setSnapshot(snap);
-      setApprovals(appRes.data.data.approvals || []);
+      setApprovals(list || []);
       pushShieldHistory(snap);
     } catch (err: unknown) {
       const apiErr = err as {
         response?: { data?: { error?: { message?: string } } };
         message?: string;
       };
-      setError(
+      const code = (apiErr.response?.data as { error?: { code?: string } })?.error
+        ?.code;
+      const message =
         apiErr.response?.data?.error?.message ||
-          apiErr.message ||
-          "Shield scan failed",
+        apiErr.message ||
+        "Shield scan failed";
+      setError(
+        code === "RPC_RATE_LIMIT"
+          ? `${message} Wallet connection may still work; use Refresh after a short wait.`
+          : message,
       );
     } finally {
       setLoading(false);

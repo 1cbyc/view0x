@@ -207,8 +207,32 @@ export interface AddressScanResult {
   analysisStatus?: string;
 }
 
+export type ScannerDiscoveryItem = {
+  id: string;
+  kind: "address" | "example" | "rekt";
+  title: string;
+  subtitle?: string;
+  chainId?: number;
+  chainName?: string;
+  address?: string;
+  riskLevel?: string;
+  reputationScore?: number;
+  href: string;
+  badge?: string;
+};
+
+export type ScannerDiscovery = {
+  recentThreats: ScannerDiscoveryItem[];
+  trending: ScannerDiscoveryItem[];
+  mostScanned: ScannerDiscoveryItem[];
+  highRiskExamples: ScannerDiscoveryItem[];
+  practiceExamples: ScannerDiscoveryItem[];
+};
+
 export const scanApi = {
   getChains: () => api.get("/scan/chains"),
+  getDiscovery: () =>
+    api.get<{ success: boolean; data: ScannerDiscovery }>("/scan/discovery"),
   scanAddress: (data: {
     address: string;
     chainId: number;
@@ -290,8 +314,18 @@ export type ShieldApproval = {
   tokenRisk: ContractRiskBrief | null;
 };
 
+export type ShieldScanResult = {
+  snapshot: ShieldSnapshot;
+  approvals: ShieldApproval[];
+};
+
 export const shieldApi = {
   getChains: () => api.get<{ success: boolean; data: ShieldChain[] }>("/shield/chains"),
+  scan: (address: string, chainId: number) =>
+    api.get<{ success: boolean; data: ShieldScanResult }>("/shield/scan", {
+      params: { address: address.trim(), chainId },
+      timeout: 120000,
+    }),
   getSnapshot: (address: string, chainId: number) =>
     api.get<{ success: boolean; data: ShieldSnapshot }>("/shield/snapshot", {
       params: { address: address.trim(), chainId },

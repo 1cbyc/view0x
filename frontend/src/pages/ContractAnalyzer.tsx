@@ -14,6 +14,7 @@ import { javascript } from "@codemirror/lang-javascript";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { FileUpload } from "@/components/FileUpload";
 import type { ContractExample } from "@/data/contractExamples";
+import { getExampleById } from "@/data/contractExamples";
 import { ContractExamplesDialog } from "@/components/ContractExamplesDialog";
 
 // UI Components from the new theme
@@ -191,6 +192,7 @@ const ContractAnalyzer: React.FC = () => {
   const scanIdFromUrl = searchParams.get("scanId") ?? undefined;
   const addressFromUrl = searchParams.get("address") ?? undefined;
   const chainFromUrl = searchParams.get("chainId") ?? undefined;
+  const exampleFromUrl = searchParams.get("example") ?? undefined;
   const tabFromUrl = searchParams.get("tab");
   const tabFromLogin = (location.state as { tab?: string } | null)?.tab;
   const defaultTab =
@@ -199,13 +201,21 @@ const ContractAnalyzer: React.FC = () => {
     tabFromUrl === "address" ||
     addressFromUrl
       ? "address"
-      : "source";
+      : exampleFromUrl
+        ? "source"
+        : "source";
 
   const [editorDark, setEditorDark] = useState(() =>
     typeof document !== "undefined"
       ? document.documentElement.classList.contains("dark")
       : true,
   );
+
+  useEffect(() => {
+    if (!exampleFromUrl) return;
+    const ex = getExampleById(exampleFromUrl);
+    if (ex) setContractCode(ex.code);
+  }, [exampleFromUrl]);
 
   useEffect(() => {
     const root = document.documentElement;

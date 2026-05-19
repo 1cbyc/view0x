@@ -1,11 +1,13 @@
 import { Request, Response } from "express";
 import { getAddress } from "ethers";
 import { getChain, listShieldChains } from "../config/chains";
+import { AppError } from "../middleware/errorHandler";
 import {
   buildShieldSnapshot,
   getShieldApprovals,
   getShieldHoldings,
   getShieldNftApprovals,
+  runShieldScan,
 } from "../services/shield/shieldSnapshot";
 import { getIndexerNote } from "../services/shield/shieldRpc";
 
@@ -42,6 +44,43 @@ export const listShieldChainsHandler = (_req: Request, res: Response) => {
   });
 };
 
+function shieldRpcError(err: unknown): never {
+  if (err instanceof AppError) throw err;
+  const msg = err instanceof Error ? err.message : String(err);
+  if (/rate limit|429|too many requests/i.test(msg)) {
+    throw new AppError(
+      "RPC rate limit reached. Retry in a minute or set ALCHEMY_API_KEY on the API server.",
+      503,
+      "RPC_RATE_LIMIT",
+    );
+  }
+  if (/range|too many|block range|query timeout|exceed/i.test(msg)) {
+    throw new AppError(
+      "Could not index approvals for this chain window. Try again or use a shorter history with ALCHEMY_API_KEY.",
+      503,
+      "RPC_LOG_RANGE",
+    );
+  }
+  throw err;
+}
+
+export const getShieldScanHandler = async (req: Request, res: Response) => {
+  const parsed = parseAddressChain(req);
+  if ("error" in parsed) {
+    return res.status(400).json({
+      success: false,
+      error: { code: "BAD_REQUEST", message: parsed.error },
+    });
+  }
+
+  try {
+    const data = await runShieldScan(parsed.chainId, parsed.address);
+    res.json({ success: true, data });
+  } catch (err) {
+    shieldRpcError(err);
+  }
+};
+
 export const getShieldSnapshotHandler = async (req: Request, res: Response) => {
   const parsed = parseAddressChain(req);
   if ("error" in parsed) {
@@ -51,8 +90,12 @@ export const getShieldSnapshotHandler = async (req: Request, res: Response) => {
     });
   }
 
-  const snapshot = await buildShieldSnapshot(parsed.chainId, parsed.address);
-  res.json({ success: true, data: snapshot });
+  try {
+    const snapshot = await buildShieldSnapshot(parsed.chainId, parsed.address);
+    res.json({ success: true, data: snapshot });
+  } catch (err) {
+    shieldRpcError(err);
+  }
 };
 
 export const getShieldApprovalsHandler = async (req: Request, res: Response) => {
@@ -64,16 +107,20 @@ export const getShieldApprovalsHandler = async (req: Request, res: Response) => 
     });
   }
 
-  const approvals = await getShieldApprovals(parsed.chainId, parsed.address);
-  res.json({
-    success: true,
-    data: {
-      address: parsed.address,
-      chainId: parsed.chainId,
-      approvals,
-      indexerNote: getIndexerNote(parsed.chainId),
-    },
-  });
+  try {
+    const approvals = await getShieldApprovals(parsed.chainId, parsed.address);
+    res.json({
+      success: true,
+      data: {
+        address: parsed.address,
+        chainId: parsed.chainId,
+        approvals,
+        indexerNote: getIndexerNote(parsed.chainId),
+      },
+    });
+  } catch (err) {
+    shieldRpcError(err);
+  }
 };
 
 export const getShieldNftApprovalsHandler = async (req: Request, res: Response) => {

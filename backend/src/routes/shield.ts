@@ -4,6 +4,7 @@ import {
   getShieldApprovalsHandler,
   getShieldHoldingsHandler,
   getShieldNftApprovalsHandler,
+  getShieldScanHandler,
   getShieldSnapshotHandler,
   listShieldChainsHandler,
 } from "../controllers/shieldController";
@@ -14,6 +15,7 @@ const router = Router();
 router.use(shieldRateLimiter);
 
 router.get("/chains", asyncHandler(listShieldChainsHandler));
+router.get("/scan", asyncHandler(getShieldScanHandler));
 router.get("/snapshot", asyncHandler(getShieldSnapshotHandler));
 router.get("/approvals", asyncHandler(getShieldApprovalsHandler));
 router.get("/nft-approvals", asyncHandler(getShieldNftApprovalsHandler));

@@ -41,6 +41,7 @@ import { Analysis } from "./models/Analysis";
 import { notificationService } from "./services/notificationService";
 import walletRoutes from "./routes/wallet";
 import { seedRektIncidents } from "./services/rektIncidentService";
+import { sanitizeAllRektDefillamaSources } from "./services/scanDiscoveryService";
 import shieldRoutes from "./routes/shield";
 
 // Initialize Express app
@@ -320,6 +321,10 @@ export async function initializeApp(): Promise<void> {
     await syncModels();
     logger.info("Database models synchronized");
     await seedRektIncidents();
+    const sanitized = await sanitizeAllRektDefillamaSources();
+    if (sanitized > 0) {
+      logger.info(`[REKT] Replaced defillama.com/hacks sources on ${sanitized} incidents`);
+    }
     logger.info("Application initialized successfully");
   } catch (error) {
     logger.error("Failed to initialize application:", error);

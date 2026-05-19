@@ -47,3 +47,8 @@ export interface ShieldSnapshot {
   indexerNote: string;
   scannedAt: string;
 }
+
+export interface ShieldScanResult {
+  snapshot: ShieldSnapshot;
+  approvals: ShieldErc20Approval[];
+}

@@ -6,6 +6,7 @@ import {
   type RektIncidentStatus,
 } from "../models/RektIncident";
 import { logger } from "../utils/logger";
+import { resolveHackSourceUrls, sanitizeSourceUrls } from "./rektSourceUrls";
 
 type DefiLlamaHack = {
   date: number;
@@ -66,11 +67,7 @@ function statusForRecovery(amount: number, returnedFunds?: number | null): RektI
 }
 
 function sourceUrlsForHack(hack: DefiLlamaHack): string[] {
-  const source = hack.source?.trim();
-  return compact([
-    source && /^https?:\/\//i.test(source) ? source : undefined,
-    "https://defillama.com/hacks",
-  ]);
+  return resolveHackSourceUrls(hack.source, hack.name);
 }
 
 function normalizeDefiLlamaHack(hack: DefiLlamaHack) {
@@ -174,7 +171,10 @@ export async function importDefiLlamaHacks(options: {
       await existing.update({
         ...normalized,
         slug: existing.slug,
-        sourceUrls: compact([...(existing.sourceUrls || []), ...normalized.sourceUrls]),
+        sourceUrls: sanitizeSourceUrls([
+          ...(existing.sourceUrls || []),
+          ...normalized.sourceUrls,
+        ]),
         tags: compact([...(existing.tags || []), ...normalized.tags]),
         auditorNames: existing.auditorNames || [],
         affectedAddresses: existing.affectedAddresses || [],

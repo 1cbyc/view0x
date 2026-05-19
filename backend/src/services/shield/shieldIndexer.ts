@@ -3,12 +3,10 @@ import { getChain } from "../../config/chains";
 import { normalizeAddress } from "../explorer/addressValidation";
 import type { ShieldErc20Approval, ShieldHolding, ShieldNftApproval } from "../../shared/types/shield";
 import { getIndexerNote, getShieldProvider } from "./shieldRpc";
+import { getLogsChunked, shieldLogBlockWindow } from "./shieldLogScan";
 
 const APPROVAL_TOPIC = id("Approval(address,address,uint256)");
 const APPROVAL_FOR_ALL_TOPIC = id("ApprovalForAll(address,address,bool)");
-
-/** Block window for log scans — larger with Alchemy, smaller on public RPC */
-const BLOCK_WINDOW = 400_000;
 
 const ERC20_ABI = [
   "function symbol() view returns (string)",
@@ -27,13 +25,11 @@ export async function fetchErc20Approvals(
   const owner = normalizeAddress(ownerInput);
   const provider = getShieldProvider(chainId);
   const latest = await provider.getBlockNumber();
-  const fromBlock = Math.max(0, latest - BLOCK_WINDOW);
+  const fromBlock = Math.max(0, latest - shieldLogBlockWindow());
 
   const ownerTopic = zeroPadValue(owner, 32);
 
-  const logs = await provider.getLogs({
-    fromBlock,
-    toBlock: latest,
+  const logs = await getLogsChunked(provider, fromBlock, latest, {
     topics: [APPROVAL_TOPIC, ownerTopic],
   });
 
@@ -95,12 +91,10 @@ export async function fetchNftApprovals(
   const owner = normalizeAddress(ownerInput);
   const provider = getShieldProvider(chainId);
   const latest = await provider.getBlockNumber();
-  const fromBlock = Math.max(0, latest - BLOCK_WINDOW);
+  const fromBlock = Math.max(0, latest - shieldLogBlockWindow());
   const ownerTopic = zeroPadValue(owner, 32);
 
-  const logs = await provider.getLogs({
-    fromBlock,
-    toBlock: latest,
+  const logs = await getLogsChunked(provider, fromBlock, latest, {
     topics: [APPROVAL_FOR_ALL_TOPIC, ownerTopic],
   });
 

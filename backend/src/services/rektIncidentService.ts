@@ -2,6 +2,7 @@ import { fn, col, literal, type OrderItem } from "sequelize";
 import { RektIncident } from "../models/RektIncident";
 import { rektIncidentsSeed } from "../data/rektIncidentsSeed";
 import { logger } from "../utils/logger";
+import { fallbackNewsSourceUrls, sanitizeSourceUrls } from "./rektSourceUrls";
 
 const toNumber = (value: string | number | null | undefined): number =>
   value == null ? 0 : Number(value);
@@ -88,7 +89,13 @@ export async function listRektIncidents(params: {
   });
 
   return {
-    incidents: rows,
+    incidents: rows.map((row) => {
+      const plain = row.get({ plain: true }) as typeof row & { projectName: string };
+      const cleaned = sanitizeSourceUrls(plain.sourceUrls);
+      plain.sourceUrls =
+        cleaned.length > 0 ? cleaned : fallbackNewsSourceUrls(plain.projectName);
+      return plain;
+    }),
     pagination: {
       page: params.page,
       limit: params.limit,
@@ -101,10 +108,16 @@ export async function listRektIncidents(params: {
 }
 
 export async function getRektIncidentBySlug(slug: string) {
-  return RektIncident.findOne({
+  const row = await RektIncident.findOne({
     where: { slug },
     attributes: publicAttributes as unknown as string[],
   });
+  if (!row) return null;
+  const plain = row.get({ plain: true }) as typeof row & { projectName: string };
+  const cleaned = sanitizeSourceUrls(plain.sourceUrls);
+  plain.sourceUrls =
+    cleaned.length > 0 ? cleaned : fallbackNewsSourceUrls(plain.projectName);
+  return plain;
 }
 
 export async function getRektStats() {
