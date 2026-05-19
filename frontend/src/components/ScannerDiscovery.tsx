@@ -99,11 +99,11 @@ export const ScannerDiscovery: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
-          Quick picks like De.Fi — tap to scan or open an example.
+          Quick picks — tap to scan or open an example.
         </p>
-        <Button variant="ghost" size="sm" asChild>
+        <Button variant="ghost" size="sm" className="w-full sm:w-auto shrink-0" asChild>
           <Link to="/rekt">Rekt Database</Link>
         </Button>
       </div>

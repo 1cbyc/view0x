@@ -7,6 +7,11 @@ import {
 } from "../models/RektIncident";
 import { logger } from "../utils/logger";
 import { resolveHackSourceUrls, sanitizeSourceUrls } from "./rektSourceUrls";
+import {
+  buildRektIncidentSlug,
+  stripDefillamaSlugPrefix,
+  toLegacyDefillamaSlug,
+} from "./rektSlug";
 
 type DefiLlamaHack = {
   date: number;
@@ -35,14 +40,6 @@ export type RektImportResult = {
 
 const DEFAULT_DEFILLAMA_HACKS_URL =
   process.env.REKT_DEFILLAMA_HACKS_URL || "https://api.llama.fi/hacks";
-
-function slugify(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 110);
-}
 
 function compact(values: Array<string | null | undefined>): string[] {
   return [...new Set(values.map((value) => value?.trim()).filter(Boolean) as string[])];
@@ -87,10 +84,14 @@ function normalizeDefiLlamaHack(hack: DefiLlamaHack) {
   ]);
   const projectName = hack.name.trim();
   const title = `${projectName} ${hack.technique || hack.classification || "incident"}`;
-  const slugBase = slugify(`${projectName}-${incidentDate}-${hack.technique || hack.classification || "hack"}`);
+  const slug = buildRektIncidentSlug(
+    projectName,
+    incidentDate,
+    hack.technique || hack.classification || "hack",
+  );
 
   return {
-    slug: `defillama-${slugBase}`,
+    slug,
     projectName,
     title: title.slice(0, 220),
     incidentDate: new Date(`${incidentDate}T00:00:00.000Z`),
@@ -112,7 +113,6 @@ function normalizeDefiLlamaHack(hack: DefiLlamaHack) {
     transactionHashes: [],
     sourceUrls: sourceUrlsForHack(hack),
     tags: compact([
-      "defillama",
       hack.classification || undefined,
       hack.technique || undefined,
       hack.targetType || undefined,
@@ -121,8 +121,11 @@ function normalizeDefiLlamaHack(hack: DefiLlamaHack) {
   };
 }
 
-async function findExistingIncident(projectName: string, incidentDate: Date, fallbackSlug: string) {
-  const existingBySlug = await RektIncident.findOne({ where: { slug: fallbackSlug } });
+async function findExistingIncident(projectName: string, incidentDate: Date, slug: string) {
+  const legacySlug = toLegacyDefillamaSlug(slug);
+  const existingBySlug = await RektIncident.findOne({
+    where: { slug: { [Op.in]: [slug, legacySlug] } },
+  });
   if (existingBySlug) return existingBySlug;
 
   return RektIncident.findOne({
@@ -168,14 +171,17 @@ export async function importDefiLlamaHacks(options: {
       normalized.slug,
     );
     if (existing) {
+      const nextSlug = stripDefillamaSlugPrefix(existing.slug);
       await existing.update({
         ...normalized,
-        slug: existing.slug,
+        slug: nextSlug,
         sourceUrls: sanitizeSourceUrls([
           ...(existing.sourceUrls || []),
           ...normalized.sourceUrls,
         ]),
-        tags: compact([...(existing.tags || []), ...normalized.tags]),
+        tags: compact([...(existing.tags || []), ...normalized.tags]).filter(
+          (tag) => tag.toLowerCase() !== "defillama",
+        ),
         auditorNames: existing.auditorNames || [],
         affectedAddresses: existing.affectedAddresses || [],
         transactionHashes: existing.transactionHashes || [],

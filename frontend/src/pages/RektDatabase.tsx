@@ -5,6 +5,7 @@ import {
   ArrowDownUp,
   CalendarDays,
   ExternalLink,
+  Filter,
   Search,
   ShieldAlert,
   TrendingDown,
@@ -24,6 +25,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 const ALL = "__all__";
 
@@ -150,6 +158,7 @@ const RektDatabase: React.FC = () => {
   const [query, setQuery] = useState(searchParams.get("q") || "");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const filters = useMemo(
     () => ({
@@ -221,24 +230,96 @@ const RektDatabase: React.FC = () => {
   const submitSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     updateFilter("q", query.trim());
+    setFiltersOpen(false);
   };
 
+  const activeFilterCount = [
+    filters.q,
+    filters.chain,
+    filters.category,
+    filters.attackType,
+    filters.severity,
+  ].filter(Boolean).length;
+
+  const filtersContent = (
+    <CardContent className="space-y-4">
+      <form onSubmit={submitSearch} className="space-y-2">
+        <Label htmlFor="rekt-search">Search</Label>
+        <div className="flex gap-2">
+          <Input
+            id="rekt-search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Protocol, cause, tag"
+            className="min-w-0 flex-1"
+          />
+          <Button type="submit" size="icon" aria-label="Search incidents" className="shrink-0">
+            <Search className="h-4 w-4" />
+          </Button>
+        </div>
+      </form>
+      {facets ? (
+        <>
+          <FacetSelect
+            label="Chain"
+            value={filters.chain || ALL}
+            facets={facets.chains}
+            placeholder="All chains"
+            onChange={(value) => updateFilter("chain", value)}
+          />
+          <FacetSelect
+            label="Category"
+            value={filters.category || ALL}
+            facets={facets.categories}
+            placeholder="All categories"
+            onChange={(value) => updateFilter("category", value)}
+          />
+          <FacetSelect
+            label="Attack type"
+            value={filters.attackType || ALL}
+            facets={facets.attackTypes}
+            placeholder="All attack types"
+            onChange={(value) => updateFilter("attackType", value)}
+          />
+          <FacetSelect
+            label="Severity"
+            value={filters.severity || ALL}
+            facets={facets.severities}
+            placeholder="All severities"
+            onChange={(value) => updateFilter("severity", value)}
+          />
+        </>
+      ) : null}
+      <Button
+        variant="outline"
+        className="w-full"
+        onClick={() => {
+          setQuery("");
+          setSearchParams(new URLSearchParams());
+          setFiltersOpen(false);
+        }}
+      >
+        Clear filters
+      </Button>
+    </CardContent>
+  );
+
   return (
-    <div className="mx-auto box-border w-full max-w-7xl overflow-x-hidden px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div className="min-w-0 max-w-[22rem] sm:max-w-full">
+    <div className="mx-auto box-border w-full max-w-7xl overflow-x-hidden px-3 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0 w-full flex-1">
           <div className="mb-2 flex items-center gap-2 text-sm font-medium text-muted-foreground">
-            <ShieldAlert className="h-4 w-4" />
+            <ShieldAlert className="h-4 w-4 shrink-0" />
             Exploit intelligence
           </div>
-          <h1 className="w-full max-w-[22rem] whitespace-normal break-words text-3xl font-bold tracking-normal text-foreground [overflow-wrap:anywhere] sm:max-w-4xl sm:text-4xl">
+          <h1 className="w-full min-w-0 break-words text-2xl font-bold tracking-normal text-foreground [overflow-wrap:anywhere] sm:text-3xl lg:text-4xl">
             Rekt Database
           </h1>
-          <p className="mt-2 w-full max-w-[22rem] whitespace-normal break-words text-sm leading-6 text-muted-foreground [overflow-wrap:anywhere] sm:max-w-2xl sm:text-base">
+          <p className="mt-2 w-full min-w-0 break-words text-sm leading-6 text-muted-foreground [overflow-wrap:anywhere] sm:text-base">
             Search real-world exploits, rugs, bridge failures, oracle incidents, and protocol loss events.
           </p>
         </div>
-        <Button asChild variant="outline">
+        <Button asChild variant="outline" className="w-full shrink-0 sm:w-auto">
           <Link to="/analyze">Scan a contract</Link>
         </Button>
       </div>
@@ -272,71 +353,36 @@ const RektDatabase: React.FC = () => {
         </div>
       ) : null}
 
+      <div className="mb-4 lg:hidden">
+        <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+          <SheetTrigger asChild>
+            <Button variant="outline" className="w-full">
+              <Filter className="mr-2 h-4 w-4" />
+              Filters
+              {activeFilterCount > 0 ? (
+                <Badge variant="secondary" className="ml-2">
+                  {activeFilterCount}
+                </Badge>
+              ) : null}
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto rounded-t-xl">
+            <SheetHeader>
+              <SheetTitle>Filter incidents</SheetTitle>
+            </SheetHeader>
+            <div className="mt-4 space-y-4">{filtersContent}</div>
+          </SheetContent>
+        </Sheet>
+      </div>
+
       <div className="grid gap-4 lg:grid-cols-[18rem_1fr]">
-        <aside className="space-y-4">
+        <aside className="hidden space-y-4 lg:block">
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Filters</CardTitle>
               <CardDescription>Find incidents by chain, category, and exploit type.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <form onSubmit={submitSearch} className="space-y-2">
-                <Label htmlFor="rekt-search">Search</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="rekt-search"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Protocol, cause, tag"
-                  />
-                  <Button type="submit" size="icon" aria-label="Search incidents">
-                    <Search className="h-4 w-4" />
-                  </Button>
-                </div>
-              </form>
-              {facets ? (
-                <>
-                  <FacetSelect
-                    label="Chain"
-                    value={filters.chain || ALL}
-                    facets={facets.chains}
-                    placeholder="All chains"
-                    onChange={(value) => updateFilter("chain", value)}
-                  />
-                  <FacetSelect
-                    label="Category"
-                    value={filters.category || ALL}
-                    facets={facets.categories}
-                    placeholder="All categories"
-                    onChange={(value) => updateFilter("category", value)}
-                  />
-                  <FacetSelect
-                    label="Attack type"
-                    value={filters.attackType || ALL}
-                    facets={facets.attackTypes}
-                    placeholder="All attack types"
-                    onChange={(value) => updateFilter("attackType", value)}
-                  />
-                  <FacetSelect
-                    label="Severity"
-                    value={filters.severity || ALL}
-                    facets={facets.severities}
-                    placeholder="All severities"
-                    onChange={(value) => updateFilter("severity", value)}
-                  />
-                </>
-              ) : null}
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  setQuery("");
-                  setSearchParams(new URLSearchParams());
-                }}
-              >
-                Clear filters
-              </Button>
-            </CardContent>
+            {filtersContent}
           </Card>
         </aside>
 

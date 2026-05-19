@@ -261,17 +261,19 @@ const ShieldPage: React.FC = () => {
 
   return (
     <div className="container max-w-4xl py-6 px-3 sm:px-4 md:px-6 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Shield className="w-7 h-7 text-primary" />
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-xl font-bold flex items-center gap-2 sm:text-2xl">
+            <Shield className="w-6 h-6 sm:w-7 sm:h-7 text-primary shrink-0" />
             Shield
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            De.Fi-style wallet security — approvals, token risks, and in-app revoke.
+            Wallet security — approvals, token risks, and in-app revoke.
           </p>
         </div>
-        <ConnectButton />
+        <div className="w-full sm:w-auto shrink-0 [&_button]:w-full sm:[&_button]:w-auto">
+          <ConnectButton />
+        </div>
       </div>
 
       {!isConnected ? (
@@ -462,10 +464,11 @@ const ShieldPage: React.FC = () => {
                   <p className="text-xs text-muted-foreground font-mono break-all">
                     Spender: {a.spender}
                   </p>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                     <Button
                       size="sm"
                       variant="destructive"
+                      className="w-full sm:w-auto"
                       disabled={!canRevoke || revoking}
                       onClick={() => handleRevoke(a)}
                     >
@@ -478,19 +481,19 @@ const ShieldPage: React.FC = () => {
                         "Revoke"
                       )}
                     </Button>
-                    <Button size="sm" variant="outline" asChild>
+                    <Button size="sm" variant="outline" className="w-full sm:w-auto" asChild>
                       <Link
                         to={`/analyze?tab=address&address=${a.spender}&chainId=${chainId}`}
                       >
                         Scan spender
                       </Link>
                     </Button>
-                    <Button size="sm" variant="ghost" asChild>
+                    <Button size="sm" variant="ghost" className="w-full sm:w-auto" asChild>
                       <a
                         href={`https://revoke.cash/address/${address}?chainId=${chainId}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-1"
+                        className="inline-flex items-center justify-center gap-1"
                       >
                         revoke.cash <ExternalLink className="w-3 h-3" />
                       </a>
@@ -545,10 +548,11 @@ const ShieldPage: React.FC = () => {
                   <p className="text-xs text-muted-foreground font-mono break-all">
                     Operator: {a.operator}
                   </p>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                     <Button
                       size="sm"
                       variant="destructive"
+                      className="w-full sm:w-auto"
                       disabled={!canRevoke || revoking}
                       onClick={() => handleNftRevoke(a)}
                     >
@@ -561,7 +565,7 @@ const ShieldPage: React.FC = () => {
                         "Revoke operator"
                       )}
                     </Button>
-                    <Button size="sm" variant="outline" asChild>
+                    <Button size="sm" variant="outline" className="w-full sm:w-auto" asChild>
                       <Link
                         to={`/analyze?tab=address&address=${a.operator}&chainId=${chainId}`}
                       >

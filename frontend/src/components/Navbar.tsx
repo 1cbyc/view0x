@@ -144,7 +144,13 @@ const Navbar: React.FC = () => {
         <div className="flex flex-1 items-center justify-end space-x-1 sm:space-x-2 min-w-0">
           <ThemeToggle />
           {user ? (
-            <div className="hidden md:flex items-center space-x-2">
+            <>
+              <Link to="/notifications" className="md:hidden">
+                <Button variant="ghost" size="icon" aria-label="Notifications">
+                  <Bell className="h-4 w-4" />
+                </Button>
+              </Link>
+              <div className="hidden md:flex items-center space-x-2">
               <Link to="/notifications">
                 <Button variant="ghost" size="icon" aria-label="Notifications">
                   <Bell className="h-4 w-4" />
@@ -153,9 +159,16 @@ const Navbar: React.FC = () => {
               <Button onClick={handleLogout} size="sm">
                 Logout
               </Button>
-            </div>
+              </div>
+            </>
           ) : (
-            <div className="hidden md:flex items-center space-x-2">
+            <>
+              <Link to="/login" className="md:hidden">
+                <Button variant="ghost" size="sm">
+                  Sign in
+                </Button>
+              </Link>
+              <div className="hidden md:flex items-center space-x-2">
               <Link to="/login">
                 <Button variant="ghost" size="sm">
                   Sign In
@@ -164,7 +177,8 @@ const Navbar: React.FC = () => {
               <Link to="/register">
                 <Button size="sm">Sign Up</Button>
               </Link>
-            </div>
+              </div>
+            </>
           )}
         </div>
       </nav>

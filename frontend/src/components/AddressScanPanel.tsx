@@ -473,10 +473,10 @@ export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
               View on explorer <ExternalLink className="w-3 h-3" />
             </a>
             <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:flex sm:flex-wrap">
-              <Button type="button" variant="outline" size="sm" onClick={exportCsvFile}>
+              <Button type="button" variant="outline" size="sm" className="w-full sm:w-auto" onClick={exportCsvFile}>
                 Export CSV
               </Button>
-              <Button type="button" variant="outline" size="sm" onClick={exportJsonFile}>
+              <Button type="button" variant="outline" size="sm" className="w-full sm:w-auto" onClick={exportJsonFile}>
                 Export JSON
               </Button>
               {authenticated && result.scanId ? (
@@ -484,18 +484,19 @@ export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
                   type="button"
                   variant="secondary"
                   size="sm"
+                  className="w-full sm:w-auto"
                   disabled={sharing}
                   onClick={createShareLink}
                 >
                   {sharing ? "Creating…" : shareCopied ? "Link copied!" : "Copy share link"}
                 </Button>
               ) : null}
-              <Button type="button" variant="secondary" size="sm" asChild>
+              <Button type="button" variant="secondary" size="sm" className="w-full sm:w-auto" asChild>
                 <Link to={`/shield?chainId=${result.chainId}&address=${result.address}`}>
                   Open in Shield
                 </Link>
               </Button>
-              <Button type="button" variant="outline" size="sm" onClick={loadWalletTools}>
+              <Button type="button" variant="outline" size="sm" className="w-full sm:w-auto" onClick={loadWalletTools}>
                 External revoke links
               </Button>
             </div>

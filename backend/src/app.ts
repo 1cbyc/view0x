@@ -42,6 +42,7 @@ import { notificationService } from "./services/notificationService";
 import walletRoutes from "./routes/wallet";
 import { seedRektIncidents } from "./services/rektIncidentService";
 import { sanitizeAllRektDefillamaSources } from "./services/scanDiscoveryService";
+import { migrateRektDefillamaSlugs } from "./services/rektSlugMigration";
 import shieldRoutes from "./routes/shield";
 
 // Initialize Express app
@@ -324,6 +325,10 @@ export async function initializeApp(): Promise<void> {
     const sanitized = await sanitizeAllRektDefillamaSources();
     if (sanitized > 0) {
       logger.info(`[REKT] Replaced defillama.com/hacks sources on ${sanitized} incidents`);
+    }
+    const slugMigrated = await migrateRektDefillamaSlugs();
+    if (slugMigrated > 0) {
+      logger.info(`[REKT] Renamed ${slugMigrated} incident URLs off defillama- prefix`);
     }
     logger.info("Application initialized successfully");
   } catch (error) {

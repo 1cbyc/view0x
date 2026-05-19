@@ -3,6 +3,7 @@ import { RektIncident } from "../models/RektIncident";
 import { rektIncidentsSeed } from "../data/rektIncidentsSeed";
 import { logger } from "../utils/logger";
 import { fallbackNewsSourceUrls, sanitizeSourceUrls } from "./rektSourceUrls";
+import { stripDefillamaSlugPrefix } from "./rektSlug";
 
 const toNumber = (value: string | number | null | undefined): number =>
   value == null ? 0 : Number(value);
@@ -108,10 +109,19 @@ export async function listRektIncidents(params: {
 }
 
 export async function getRektIncidentBySlug(slug: string) {
-  const row = await RektIncident.findOne({
+  let row = await RektIncident.findOne({
     where: { slug },
     attributes: publicAttributes as unknown as string[],
   });
+  if (!row) {
+    const legacy = stripDefillamaSlugPrefix(slug);
+    if (legacy !== slug) {
+      row = await RektIncident.findOne({
+        where: { slug: legacy },
+        attributes: publicAttributes as unknown as string[],
+      });
+    }
+  }
   if (!row) return null;
   const plain = row.get({ plain: true }) as typeof row & { projectName: string };
   const cleaned = sanitizeSourceUrls(plain.sourceUrls);

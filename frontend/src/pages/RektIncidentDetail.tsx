@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, ExternalLink, Loader2, ShieldAlert } from "lucide-react";
 import { rektApi, type RektIncident } from "@/services/api";
 import { getApiErrorMessage } from "@/lib/apiHelpers";
@@ -33,12 +33,15 @@ function severityVariant(severity: RektIncident["severity"]) {
 
 const RektIncidentDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const [incident, setIncident] = useState<RektIncident | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!slug) return;
     let cancelled = false;
+    setIncident(null);
+    setError(null);
     rektApi
       .getIncident(slug)
       .then((res) => {
@@ -51,6 +54,12 @@ const RektIncidentDetail: React.FC = () => {
       cancelled = true;
     };
   }, [slug]);
+
+  useEffect(() => {
+    if (incident && slug && incident.slug !== slug) {
+      navigate(`/rekt/${incident.slug}`, { replace: true });
+    }
+  }, [incident, slug, navigate]);
 
   if (error) {
     return (
@@ -74,24 +83,24 @@ const RektIncidentDetail: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto box-border w-full max-w-5xl overflow-x-hidden px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-      <Button asChild variant="ghost" className="mb-4 -ml-3">
+    <div className="mx-auto box-border w-full max-w-5xl overflow-x-hidden px-3 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <Button asChild variant="ghost" className="mb-4 -ml-2 sm:-ml-3">
         <Link to="/rekt">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Rekt Database
         </Link>
       </Button>
 
-      <div className="mb-6 min-w-0 max-w-[22rem] sm:max-w-full">
+      <div className="mb-6 min-w-0 w-full">
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <Badge variant={severityVariant(incident.severity)}>{incident.severity}</Badge>
           <Badge variant="outline">{incident.status.replace(/_/g, " ")}</Badge>
           <span className="text-sm text-muted-foreground">{displayDate(incident.incidentDate)}</span>
         </div>
-        <h1 className="w-full max-w-[22rem] whitespace-normal break-words text-2xl font-bold tracking-normal text-foreground [overflow-wrap:anywhere] sm:max-w-4xl sm:text-4xl">
+        <h1 className="w-full min-w-0 break-words text-2xl font-bold tracking-normal text-foreground [overflow-wrap:anywhere] sm:text-3xl lg:text-4xl">
           {incident.title}
         </h1>
-        <p className="mt-3 w-full max-w-[22rem] whitespace-normal break-words text-base leading-7 text-muted-foreground [overflow-wrap:anywhere] sm:max-w-3xl">
+        <p className="mt-3 w-full min-w-0 break-words text-base leading-7 text-muted-foreground [overflow-wrap:anywhere]">
           {incident.summary}
         </p>
       </div>
@@ -126,7 +135,7 @@ const RektIncidentDetail: React.FC = () => {
                 Incident breakdown
               </CardTitle>
             </CardHeader>
-            <CardContent className="max-w-[22rem] space-y-5 text-sm leading-6 [overflow-wrap:anywhere] sm:max-w-none">
+            <CardContent className="min-w-0 space-y-5 text-sm leading-6 [overflow-wrap:anywhere]">
               {incident.rootCause ? (
                 <div>
                   <h2 className="font-semibold text-foreground">Root cause</h2>
