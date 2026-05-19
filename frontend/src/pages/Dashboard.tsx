@@ -170,41 +170,31 @@ const Dashboard: React.FC = () => {
     };
     window.addEventListener("focus", onFocus);
 
-    // Connect to WebSocket for real-time updates
+    const handleAnalysisUpdate = (payload: AnalysisUpdatePayload) => {
+      setAnalyses((prev) =>
+        prev.map((analysis) => {
+          if (analysis.id !== payload.analysisId) return analysis;
+          return {
+            ...analysis,
+            status: payload.status,
+            ...(payload.status === "completed" && payload.result
+              ? {
+                  summary: {
+                    highSeverity: payload.result.summary?.highSeverity || 0,
+                    mediumSeverity: payload.result.summary?.mediumSeverity || 0,
+                    lowSeverity: payload.result.summary?.lowSeverity || 0,
+                  },
+                }
+              : {}),
+          };
+        }),
+      );
+    };
+
     if (token) {
       socketService.connect();
       setIsConnected(true);
-
-      // Listen for analysis updates
-      const handleAnalysisUpdate = (payload: AnalysisUpdatePayload) => {
-        setAnalyses((prev) => {
-          const updated = prev.map((analysis) => {
-            if (analysis.id === payload.analysisId) {
-              return {
-                ...analysis,
-                status: payload.status,
-                ...(payload.status === "completed" && payload.result
-                  ? {
-                      summary: {
-                        highSeverity:
-                          payload.result.summary?.highSeverity || 0,
-                        mediumSeverity:
-                          payload.result.summary?.mediumSeverity || 0,
-                        lowSeverity: payload.result.summary?.lowSeverity || 0,
-                      },
-                    }
-                  : {}),
-              };
-            }
-            return analysis;
-          });
-          return updated;
-        });
-      };
-
-      // Subscribe to all user analyses for real-time updates
       socketService.socketInstance?.on("analysis:update", handleAnalysisUpdate);
-
     }
 
     return () => {
