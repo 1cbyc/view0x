@@ -58,7 +58,8 @@ function statusLabel(status: RektIncident["status"]) {
 function setOrDelete(params: URLSearchParams, key: string, value: string) {
   if (!value || value === ALL) params.delete(key);
   else params.set(key, value);
-  params.delete("page");
+  // Reset to page 1 when filters change, but not when paginating.
+  if (key !== "page") params.delete("page");
 }
 
 function FacetSelect({
