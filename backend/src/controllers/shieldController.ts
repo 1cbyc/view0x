@@ -9,8 +9,6 @@ import {
   getShieldNftApprovals,
   runShieldScan,
 } from "../services/shield/shieldSnapshot";
-import { getIndexerNote } from "../services/shield/shieldRpc";
-
 function parseAddressChain(req: Request): { address: string; chainId: number } | { error: string } {
   const raw = typeof req.query.address === "string" ? req.query.address.trim() : "";
   const chainId = Number(req.query.chainId || 1);
@@ -39,7 +37,6 @@ export const listShieldChainsHandler = (_req: Request, res: Response) => {
       key: c.key,
       name: c.name,
       nativeSymbol: c.nativeSymbol,
-      indexerNote: getIndexerNote(c.id),
     })),
   });
 };
@@ -49,14 +46,14 @@ function shieldRpcError(err: unknown): never {
   const msg = err instanceof Error ? err.message : String(err);
   if (/rate limit|429|too many requests/i.test(msg)) {
     throw new AppError(
-      "RPC rate limit reached. Retry in a minute or set ALCHEMY_API_KEY on the API server.",
+      "Network is busy. Wait a minute and try again.",
       503,
       "RPC_RATE_LIMIT",
     );
   }
   if (/range|too many|block range|query timeout|exceed/i.test(msg)) {
     throw new AppError(
-      "Could not index approvals for this chain window. Try again or use a shorter history with ALCHEMY_API_KEY.",
+      "Could not load approvals for this wallet on this chain. Try again in a moment.",
       503,
       "RPC_LOG_RANGE",
     );
@@ -115,7 +112,6 @@ export const getShieldApprovalsHandler = async (req: Request, res: Response) => 
         address: parsed.address,
         chainId: parsed.chainId,
         approvals,
-        indexerNote: getIndexerNote(parsed.chainId),
       },
     });
   } catch (err) {
@@ -139,7 +135,6 @@ export const getShieldNftApprovalsHandler = async (req: Request, res: Response) 
       address: parsed.address,
       chainId: parsed.chainId,
       nftApprovals,
-      indexerNote: getIndexerNote(parsed.chainId),
     },
   });
 };
@@ -160,7 +155,6 @@ export const getShieldHoldingsHandler = async (req: Request, res: Response) => {
       address: parsed.address,
       chainId: parsed.chainId,
       holdings,
-      indexerNote: getIndexerNote(parsed.chainId),
     },
   });
 };

@@ -4,7 +4,6 @@ import { normalizeAddress } from "../explorer/addressValidation";
 import type { ShieldErc20Approval, ShieldHolding, ShieldNftApproval } from "../../shared/types/shield";
 import {
   canFallbackToPublicRpc,
-  getIndexerNote,
   getShieldProvider,
   isAlchemyNetworkError,
 } from "./shieldRpc";
@@ -22,16 +21,23 @@ const ERC20_ABI = [
 
 async function withShieldProvider<T>(
   chainId: number,
-  task: (provider: ReturnType<typeof getShieldProvider>) => Promise<T>,
+  task: (
+    provider: ReturnType<typeof getShieldProvider>,
+    mode: "alchemy" | "public",
+  ) => Promise<T>,
 ): Promise<T> {
   try {
-    return await task(getShieldProvider(chainId, true));
+    return await task(getShieldProvider(chainId, true), "alchemy");
   } catch (err) {
     if (!canFallbackToPublicRpc(chainId) || !isAlchemyNetworkError(err)) {
       throw err;
     }
-    return task(getShieldProvider(chainId, false));
+    return task(getShieldProvider(chainId, false), "public");
   }
+}
+
+function blockWindowForMode(mode: "alchemy" | "public"): number {
+  return mode === "alchemy" ? shieldLogBlockWindow() : 25_000;
 }
 
 export async function fetchErc20Approvals(
@@ -42,9 +48,9 @@ export async function fetchErc20Approvals(
   if (!chain) throw new Error(`Unsupported chainId: ${chainId}`);
 
   const owner = normalizeAddress(ownerInput);
-  return withShieldProvider(chainId, async (provider) => {
+  return withShieldProvider(chainId, async (provider, mode) => {
     const latest = await provider.getBlockNumber();
-    const fromBlock = Math.max(0, latest - shieldLogBlockWindow());
+    const fromBlock = Math.max(0, latest - blockWindowForMode(mode));
 
     const ownerTopic = zeroPadValue(owner, 32);
 
@@ -109,9 +115,9 @@ export async function fetchNftApprovals(
   ownerInput: string,
 ): Promise<ShieldNftApproval[]> {
   const owner = normalizeAddress(ownerInput);
-  return withShieldProvider(chainId, async (provider) => {
+  return withShieldProvider(chainId, async (provider, mode) => {
     const latest = await provider.getBlockNumber();
-    const fromBlock = Math.max(0, latest - shieldLogBlockWindow());
+    const fromBlock = Math.max(0, latest - blockWindowForMode(mode));
     const ownerTopic = zeroPadValue(owner, 32);
 
     const logs = await getLogsChunked(provider, fromBlock, latest, {
@@ -175,5 +181,3 @@ export async function fetchTokenHoldings(
     return holdings;
   });
 }
-
-export { getIndexerNote };

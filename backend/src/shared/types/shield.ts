@@ -44,7 +44,6 @@ export interface ShieldSnapshot {
     highRiskHoldings: number;
     nftApprovals: number;
   };
-  indexerNote: string;
   scannedAt: string;
 }
 

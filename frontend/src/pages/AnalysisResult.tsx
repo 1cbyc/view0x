@@ -7,6 +7,7 @@ import { Loader2, AlertTriangle, ArrowLeft, ShieldCheck, Download, MessageSquare
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { FormattedCodeText } from "@/components/FormattedCodeText";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Accordion,
@@ -116,15 +117,25 @@ const VulnerabilityAccordionItem: React.FC<{ vuln: Vulnerability }> = ({
       <AccordionTrigger>
         <div className="flex items-center gap-4">
           <Badge variant={getSeverityVariant(vuln.impact)}>{vuln.impact}</Badge>
-          <span className="text-left">{vuln.check}</span>
+          <span className="text-left font-mono">{vuln.check}</span>
         </div>
       </AccordionTrigger>
       <AccordionContent className="space-y-2">
-        <p className="text-sm text-muted-foreground">{vuln.description}</p>
-        <div className="text-xs font-mono text-muted-foreground">
+        <FormattedCodeText
+          text={vuln.description}
+          as="p"
+          className="text-sm text-muted-foreground"
+        />
+        <div className="space-y-1 text-xs text-muted-foreground">
           {(vuln.elements ?? []).map((el, i) => (
-            <div key={i}>
-              {`${el.type} "${el.name}" (${formatLines(el.source_mapping.lines)})`}
+            <div key={i} className="break-words">
+              <code className="rounded bg-muted px-1 py-0.5 font-mono text-foreground">
+                {el.type}
+              </code>{" "}
+              <code className="rounded bg-muted px-1 py-0.5 font-mono text-foreground">
+                {el.name}
+              </code>{" "}
+              <span className="font-mono">({formatLines(el.source_mapping.lines)})</span>
             </div>
           ))}
         </div>

@@ -393,7 +393,13 @@ const ShieldPage: React.FC = () => {
                 {snapshot.healthLevel} · {snapshot.healthScore}/100
               </Badge>
             </div>
-            <CardDescription>{snapshot.indexerNote}</CardDescription>
+            <CardDescription>
+              {snapshot.chainName} · scanned{" "}
+              {new Date(snapshot.scannedAt).toLocaleString(undefined, {
+                dateStyle: "medium",
+                timeStyle: "short",
+              })}
+            </CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
             <div>
@@ -498,8 +504,8 @@ const ShieldPage: React.FC = () => {
       ) : snapshot && !loading ? (
         <p className="text-sm text-muted-foreground text-center py-4">
           {advancedMode
-            ? "No active ERC-20 approvals found in the recent block window."
-            : "No high-risk approvals in the recent window. Enable Advanced mode to see all."}
+            ? "No active token approvals found for this wallet on this chain."
+            : "No high-risk approvals found. Turn on Advanced mode to see everything we detected."}
         </p>
       ) : null}
 

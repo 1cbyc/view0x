@@ -274,7 +274,6 @@ export type ShieldChain = {
   key: string;
   name: string;
   nativeSymbol: string;
-  indexerNote?: string;
 };
 
 export type ContractRiskBrief = {
@@ -300,7 +299,6 @@ export type ShieldSnapshot = {
     highRiskHoldings: number;
     nftApprovals: number;
   };
-  indexerNote: string;
   scannedAt: string;
 };
 
@@ -355,7 +353,6 @@ export const shieldApi = {
         address: string;
         chainId: number;
         approvals: ShieldApproval[];
-        indexerNote: string;
       };
     }>("/shield/approvals", {
       params: { address: address.trim(), chainId },
@@ -368,7 +365,6 @@ export const shieldApi = {
         address: string;
         chainId: number;
         nftApprovals: ShieldNftApproval[];
-        indexerNote: string;
       };
     }>("/shield/nft-approvals", {
       params: { address: address.trim(), chainId },
@@ -381,7 +377,6 @@ export const shieldApi = {
         address: string;
         chainId: number;
         holdings: ShieldHolding[];
-        indexerNote: string;
       };
     }>("/shield/holdings", {
       params: { address: address.trim(), chainId },

@@ -9,7 +9,6 @@ import {
   fetchErc20Approvals,
   fetchNftApprovals,
   fetchTokenHoldings,
-  getIndexerNote,
 } from "./shieldIndexer";
 import {
   enrichApprovalRisks,
@@ -95,7 +94,6 @@ export async function runShieldScan(
       highRiskHoldings,
       nftApprovals,
     },
-    indexerNote: getIndexerNote(chainId),
     scannedAt: new Date().toISOString(),
   };
 

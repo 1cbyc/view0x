@@ -38,11 +38,3 @@ export function isAlchemyNetworkError(err: unknown): boolean {
   return /not enabled for this app|403 Forbidden|forbidden|unauthorized|invalid api key/i.test(msg);
 }
 
-export function getIndexerNote(chainId: number): string {
-  const chain = getChain(chainId);
-  if (!chain) return "";
-  if (env.ALCHEMY_API_KEY && chain.alchemyNetwork) {
-    return "Indexed via Alchemy RPC. Approval history is limited to recent blocks for performance.";
-  }
-  return "Indexed via public RPC. Set ALCHEMY_API_KEY for better reliability. Approval history is limited to recent blocks.";
-}

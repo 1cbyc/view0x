@@ -13,6 +13,7 @@ import CodeMirror from "@uiw/react-codemirror";
 import { javascript } from "@codemirror/lang-javascript";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { FileUpload } from "@/components/FileUpload";
+import { FormattedCodeText } from "@/components/FormattedCodeText";
 import type { ContractExample } from "@/data/contractExamples";
 import { getExampleById } from "@/data/contractExamples";
 import { ContractExamplesDialog } from "@/components/ContractExamplesDialog";
@@ -651,17 +652,27 @@ const ContractAnalyzer: React.FC = () => {
                       <Badge variant={getSeverityClass(vuln.impact)} className="text-xs flex-shrink-0">
                         {vuln.impact}
                       </Badge>
-                      <span className="text-sm sm:text-base truncate">{vuln.check}</span>
+                      <span className="truncate font-mono text-sm sm:text-base">{vuln.check}</span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="space-y-2">
-                    <p className="text-sm text-muted-foreground">
-                      {vuln.description}
-                    </p>
-                    <div className="text-xs font-mono text-muted-foreground">
+                    <FormattedCodeText
+                      text={vuln.description}
+                      as="p"
+                      className="text-sm text-muted-foreground"
+                    />
+                    <div className="space-y-1 text-xs text-muted-foreground">
                       {vuln.elements.map((el, i) => (
                         <div className="break-words" key={i}>
-                          {`${el.type} "${el.name}" (Lines: ${el.source_mapping.lines.join(", ")})`}
+                          <code className="rounded bg-muted px-1 py-0.5 font-mono text-foreground">
+                            {el.type}
+                          </code>{" "}
+                          <code className="rounded bg-muted px-1 py-0.5 font-mono text-foreground">
+                            {el.name}
+                          </code>{" "}
+                          <span className="font-mono">
+                            (lines {el.source_mapping.lines.join(", ")})
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -698,7 +709,7 @@ const ContractAnalyzer: React.FC = () => {
                           <Badge variant="outline" className="text-purple-500 border-purple-500 text-xs">
                             Gas
                           </Badge>
-                          <span className="min-w-0 break-words text-sm font-medium">{opt.type}</span>
+                          <span className="min-w-0 break-words font-mono text-sm font-medium">{opt.type}</span>
                         </div>
                         {opt.potentialSavings && (
                           <span className="text-xs font-medium text-purple-400 sm:whitespace-nowrap">
@@ -706,9 +717,17 @@ const ContractAnalyzer: React.FC = () => {
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground mb-2">{opt.description}</p>
+                      <FormattedCodeText
+                        text={opt.description}
+                        as="p"
+                        className="mb-2 text-sm text-muted-foreground"
+                      />
                       <p className="mb-1 break-words text-sm font-medium text-foreground">
-                        Recommendation: <span className="text-primary">{opt.recommendation}</span>
+                        Recommendation:{" "}
+                        <FormattedCodeText
+                          text={opt.recommendation}
+                          className="text-primary"
+                        />
                       </p>
                       {opt.lineNumber && (
                         <p className="text-xs font-mono text-muted-foreground">
@@ -740,13 +759,18 @@ const ContractAnalyzer: React.FC = () => {
                           >
                             {issue.severity}
                           </Badge>
-                          <span className="text-sm sm:text-base truncate">{issue.type}</span>
+                          <span className="truncate font-mono text-sm sm:text-base">{issue.type}</span>
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="space-y-2">
-                        <p className="text-sm text-muted-foreground">{issue.description}</p>
+                        <FormattedCodeText
+                          text={issue.description}
+                          as="p"
+                          className="text-sm text-muted-foreground"
+                        />
                         <p className="break-words text-sm font-medium text-foreground">
-                          Recommendation: {issue.recommendation}
+                          Recommendation:{" "}
+                          <FormattedCodeText text={issue.recommendation} />
                         </p>
                         {issue.lineNumber && (
                           <p className="text-xs font-mono text-muted-foreground">
