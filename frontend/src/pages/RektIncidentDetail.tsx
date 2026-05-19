@@ -74,7 +74,7 @@ const RektIncidentDetail: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+    <div className="mx-auto box-border w-full max-w-5xl overflow-x-hidden px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       <Button asChild variant="ghost" className="mb-4 -ml-3">
         <Link to="/rekt">
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -82,16 +82,16 @@ const RektIncidentDetail: React.FC = () => {
         </Link>
       </Button>
 
-      <div className="mb-6">
+      <div className="mb-6 min-w-0 max-w-full">
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <Badge variant={severityVariant(incident.severity)}>{incident.severity}</Badge>
           <Badge variant="outline">{incident.status.replace(/_/g, " ")}</Badge>
           <span className="text-sm text-muted-foreground">{displayDate(incident.incidentDate)}</span>
         </div>
-        <h1 className="break-words text-2xl font-bold tracking-normal text-foreground sm:text-4xl">
+        <h1 className="max-w-full whitespace-normal break-words text-2xl font-bold tracking-normal text-foreground [overflow-wrap:anywhere] sm:text-4xl">
           {incident.title}
         </h1>
-        <p className="mt-3 max-w-3xl break-words text-base leading-7 text-muted-foreground">
+        <p className="mt-3 max-w-full whitespace-normal break-words text-base leading-7 text-muted-foreground [overflow-wrap:anywhere] sm:max-w-3xl">
           {incident.summary}
         </p>
       </div>
@@ -126,7 +126,7 @@ const RektIncidentDetail: React.FC = () => {
                 Incident breakdown
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-5 text-sm leading-6">
+            <CardContent className="space-y-5 text-sm leading-6 [overflow-wrap:anywhere]">
               {incident.rootCause ? (
                 <div>
                   <h2 className="font-semibold text-foreground">Root cause</h2>

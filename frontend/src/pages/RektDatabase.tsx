@@ -223,17 +223,17 @@ const RektDatabase: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+    <div className="mx-auto box-border w-full max-w-7xl overflow-x-hidden px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
+        <div className="min-w-0 max-w-full">
           <div className="mb-2 flex items-center gap-2 text-sm font-medium text-muted-foreground">
             <ShieldAlert className="h-4 w-4" />
             Exploit intelligence
           </div>
-          <h1 className="text-3xl font-bold tracking-normal text-foreground sm:text-4xl">
+          <h1 className="max-w-full whitespace-normal break-words text-3xl font-bold tracking-normal text-foreground [overflow-wrap:anywhere] sm:text-4xl">
             Rekt Database
           </h1>
-          <p className="mt-2 max-w-2xl break-words text-sm leading-6 text-muted-foreground sm:text-base">
+          <p className="mt-2 max-w-full whitespace-normal break-words text-sm leading-6 text-muted-foreground [overflow-wrap:anywhere] sm:max-w-2xl sm:text-base">
             Search real-world exploits, rugs, bridge failures, oracle incidents, and protocol loss events.
           </p>
         </div>
