@@ -74,11 +74,15 @@ export async function listRektIncidents(params: {
 }) {
   const where = RektIncident.buildWhere(params);
   const offset = (params.page - 1) * params.limit;
+  const order: OrderItem[] =
+    params.sortBy === "amountLostUsd"
+      ? [literal(`amount_lost_usd ${params.sortOrder} NULLS LAST`) as OrderItem]
+      : [[params.sortBy, params.sortOrder]];
 
   const { count, rows } = await RektIncident.findAndCountAll({
     where,
     attributes: publicAttributes as unknown as string[],
-    order: [[params.sortBy, params.sortOrder]],
+    order,
     limit: params.limit,
     offset,
   });
