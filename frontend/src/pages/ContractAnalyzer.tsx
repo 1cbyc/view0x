@@ -203,7 +203,7 @@ const ContractAnalyzer: React.FC = () => {
       ? "address"
       : exampleFromUrl
         ? "source"
-        : "source";
+        : "address";
 
   const [editorDark, setEditorDark] = useState(() =>
     typeof document !== "undefined"
@@ -801,8 +801,8 @@ const ContractAnalyzer: React.FC = () => {
         className="w-full"
       >
         <TabsList className="mx-auto mb-4 grid h-10 w-full max-w-md grid-cols-2">
-          <TabsTrigger value="source">Paste source</TabsTrigger>
           <TabsTrigger value="address">Scan address</TabsTrigger>
+          <TabsTrigger value="source">Paste source</TabsTrigger>
         </TabsList>
         <TabsContent value="address" className="mt-0">
           <AddressScanPanel
