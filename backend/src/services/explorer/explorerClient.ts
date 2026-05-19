@@ -96,7 +96,7 @@ export async function fetchContractFromExplorer(
   const address = normalizeAddress(addressInput);
   const explorerUrl = `${chain.explorerWebUrl}/address/${address}`;
 
-  let bytecode = "0x";
+  let bytecode: string;
   try {
     bytecode = await explorerGet<string>(chain, {
       module: "proxy",
@@ -105,7 +105,9 @@ export async function fetchContractFromExplorer(
       tag: "latest",
     });
   } catch {
-    bytecode = "0x";
+    throw new Error(
+      `Could not read bytecode from ${chain.name} explorer. Check ${chain.apiKeyEnv} on the server and try again.`,
+    );
   }
 
   if (!isContractBytecode(bytecode)) {

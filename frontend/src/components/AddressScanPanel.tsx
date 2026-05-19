@@ -343,7 +343,9 @@ export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
         <CardHeader>
           <CardTitle className="text-base sm:text-lg">Scan by address</CardTitle>
           <CardDescription className="text-xs sm:text-sm">
-            Scan any deployed contract across supported EVM chains (De.Fi-style scanner).
+            Scan a deployed <strong className="font-medium text-foreground">smart contract</strong> on
+            supported EVM chains. Wallet addresses (EOAs) are detected separately — use Shield for
+            approvals.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -375,7 +377,7 @@ export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
             </Select>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="scan-address">Contract address</Label>
+            <Label htmlFor="scan-address">Address</Label>
             <Input
               id="scan-address"
               placeholder="0x..."
@@ -422,7 +424,6 @@ export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
           </Button>
         </CardFooter>
       </Card>
-      <ScannerDiscovery />
       {error && (
         <Alert variant="destructive">
           <ShieldAlert className="h-4 w-4" />
@@ -435,13 +436,39 @@ export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
           <CardHeader>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <CardTitle className="text-base">Risk report</CardTitle>
-              <Badge variant={riskVariant(result.riskLevel)}>{result.riskLevel} · {result.reputationScore}/100</Badge>
+              {result.contractType === "contract" ? (
+                <Badge variant={riskVariant(result.riskLevel)}>
+                  {result.riskLevel} · {result.reputationScore}/100
+                </Badge>
+              ) : (
+                <Badge variant="secondary">Wallet (EOA)</Badge>
+              )}
             </div>
             <CardDescription className="break-words">
-              {result.chainName} · {result.contractType} · {result.explorer.contractName || "Unnamed"}
+              {result.chainName} · {result.contractType === "eoa" ? "wallet / EOA" : result.contractType}
+              {result.contractType === "contract"
+                ? ` · ${result.explorer.contractName || "Unnamed"}`
+                : null}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
+            {result.contractType === "eoa" ? (
+              <Alert>
+                <ShieldAlert className="h-4 w-4" />
+                <AlertTitle>Not a smart contract</AlertTitle>
+                <AlertDescription>
+                  This address has no contract bytecode — it is a wallet (EOA). Contract heuristics do
+                  not apply. Open{" "}
+                  <Link
+                    to={`/shield?chainId=${result.chainId}&address=${result.address}`}
+                    className="text-primary underline"
+                  >
+                    Shield
+                  </Link>{" "}
+                  to scan token approvals, or paste a token/protocol contract address above.
+                </AlertDescription>
+              </Alert>
+            ) : null}
             <a href={result.explorer.explorerUrl} target="_blank" rel="noreferrer" className="text-sm text-primary inline-flex items-center gap-1">
               View on explorer <ExternalLink className="w-3 h-3" />
             </a>
@@ -512,9 +539,11 @@ export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
             </div>
             {filteredHeuristics.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                {result.heuristics.length === 0
-                  ? "No risk flags detected."
-                  : "No flags match the current filters."}
+                {result.contractType === "eoa"
+                  ? "No contract-level flags — this target is a wallet, not deployed code."
+                  : result.heuristics.length === 0
+                    ? "No risk flags detected for this contract."
+                    : "No flags match the current filters."}
               </p>
             ) : (
               <ul className="space-y-2">
@@ -581,6 +610,7 @@ export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
           </CardContent>
         </Card>
       )}
+      <ScannerDiscovery />
       <ScannerFaq />
     </div>
   );
