@@ -5,6 +5,7 @@ import type {
   ShieldScanResult,
   ShieldSnapshot,
 } from "../../shared/types/shield";
+import { fetchEip7702Delegation } from "./shieldEip7702";
 import {
   fetchErc20Approvals,
   fetchNftApprovals,
@@ -20,7 +21,7 @@ import { cacheRedis } from "../../config/database";
 import { normalizeAddress } from "../explorer/addressValidation";
 
 const CACHE_TTL_SEC = 30 * 60;
-const SCAN_CACHE_PREFIX = "shield:scan:v2:";
+const SCAN_CACHE_PREFIX = "shield:scan:v3:";
 
 function scoreToHealthLevel(score: number): RiskLevel {
   if (score >= 80) return "LOW";
@@ -34,12 +35,14 @@ function computeHealthScore(params: {
   unlimitedApprovals: number;
   highRiskHoldings: number;
   nftApprovals: number;
+  eip7702Delegations: number;
 }): number {
   let score = 100;
   score -= params.highRiskApprovals * 15;
   score -= params.unlimitedApprovals * 8;
   score -= params.highRiskHoldings * 10;
   score -= params.nftApprovals * 5;
+  score -= params.eip7702Delegations * 20;
   return Math.max(0, Math.min(100, score));
 }
 
@@ -74,11 +77,15 @@ export async function runShieldScan(
   const holdings = await enrichHoldingRisks(chainId, rawHoldings);
   const highRiskHoldings = holdings.filter((h) => isHighRisk(h.tokenRisk)).length;
 
+  const eip7702 = await fetchEip7702Delegation(chainId, address);
+  const eip7702Delegations = eip7702?.hasDelegation ? 1 : 0;
+
   const healthScore = computeHealthScore({
     highRiskApprovals,
     unlimitedApprovals,
     highRiskHoldings,
     nftApprovals,
+    eip7702Delegations,
   });
 
   const snapshot: ShieldSnapshot = {
@@ -93,6 +100,7 @@ export async function runShieldScan(
       holdings: holdings.length,
       highRiskHoldings,
       nftApprovals,
+      eip7702Delegations,
     },
     scannedAt: new Date().toISOString(),
   };
@@ -102,6 +110,7 @@ export async function runShieldScan(
     approvals,
     nftApprovals: nftEnriched,
     holdings,
+    eip7702,
   };
   await cacheRedis.setex(cacheKey, CACHE_TTL_SEC, JSON.stringify(payload));
   return payload;

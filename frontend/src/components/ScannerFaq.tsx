@@ -65,7 +65,8 @@ const FAQ_ITEMS: { id: string; question: string; answer: React.ReactNode }[] = [
         <Link to="/shield" className="text-primary underline">
           Shield
         </Link>{" "}
-        scans wallet token approvals and supports in-app revoke (revoke.cash-style). The{" "}
+        scans your connected wallet&apos;s approvals and revokes them on-chain (including
+        EIP-7702 delegations on Ethereum). The{" "}
         <Link to="/rekt" className="text-primary underline">
           Rekt Database
         </Link>{" "}

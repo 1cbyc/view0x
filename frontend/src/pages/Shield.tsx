@@ -5,6 +5,7 @@ import {
   useAccount,
   useChainId,
   useSwitchChain,
+  useWalletClient,
   useWriteContract,
   useWaitForTransactionReceipt,
 } from "wagmi";
@@ -34,10 +35,15 @@ import {
   shieldApi,
   type ShieldApproval,
   type ShieldChain,
+  type ShieldEip7702Delegation,
   type ShieldNftApproval,
   type ShieldSnapshot,
 } from "@/services/api";
 import { pushShieldHistory } from "@/lib/shieldHistory";
+import {
+  type PendingShieldRevoke,
+  revokeEip7702Delegation,
+} from "@/lib/shieldRevoke";
 
 const SET_APPROVAL_FOR_ALL_ABI = [
   {
@@ -75,6 +81,7 @@ const ShieldPage: React.FC = () => {
   const { address, isConnected } = useAccount();
   const connectedChainId = useChainId();
   const { switchChain } = useSwitchChain();
+  const { data: walletClient } = useWalletClient();
 
   const [chains, setChains] = useState<ShieldChain[]>([]);
   const [chainId, setChainId] = useState(
@@ -85,17 +92,26 @@ const ShieldPage: React.FC = () => {
   const [snapshot, setSnapshot] = useState<ShieldSnapshot | null>(null);
   const [approvals, setApprovals] = useState<ShieldApproval[]>([]);
   const [nftApprovals, setNftApprovals] = useState<ShieldNftApproval[]>([]);
-  const [scanAddress, setScanAddress] = useState(
+  const [eip7702, setEip7702] = useState<ShieldEip7702Delegation | null>(null);
+  const [browseOther, setBrowseOther] = useState(false);
+  const [otherAddress, setOtherAddress] = useState(
     () => searchParams.get("address") || "",
   );
   const [advancedMode, setAdvancedMode] = useState(false);
   const [severityFilter, setSeverityFilter] = useState<string>("all");
   const [revokingKey, setRevokingKey] = useState<string | null>(null);
+  const [pendingRevoke, setPendingRevoke] = useState<PendingShieldRevoke | null>(
+    null,
+  );
+  const [eip7702TxHash, setEip7702TxHash] = useState<`0x${string}` | undefined>();
 
   const { writeContract, data: revokeHash, isPending: revokePending } =
     useWriteContract();
   const { isLoading: revokeConfirming } = useWaitForTransactionReceipt({
     hash: revokeHash,
+  });
+  const { isLoading: eip7702Confirming } = useWaitForTransactionReceipt({
+    hash: eip7702TxHash,
   });
 
   useEffect(() => {
@@ -108,34 +124,51 @@ const ShieldPage: React.FC = () => {
     const fromUrl = searchParams.get("chainId");
     if (fromUrl) setChainId(fromUrl);
     const addressFromUrl = searchParams.get("address");
-    if (addressFromUrl) setScanAddress(addressFromUrl);
-  }, [searchParams]);
+    if (addressFromUrl) {
+      setOtherAddress(addressFromUrl);
+      if (addressFromUrl && (!isConnected || addressFromUrl.toLowerCase() !== address?.toLowerCase())) {
+        setBrowseOther(true);
+      }
+    }
+  }, [searchParams, address, isConnected]);
 
   useEffect(() => {
     if (isConnected && connectedChainId) {
       setChainId(String(connectedChainId));
     }
-    if (isConnected && address && !scanAddress) {
-      setScanAddress(address);
-    }
-  }, [address, connectedChainId, isConnected, scanAddress]);
+  }, [connectedChainId, isConnected]);
 
-  const activeScanAddress = (scanAddress || address || "").trim();
+  const activeScanAddress = useMemo(() => {
+    if (isConnected && address && !browseOther) return address;
+    return otherAddress.trim();
+  }, [address, browseOther, isConnected, otherAddress]);
+
   const canRevoke =
-    Boolean(address && activeScanAddress) &&
-    address?.toLowerCase() === activeScanAddress.toLowerCase();
+    isConnected &&
+    Boolean(address) &&
+    Boolean(activeScanAddress) &&
+    address!.toLowerCase() === activeScanAddress.toLowerCase();
+
+  const targetChainId = Number(chainId);
+  const wrongNetwork =
+    isConnected && connectedChainId != null && connectedChainId !== targetChainId;
 
   const loadShield = useCallback(async () => {
     if (!activeScanAddress) return;
-    const cid = Number(chainId);
     setLoading(true);
     setError(null);
     try {
-      const scanRes = await shieldApi.scan(activeScanAddress, cid);
-      const { snapshot: snap, approvals: list, nftApprovals: nftList } = scanRes.data.data;
+      const scanRes = await shieldApi.scan(activeScanAddress, targetChainId);
+      const {
+        snapshot: snap,
+        approvals: list,
+        nftApprovals: nftList,
+        eip7702: delegation,
+      } = scanRes.data.data;
       setSnapshot(snap);
       setApprovals(list || []);
       setNftApprovals(nftList || []);
+      setEip7702(delegation ?? null);
       pushShieldHistory(snap);
     } catch (err: unknown) {
       const apiErr = err as {
@@ -150,31 +183,129 @@ const ShieldPage: React.FC = () => {
         "Shield scan failed";
       setError(
         code === "RPC_RATE_LIMIT"
-          ? `${message} Wallet connection may still work; use Refresh after a short wait.`
+          ? `${message} Try again in a minute.`
           : message,
       );
     } finally {
       setLoading(false);
     }
-  }, [activeScanAddress, chainId]);
+  }, [activeScanAddress, targetChainId]);
 
   useEffect(() => {
-    if (
-      isConnected &&
-      address &&
-      activeScanAddress &&
-      activeScanAddress.toLowerCase() === address.toLowerCase()
-    ) {
+    if (isConnected && address && !browseOther) {
       loadShield();
     }
-  }, [activeScanAddress, address, isConnected, chainId, loadShield]);
+  }, [address, browseOther, isConnected, targetChainId, loadShield]);
 
   useEffect(() => {
     if (revokeHash && !revokeConfirming) {
       setRevokingKey(null);
+      setPendingRevoke(null);
       loadShield();
     }
   }, [revokeHash, revokeConfirming, loadShield]);
+
+  useEffect(() => {
+    if (eip7702TxHash && !eip7702Confirming) {
+      setRevokingKey(null);
+      setEip7702TxHash(undefined);
+      setPendingRevoke(null);
+      loadShield();
+    }
+  }, [eip7702TxHash, eip7702Confirming, loadShield]);
+
+  const runPendingRevoke = useCallback(
+    async (pending: PendingShieldRevoke) => {
+      if (!address || !canRevoke) return;
+
+      if (pending.kind === "eip7702") {
+        if (!walletClient) {
+          setError("Your wallet must support EIP-7702 signing. Try MetaMask or use revoke.cash.");
+          return;
+        }
+        setRevokingKey("eip7702");
+        try {
+          const hash = await revokeEip7702Delegation(
+            walletClient,
+            address as `0x${string}`,
+          );
+          setEip7702TxHash(hash);
+        } catch (err: unknown) {
+          setRevokingKey(null);
+          const msg = err instanceof Error ? err.message : "EIP-7702 revoke failed";
+          setError(
+            msg.includes("not supported") || msg.includes("rejected")
+              ? "Wallet rejected the delegation revoke. Use a wallet with EIP-7702 support (e.g. MetaMask) or revoke.cash."
+              : msg,
+          );
+        }
+        return;
+      }
+
+      if (pending.kind === "erc20") {
+        const a = pending.approval;
+        const key = `erc20:${a.token}:${a.spender}`;
+        setRevokingKey(key);
+        writeContract({
+          address: a.token as `0x${string}`,
+          abi: erc20Abi,
+          functionName: "approve",
+          args: [a.spender as `0x${string}`, 0n],
+          chainId: targetChainId,
+        });
+        return;
+      }
+
+      const a = pending.approval;
+      const key = `nft:${a.collection}:${a.operator}`;
+      setRevokingKey(key);
+      writeContract({
+        address: a.collection as `0x${string}`,
+        abi: SET_APPROVAL_FOR_ALL_ABI,
+        functionName: "setApprovalForAll",
+        args: [a.operator as `0x${string}`, false],
+        chainId: targetChainId,
+      });
+    },
+    [address, canRevoke, targetChainId, walletClient, writeContract],
+  );
+
+  useEffect(() => {
+    if (!pendingRevoke || !isConnected || wrongNetwork) return;
+    void runPendingRevoke(pendingRevoke);
+    setPendingRevoke(null);
+  }, [connectedChainId, isConnected, pendingRevoke, runPendingRevoke, wrongNetwork]);
+
+  const queueRevoke = (pending: PendingShieldRevoke) => {
+    if (!canRevoke) return;
+    setError(null);
+    if (wrongNetwork) {
+      setPendingRevoke(pending);
+      switchChain({ chainId: targetChainId });
+      return;
+    }
+    void runPendingRevoke(pending);
+  };
+
+  const handleChainChange = (value: string) => {
+    setChainId(value);
+    const cid = Number(value);
+    if (isConnected && connectedChainId !== cid) {
+      switchChain({ chainId: cid });
+    }
+  };
+
+  const handleRevoke = (approval: ShieldApproval) => {
+    queueRevoke({ kind: "erc20", approval });
+  };
+
+  const handleNftRevoke = (approval: ShieldNftApproval) => {
+    queueRevoke({ kind: "nft", approval });
+  };
+
+  const handleEip7702Revoke = () => {
+    queueRevoke({ kind: "eip7702" });
+  };
 
   const filteredApprovals = useMemo(() => {
     let list = approvals;
@@ -223,41 +354,12 @@ const ShieldPage: React.FC = () => {
     return list;
   }, [advancedMode, nftApprovals, severityFilter]);
 
-  const handleRevoke = (approval: ShieldApproval) => {
-    if (!address || !canRevoke) return;
-    const key = `erc20:${approval.token}:${approval.spender}`;
-    setRevokingKey(key);
-    const targetChainId = Number(chainId);
-    if (connectedChainId !== targetChainId) {
-      switchChain({ chainId: targetChainId });
-    }
-    writeContract({
-      address: approval.token as `0x${string}`,
-      abi: erc20Abi,
-      functionName: "approve",
-      args: [approval.spender as `0x${string}`, 0n],
-      chainId: targetChainId,
-    });
-  };
-
-  const handleNftRevoke = (approval: ShieldNftApproval) => {
-    if (!address || !canRevoke) return;
-    const key = `nft:${approval.collection}:${approval.operator}`;
-    setRevokingKey(key);
-    const targetChainId = Number(chainId);
-    if (connectedChainId !== targetChainId) {
-      switchChain({ chainId: targetChainId });
-    }
-    writeContract({
-      address: approval.collection as `0x${string}`,
-      abi: SET_APPROVAL_FOR_ALL_ABI,
-      functionName: "setApprovalForAll",
-      args: [approval.operator as `0x${string}`, false],
-      chainId: targetChainId,
-    });
-  };
-
   const shortAddress = (value: string) => `${value.slice(0, 8)}…${value.slice(-6)}`;
+  const txBusy =
+    revokePending ||
+    revokeConfirming ||
+    eip7702Confirming ||
+    Boolean(pendingRevoke);
 
   return (
     <div className="container max-w-4xl py-6 px-3 sm:px-4 md:px-6 space-y-6">
@@ -268,7 +370,7 @@ const ShieldPage: React.FC = () => {
             Shield
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Wallet security — approvals, token risks, and in-app revoke.
+            Connect your wallet to scan and revoke token approvals on-chain — like revoke.cash.
           </p>
         </div>
         <div className="w-full sm:w-auto shrink-0 [&_button]:w-full sm:[&_button]:w-auto">
@@ -279,65 +381,106 @@ const ShieldPage: React.FC = () => {
       {!isConnected ? (
         <Alert>
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Connect your wallet</AlertTitle>
+          <AlertTitle>Connect your wallet to start</AlertTitle>
           <AlertDescription>
-            Connect a wallet to scan approvals and revoke risky spenders on-chain.
+            Revokes are signed and sent from the wallet you connect. Without a connection we can
+            only show a read-only preview of another address.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      {isConnected && wrongNetwork ? (
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Wrong network</AlertTitle>
+          <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <span>
+              Switch your wallet to the selected chain before revoking. Pending actions will run
+              after you switch.
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              className="shrink-0"
+              onClick={() => switchChain({ chainId: targetChainId })}
+            >
+              Switch network
+            </Button>
           </AlertDescription>
         </Alert>
       ) : null}
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Network</CardTitle>
-          <CardDescription>Scan any wallet, then connect that same wallet to revoke on-chain.</CardDescription>
+          <CardTitle className="text-base">Your wallet</CardTitle>
+          <CardDescription>
+            {isConnected
+              ? "Approvals are loaded for the connected account. Revoke buttons send transactions from that wallet."
+              : "Connect a wallet, or enter an address below for a read-only preview."}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid gap-3 sm:grid-cols-[1fr_16rem]">
+          {isConnected && address && !browseOther ? (
+            <div className="rounded-md border border-border bg-muted/30 px-3 py-2">
+              <p className="text-xs text-muted-foreground">Connected wallet</p>
+              <p className="font-mono text-sm break-all">{address}</p>
+            </div>
+          ) : (
             <div className="grid gap-2">
-              <Label htmlFor="shield-address">Wallet address</Label>
+              <Label htmlFor="shield-address">Address (read-only)</Label>
               <input
                 id="shield-address"
-                value={scanAddress}
-                onChange={(e) => setScanAddress(e.target.value)}
-                placeholder={address || "0x…"}
-                className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                value={otherAddress}
+                onChange={(e) => setOtherAddress(e.target.value)}
+                placeholder="0x…"
+                className="h-10 rounded-md border border-input bg-background px-3 text-sm font-mono outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="shield-chain">Chain</Label>
-              <Select value={chainId} onValueChange={setChainId}>
-                <SelectTrigger id="shield-chain">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {chains.map((c) => (
-                    <SelectItem key={c.chainId} value={String(c.chainId)}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                  {chains.length === 0 ? (
-                    <>
-                      <SelectItem value="1">Ethereum</SelectItem>
-                      <SelectItem value="56">BNB Smart Chain</SelectItem>
-                      <SelectItem value="8453">Base</SelectItem>
-                      <SelectItem value="42161">Arbitrum</SelectItem>
-                      <SelectItem value="137">Polygon</SelectItem>
-                      <SelectItem value="10">Optimism</SelectItem>
-                      <SelectItem value="43114">Avalanche</SelectItem>
-                    </>
-                  ) : null}
-                </SelectContent>
-              </Select>
+          )}
+
+          {isConnected ? (
+            <div className="flex items-center gap-2">
+              <Switch
+                id="browse-other"
+                checked={browseOther}
+                onCheckedChange={(checked) => {
+                  setBrowseOther(checked);
+                  if (!checked && address) setOtherAddress("");
+                }}
+              />
+              <Label htmlFor="browse-other" className="text-sm cursor-pointer">
+                Preview a different address (cannot revoke)
+              </Label>
             </div>
-          </div>
-          {isConnected && activeScanAddress && !canRevoke ? (
-            <Alert>
-              <AlertTitle>Read-only scan</AlertTitle>
-              <AlertDescription>
-                You are viewing {shortAddress(activeScanAddress)}. Connect that wallet to revoke approvals.
-              </AlertDescription>
-            </Alert>
           ) : null}
+
+          <div className="grid gap-2 max-w-xs sm:max-w-none">
+            <Label htmlFor="shield-chain">Chain</Label>
+            <Select value={chainId} onValueChange={handleChainChange}>
+              <SelectTrigger id="shield-chain">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {chains.map((c) => (
+                  <SelectItem key={c.chainId} value={String(c.chainId)}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+                {chains.length === 0 ? (
+                  <>
+                    <SelectItem value="1">Ethereum</SelectItem>
+                    <SelectItem value="56">BNB Smart Chain</SelectItem>
+                    <SelectItem value="8453">Base</SelectItem>
+                    <SelectItem value="42161">Arbitrum</SelectItem>
+                    <SelectItem value="137">Polygon</SelectItem>
+                    <SelectItem value="10">Optimism</SelectItem>
+                    <SelectItem value="43114">Avalanche</SelectItem>
+                  </>
+                ) : null}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="flex items-center gap-2">
             <Switch
               id="advanced"
@@ -348,6 +491,7 @@ const ShieldPage: React.FC = () => {
               Advanced mode (show all approvals)
             </Label>
           </div>
+
           {advancedMode ? (
             <div className="grid gap-2 max-w-xs">
               <Label>Severity filter</Label>
@@ -365,17 +509,26 @@ const ShieldPage: React.FC = () => {
             </div>
           ) : null}
         </CardContent>
-        <CardFooter>
-          <Button onClick={loadShield} disabled={!activeScanAddress || loading}>
+        <CardFooter className="flex flex-wrap gap-2">
+          <Button
+            onClick={loadShield}
+            disabled={!activeScanAddress || loading}
+            variant={isConnected && !browseOther ? "outline" : "default"}
+          >
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Scanning wallet…
+                Scanning…
               </>
             ) : (
-              "Scan approvals"
+              "Refresh scan"
             )}
           </Button>
+          {browseOther || !isConnected ? (
+            <p className="text-xs text-muted-foreground self-center">
+              Connect your wallet to revoke on-chain.
+            </p>
+          ) : null}
         </CardFooter>
       </Card>
 
@@ -396,7 +549,7 @@ const ShieldPage: React.FC = () => {
               </Badge>
             </div>
             <CardDescription>
-              {snapshot.chainName} · scanned{" "}
+              {snapshot.chainName} · {shortAddress(snapshot.address)} · scanned{" "}
               {new Date(snapshot.scannedAt).toLocaleString(undefined, {
                 dateStyle: "medium",
                 timeStyle: "short",
@@ -418,10 +571,62 @@ const ShieldPage: React.FC = () => {
               <p className="text-muted-foreground">NFT operators</p>
               <p className="font-medium">{snapshot.counts.nftApprovals}</p>
             </div>
+            {(snapshot.counts.eip7702Delegations ?? 0) > 0 ? (
+              <div>
+                <p className="text-muted-foreground">EIP-7702</p>
+                <p className="font-medium text-destructive">Delegated</p>
+              </div>
+            ) : null}
             <div>
               <p className="text-muted-foreground">Holdings checked</p>
               <p className="font-medium">{snapshot.counts.holdings}</p>
             </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {eip7702?.hasDelegation && eip7702.delegate ? (
+        <Card className="border-destructive/40">
+          <CardHeader>
+            <CardTitle className="text-base">EIP-7702 delegation</CardTitle>
+            <CardDescription>
+              Your wallet has delegated execution to a smart contract. Revoke clears the
+              delegation (same idea as revoke.cash).
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <p className="font-mono text-xs break-all text-muted-foreground">
+              Delegate: {eip7702.delegate}
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <Button
+                size="sm"
+                variant="destructive"
+                className="w-full sm:w-auto"
+                disabled={!canRevoke || txBusy}
+                onClick={handleEip7702Revoke}
+              >
+                {revokingKey === "eip7702" && txBusy ? (
+                  <>
+                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                    Revoking delegation…
+                  </>
+                ) : (
+                  "Revoke EIP-7702 delegation"
+                )}
+              </Button>
+              <Button size="sm" variant="outline" className="w-full sm:w-auto" asChild>
+                <Link
+                  to={`/analyze?tab=address&address=${eip7702.delegate}&chainId=${chainId}`}
+                >
+                  Scan delegate contract
+                </Link>
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Requires a wallet that supports EIP-7702 (e.g. MetaMask). Currently detected on
+              Ethereum mainnet only.
+            </p>
           </CardContent>
         </Card>
       ) : null}
@@ -431,13 +636,13 @@ const ShieldPage: React.FC = () => {
           <CardHeader>
             <CardTitle className="text-base">Token approvals</CardTitle>
             <CardDescription>
-              Revoke sets allowance to zero — the spender can no longer move tokens.
+              Revoke sends an approval transaction from your connected wallet (allowance → 0).
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {filteredApprovals.map((a) => {
               const key = `erc20:${a.token}:${a.spender}`;
-              const revoking = revokingKey === key && (revokePending || revokeConfirming);
+              const revoking = revokingKey === key && txBusy;
               return (
                 <div
                   key={key}
@@ -475,7 +680,7 @@ const ShieldPage: React.FC = () => {
                       {revoking ? (
                         <>
                           <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                          Revoking…
+                          Confirm in wallet…
                         </>
                       ) : (
                         "Revoke"
@@ -487,16 +692,6 @@ const ShieldPage: React.FC = () => {
                       >
                         Scan spender
                       </Link>
-                    </Button>
-                    <Button size="sm" variant="ghost" className="w-full sm:w-auto" asChild>
-                      <a
-                        href={`https://revoke.cash/address/${address}?chainId=${chainId}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center justify-center gap-1"
-                      >
-                        revoke.cash <ExternalLink className="w-3 h-3" />
-                      </a>
                     </Button>
                   </div>
                 </div>
@@ -517,13 +712,13 @@ const ShieldPage: React.FC = () => {
           <CardHeader>
             <CardTitle className="text-base">NFT collection approvals</CardTitle>
             <CardDescription>
-              Revoke removes operator access for the entire collection.
+              Revoke removes operator access — signed by your connected wallet.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {filteredNftApprovals.map((a) => {
               const key = `nft:${a.collection}:${a.operator}`;
-              const revoking = revokingKey === key && (revokePending || revokeConfirming);
+              const revoking = revokingKey === key && txBusy;
               return (
                 <div
                   key={key}
@@ -559,7 +754,7 @@ const ShieldPage: React.FC = () => {
                       {revoking ? (
                         <>
                           <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                          Revoking…
+                          Confirm in wallet…
                         </>
                       ) : (
                         "Revoke operator"

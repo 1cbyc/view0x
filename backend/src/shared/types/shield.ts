@@ -31,6 +31,12 @@ export interface ShieldHolding {
   tokenRisk: ContractRiskBrief | null;
 }
 
+/** Active EIP-7702 code delegation on the wallet (Ethereum mainnet). */
+export interface ShieldEip7702Delegation {
+  hasDelegation: boolean;
+  delegate: string | null;
+}
+
 export interface ShieldSnapshot {
   address: string;
   chainId: number;
@@ -43,6 +49,7 @@ export interface ShieldSnapshot {
     holdings: number;
     highRiskHoldings: number;
     nftApprovals: number;
+    eip7702Delegations: number;
   };
   scannedAt: string;
 }
@@ -52,4 +59,5 @@ export interface ShieldScanResult {
   approvals: ShieldErc20Approval[];
   nftApprovals: ShieldNftApproval[];
   holdings: ShieldHolding[];
+  eip7702: ShieldEip7702Delegation | null;
 }

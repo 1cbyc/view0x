@@ -298,8 +298,14 @@ export type ShieldSnapshot = {
     holdings: number;
     highRiskHoldings: number;
     nftApprovals: number;
+    eip7702Delegations: number;
   };
   scannedAt: string;
+};
+
+export type ShieldEip7702Delegation = {
+  hasDelegation: boolean;
+  delegate: string | null;
 };
 
 export type ShieldApproval = {
@@ -332,6 +338,7 @@ export type ShieldScanResult = {
   approvals: ShieldApproval[];
   nftApprovals: ShieldNftApproval[];
   holdings: ShieldHolding[];
+  eip7702: ShieldEip7702Delegation | null;
 };
 
 export const shieldApi = {
