@@ -79,6 +79,8 @@ jobs:
             docker compose -f docker-compose.yml -f docker-compose.vps.yml exec -T postgres \
               psql -U "\${POSTGRES_USER}" -d "\${POSTGRES_DB}" \
               < deploy/sql/migrate_production.sql
+            docker compose -f docker-compose.yml -f docker-compose.vps.yml exec -T api \
+              npm run rekt:sync || echo "::warning::Rekt incident sync failed; deploy will continue with existing data"
             EDGE_B64=$VIEW0X_EDGE_SCRIPT_B64
             printf '%s' "\$EDGE_B64" | base64 -d | \
               EDGE_CONTAINER=koreshield-caddy \
