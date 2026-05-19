@@ -88,10 +88,10 @@ const RektIncidentDetail: React.FC = () => {
           <Badge variant="outline">{incident.status.replace(/_/g, " ")}</Badge>
           <span className="text-sm text-muted-foreground">{displayDate(incident.incidentDate)}</span>
         </div>
-        <h1 className="text-3xl font-bold tracking-normal text-foreground sm:text-4xl">
+        <h1 className="break-words text-2xl font-bold tracking-normal text-foreground sm:text-4xl">
           {incident.title}
         </h1>
-        <p className="mt-3 max-w-3xl text-base leading-7 text-muted-foreground">
+        <p className="mt-3 max-w-3xl break-words text-base leading-7 text-muted-foreground">
           {incident.summary}
         </p>
       </div>
