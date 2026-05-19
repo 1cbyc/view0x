@@ -25,6 +25,7 @@ import { clearDashboardCache } from "@/lib/guestSession";
 import { formatCategory, formatSeverity } from "@/lib/scanLabels";
 import { scanApi, walletApi, type AddressScanResult } from "@/services/api";
 import { ScannerDiscovery } from "@/components/ScannerDiscovery";
+import { ScannerFaq } from "@/components/ScannerFaq";
 
 function csvEscape(s: string) {
   if (s.includes('"') || s.includes(",") || s.includes("\n")) {
@@ -580,6 +581,7 @@ export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
           </CardContent>
         </Card>
       )}
+      <ScannerFaq />
     </div>
   );
 };
