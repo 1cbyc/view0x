@@ -9,8 +9,9 @@ import {
   useWriteContract,
   useWaitForTransactionReceipt,
 } from "wagmi";
+import { mainnet } from "wagmi/chains";
 import { erc20Abi } from "viem";
-import { Loader2, Shield, ExternalLink, AlertTriangle } from "lucide-react";
+import { Loader2, Shield, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -228,6 +229,7 @@ const ShieldPage: React.FC = () => {
           const hash = await revokeEip7702Delegation(
             walletClient,
             address as `0x${string}`,
+            walletClient.chain ?? mainnet,
           );
           setEip7702TxHash(hash);
         } catch (err: unknown) {
