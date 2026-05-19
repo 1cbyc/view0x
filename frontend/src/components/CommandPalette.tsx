@@ -45,14 +45,25 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   const commands: Command[] = [
     {
       id: "analyze",
-      label: "New Analysis",
+      label: "Scanner",
       icon: <ShieldAlert className="w-4 h-4" />,
       action: () => {
         navigate("/analyze");
         onOpenChange(false);
       },
-      keywords: ["new", "analyze", "scan", "contract"],
+      keywords: ["new", "analyze", "scan", "contract", "scanner"],
       category: "actions",
+    },
+    {
+      id: "shield",
+      label: "Shield",
+      icon: <ShieldAlert className="w-4 h-4" />,
+      action: () => {
+        navigate("/shield");
+        onOpenChange(false);
+      },
+      keywords: ["shield", "wallet", "approvals", "revoke", "defi"],
+      category: "navigation",
     },
     {
       id: "dashboard",

@@ -40,6 +40,12 @@ export interface EnvironmentConfig {
   MYTHX_API_KEY?: string;
   ETHERSCAN_API_KEY?: string;
   BSCSCAN_API_KEY?: string;
+  BASESCAN_API_KEY?: string;
+  ARBISCAN_API_KEY?: string;
+  POLYGONSCAN_API_KEY?: string;
+  OPTIMISM_API_KEY?: string;
+  SNOWTRACE_API_KEY?: string;
+  ALCHEMY_API_KEY?: string;
 
   // Email configuration (future)
   SMTP_HOST?: string;
@@ -167,6 +173,12 @@ function parseEnvironmentConfig(): EnvironmentConfig {
     MYTHX_API_KEY: process.env.MYTHX_API_KEY,
     ETHERSCAN_API_KEY: process.env.ETHERSCAN_API_KEY,
     BSCSCAN_API_KEY: process.env.BSCSCAN_API_KEY,
+    BASESCAN_API_KEY: process.env.BASESCAN_API_KEY,
+    ARBISCAN_API_KEY: process.env.ARBISCAN_API_KEY,
+    POLYGONSCAN_API_KEY: process.env.POLYGONSCAN_API_KEY,
+    OPTIMISM_API_KEY: process.env.OPTIMISM_API_KEY,
+    SNOWTRACE_API_KEY: process.env.SNOWTRACE_API_KEY,
+    ALCHEMY_API_KEY: process.env.ALCHEMY_API_KEY,
 
     // Email
     SMTP_HOST: process.env.SMTP_HOST,

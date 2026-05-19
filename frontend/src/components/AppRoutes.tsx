@@ -19,12 +19,14 @@ const Notifications = lazy(() => import("../pages/Notifications"));
 const RektDatabase = lazy(() => import("../pages/RektDatabase"));
 const RektIncidentDetail = lazy(() => import("../pages/RektIncidentDetail"));
 const NotFound = lazy(() => import("../pages/NotFound"));
+const Shield = lazy(() => import("../pages/Shield"));
 
 export const AppRoutes: React.FC = () => (
   <Routes>
     <Route path="/" element={<SafeRoute><ContractAnalyzer /></SafeRoute>} />
     <Route path="/shared/scan/:token" element={<SafeRoute><SharedAddressScan /></SafeRoute>} />
     <Route path="/analyze" element={<SafeRoute><ContractAnalyzer /></SafeRoute>} />
+    <Route path="/shield" element={<SafeRoute><Shield /></SafeRoute>} />
     <Route path="/analytics" element={<SafeRoute><AnalyticsDashboard /></SafeRoute>} />
     <Route path="/rekt" element={<SafeRoute><RektDatabase /></SafeRoute>} />
     <Route path="/rekt/:slug" element={<SafeRoute><RektIncidentDetail /></SafeRoute>} />

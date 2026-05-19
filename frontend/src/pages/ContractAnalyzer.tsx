@@ -189,9 +189,17 @@ const ContractAnalyzer: React.FC = () => {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const scanIdFromUrl = searchParams.get("scanId") ?? undefined;
+  const addressFromUrl = searchParams.get("address") ?? undefined;
+  const chainFromUrl = searchParams.get("chainId") ?? undefined;
+  const tabFromUrl = searchParams.get("tab");
   const tabFromLogin = (location.state as { tab?: string } | null)?.tab;
   const defaultTab =
-    scanIdFromUrl || tabFromLogin === "address" ? "address" : "source";
+    scanIdFromUrl ||
+    tabFromLogin === "address" ||
+    tabFromUrl === "address" ||
+    addressFromUrl
+      ? "address"
+      : "source";
 
   const [editorDark, setEditorDark] = useState(() =>
     typeof document !== "undefined"
@@ -787,7 +795,11 @@ const ContractAnalyzer: React.FC = () => {
           <TabsTrigger value="address">Scan address</TabsTrigger>
         </TabsList>
         <TabsContent value="address" className="mt-0">
-          <AddressScanPanel initialScanId={scanIdFromUrl} />
+          <AddressScanPanel
+            initialScanId={scanIdFromUrl}
+            initialAddress={addressFromUrl}
+            initialChainId={chainFromUrl}
+          />
         </TabsContent>
         <TabsContent value="source" className="mt-0">
       <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2 lg:gap-8">

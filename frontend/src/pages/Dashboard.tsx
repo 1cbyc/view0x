@@ -48,6 +48,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DashboardSkeleton } from "@/components/DashboardSkeleton";
+import { loadShieldHistory } from "@/lib/shieldHistory";
 
 // This type should match the summary object from the backend Analysis model
 interface AnalysisSummary {
@@ -446,6 +447,36 @@ const Dashboard: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      {loadShieldHistory().length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Recent Shield scans</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {loadShieldHistory().slice(0, 5).map((s) => (
+              <div
+                key={`${s.chainId}-${s.address}`}
+                className="flex flex-wrap items-center justify-between gap-2 text-sm border border-border rounded-md p-2"
+              >
+                <span className="font-mono text-xs truncate max-w-[200px]">
+                  {s.address}
+                </span>
+                <span className="text-muted-foreground">{s.chainName}</span>
+                <Badge variant="outline">
+                  {s.healthLevel} · {s.healthScore}
+                </Badge>
+                <Link
+                  to={`/shield?chainId=${s.chainId}&address=${s.address}`}
+                  className="text-primary text-xs underline"
+                >
+                  Open Shield
+                </Link>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

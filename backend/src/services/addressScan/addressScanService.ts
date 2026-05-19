@@ -23,6 +23,26 @@ export function getSupportedChains() {
   }));
 }
 
+/** Lightweight contract risk for Shield (reuses explorer + heuristics). */
+export async function getContractRiskBrief(
+  chainId: number,
+  addressInput: string,
+): Promise<Pick<
+  AddressScanResult,
+  "address" | "chainId" | "chainName" | "reputationScore" | "riskLevel" | "heuristics" | "contractType"
+>> {
+  const result = await buildScanResult({ address: addressInput, chainId });
+  return {
+    address: result.address,
+    chainId: result.chainId,
+    chainName: result.chainName,
+    reputationScore: result.reputationScore,
+    riskLevel: result.riskLevel,
+    heuristics: result.heuristics,
+    contractType: result.contractType,
+  };
+}
+
 async function buildScanResult(
   input: ScanAddressRequest,
 ): Promise<AddressScanResult> {

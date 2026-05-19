@@ -77,6 +77,20 @@ export const authRateLimiter = createRateLimiter({
   skipSuccessfulRequests: false,
 });
 
+// Shield wallet indexer (RPC-heavy)
+export const shieldRateLimiter = createRateLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 30,
+  message: "Shield rate limit exceeded. Try again later.",
+  keyGenerator: (req: Request) => {
+    const userId = (req as { user?: { userId?: string } }).user?.userId;
+    if (userId) {
+      return `shield_user_${userId}`;
+    }
+    return `shield_ip_${getIpAddress(req)}`;
+  },
+});
+
 // Address scan (anonymous: stricter per IP)
 export const addressScanRateLimiter = createRateLimiter({
   windowMs: 60 * 60 * 1000,

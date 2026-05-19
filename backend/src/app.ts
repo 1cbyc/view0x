@@ -41,6 +41,7 @@ import { Analysis } from "./models/Analysis";
 import { notificationService } from "./services/notificationService";
 import walletRoutes from "./routes/wallet";
 import { seedRektIncidents } from "./services/rektIncidentService";
+import shieldRoutes from "./routes/shield";
 
 // Initialize Express app
 const app = express();
@@ -184,6 +185,7 @@ app.use(`/api/${API_VERSION}/scan`, scanRoutes);
 app.use(`/api/${API_VERSION}/notifications`, notificationRoutes);
 app.use(`/api/${API_VERSION}/wallet`, walletRoutes);
 app.use(`/api/${API_VERSION}/rekt`, rektRoutes);
+app.use(`/api/${API_VERSION}/shield`, shieldRoutes);
 
 // Legacy routes (backward compatibility)
 app.use("/api/auth", authRoutes);
@@ -200,6 +202,7 @@ app.use("/api/scan", scanRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/wallet", walletRoutes);
 app.use("/api/rekt", rektRoutes);
+app.use("/api/shield", shieldRoutes);
 
 // Root endpoint with API information
 app.get("/", (req, res) => {

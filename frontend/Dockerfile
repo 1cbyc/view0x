@@ -2,6 +2,11 @@ FROM node:20-bookworm-slim AS build
 
 WORKDIR /app
 
+# walletconnect / ws optional deps may compile native modules
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 make g++ \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 

@@ -284,9 +284,60 @@ const documentedPaths: swaggerJsdoc.OAS3Definition["paths"] = {
       summary: "Curated revoke / approval / portfolio URLs (Phase 5 light)",
       parameters: [
         { name: "address", in: "query", schema: { type: "string" } },
-        { name: "chainId", in: "query", schema: { type: "integer", enum: [1, 56] } },
+        { name: "chainId", in: "query", schema: { type: "integer" } },
       ],
       responses: { "200": { description: "Outbound tool links" } },
+    },
+  },
+  "/api/shield/chains": {
+    get: {
+      tags: ["Shield"],
+      summary: "List chains supported by Shield indexer",
+      responses: { "200": { description: "Chain list with indexer notes" } },
+    },
+  },
+  "/api/shield/snapshot": {
+    get: {
+      tags: ["Shield"],
+      summary: "Wallet health snapshot (approvals + holdings summary)",
+      parameters: [
+        { name: "address", in: "query", required: true, schema: { type: "string" } },
+        { name: "chainId", in: "query", schema: { type: "integer" } },
+      ],
+      responses: { "200": { description: "Shield snapshot" } },
+    },
+  },
+  "/api/shield/approvals": {
+    get: {
+      tags: ["Shield"],
+      summary: "ERC-20 token approvals with spender/token risk scores",
+      parameters: [
+        { name: "address", in: "query", required: true, schema: { type: "string" } },
+        { name: "chainId", in: "query", schema: { type: "integer" } },
+      ],
+      responses: { "200": { description: "Approval list" } },
+    },
+  },
+  "/api/shield/nft-approvals": {
+    get: {
+      tags: ["Shield"],
+      summary: "NFT operator approvals (ApprovalForAll)",
+      parameters: [
+        { name: "address", in: "query", required: true, schema: { type: "string" } },
+        { name: "chainId", in: "query", schema: { type: "integer" } },
+      ],
+      responses: { "200": { description: "NFT approval list" } },
+    },
+  },
+  "/api/shield/holdings": {
+    get: {
+      tags: ["Shield"],
+      summary: "ERC-20 balances for tokens with active approvals",
+      parameters: [
+        { name: "address", in: "query", required: true, schema: { type: "string" } },
+        { name: "chainId", in: "query", schema: { type: "integer" } },
+      ],
+      responses: { "200": { description: "Holdings list" } },
     },
   },
   "/api/notifications": {

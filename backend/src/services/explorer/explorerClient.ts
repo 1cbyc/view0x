@@ -13,23 +13,37 @@ interface EtherscanSourceResult {
   Implementation: string;
 }
 
-function getApiKey(chain: ChainConfig): string | undefined {
-  if (chain.apiKeyEnv === "ETHERSCAN_API_KEY") {
-    return env.ETHERSCAN_API_KEY;
-  }
-  return env.BSCSCAN_API_KEY;
+function resolveApiKey(chain: ChainConfig): string | undefined {
+  const keyMap: Record<string, string | undefined> = {
+    ETHERSCAN_API_KEY: env.ETHERSCAN_API_KEY,
+    BSCSCAN_API_KEY: env.BSCSCAN_API_KEY,
+    BASESCAN_API_KEY: env.BASESCAN_API_KEY,
+    ARBISCAN_API_KEY: env.ARBISCAN_API_KEY,
+    POLYGONSCAN_API_KEY: env.POLYGONSCAN_API_KEY,
+    OPTIMISM_API_KEY: env.OPTIMISM_API_KEY,
+    SNOWTRACE_API_KEY: env.SNOWTRACE_API_KEY,
+  };
+  const specific = keyMap[chain.apiKeyEnv];
+  if (specific) return specific;
+  return env.ETHERSCAN_API_KEY;
 }
 
 async function explorerGet<T>(
   chain: ChainConfig,
   params: Record<string, string>,
 ): Promise<T> {
-  const apiKey = getApiKey(chain);
+  const apiKey = resolveApiKey(chain);
+  const query: Record<string, string> = { ...params, apikey: apiKey || "" };
+
+  if (chain.explorerKind === "etherscan-v2") {
+    query.chainid = String(chain.id);
+  }
+
   const { data } = await axios.get<{ status: string; message: string; result: T }>(
     chain.explorerApiUrl,
     {
-      params: { ...params, apikey: apiKey || "" },
-      timeout: 20000,
+      params: query,
+      timeout: 25000,
     },
   );
 
@@ -44,7 +58,6 @@ function unwrapSourceCode(raw: string): string {
   if (!raw || raw === "Contract source code not verified") {
     return "";
   }
-  // Etherscan double-JSON wrapped sources for multi-file
   if (raw.startsWith("{{")) {
     try {
       const inner = JSON.parse(raw.slice(1, -1));
@@ -142,9 +155,10 @@ export async function fetchContractFromExplorer(
     implementationAddress,
     compilerVersion: sourceRow?.CompilerVersion || null,
     sourceCode: isVerified ? sourceCode : null,
-    abi: sourceRow?.ABI && sourceRow.ABI !== "Contract source code not verified"
-      ? sourceRow.ABI
-      : null,
+    abi:
+      sourceRow?.ABI && sourceRow.ABI !== "Contract source code not verified"
+        ? sourceRow.ABI
+        : null,
     explorerUrl,
   };
 }

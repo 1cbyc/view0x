@@ -245,6 +245,83 @@ export const walletApi = {
     }),
 };
 
+export type ShieldChain = {
+  chainId: number;
+  key: string;
+  name: string;
+  nativeSymbol: string;
+  indexerNote?: string;
+};
+
+export type ContractRiskBrief = {
+  reputationScore: number;
+  riskLevel: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  topFlags: Array<{
+    id: string;
+    title: string;
+    severity: string;
+  }>;
+};
+
+export type ShieldSnapshot = {
+  address: string;
+  chainId: number;
+  chainName: string;
+  healthScore: number;
+  healthLevel: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  counts: {
+    approvals: number;
+    highRiskApprovals: number;
+    holdings: number;
+    highRiskHoldings: number;
+    nftApprovals: number;
+  };
+  indexerNote: string;
+  scannedAt: string;
+};
+
+export type ShieldApproval = {
+  token: string;
+  tokenSymbol: string | null;
+  spender: string;
+  allowance: string;
+  isUnlimited: boolean;
+  spenderRisk: ContractRiskBrief | null;
+  tokenRisk: ContractRiskBrief | null;
+};
+
+export const shieldApi = {
+  getChains: () => api.get<{ success: boolean; data: ShieldChain[] }>("/shield/chains"),
+  getSnapshot: (address: string, chainId: number) =>
+    api.get<{ success: boolean; data: ShieldSnapshot }>("/shield/snapshot", {
+      params: { address: address.trim(), chainId },
+      timeout: 120000,
+    }),
+  getApprovals: (address: string, chainId: number) =>
+    api.get<{
+      success: boolean;
+      data: {
+        address: string;
+        chainId: number;
+        approvals: ShieldApproval[];
+        indexerNote: string;
+      };
+    }>("/shield/approvals", {
+      params: { address: address.trim(), chainId },
+      timeout: 120000,
+    }),
+  getNftApprovals: (address: string, chainId: number) =>
+    api.get("/shield/nft-approvals", {
+      params: { address: address.trim(), chainId },
+      timeout: 120000,
+    }),
+  getHoldings: (address: string, chainId: number) =>
+    api.get("/shield/holdings", {
+      params: { address: address.trim(), chainId },
+      timeout: 120000,
+    }),
+};
+
 // --- Vulnerability Comments API Endpoints ---
 export const vulnerabilityApi = {
   /**

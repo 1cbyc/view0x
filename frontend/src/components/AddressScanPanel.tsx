@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Loader2, ExternalLink, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -87,8 +87,15 @@ type PendingAddressScan = {
   runSlither: boolean;
 };
 
+type ScanChain = {
+  chainId: number;
+  name: string;
+};
+
 type AddressScanPanelProps = {
   initialScanId?: string;
+  initialAddress?: string;
+  initialChainId?: string;
 };
 
 function isAuthenticated(): boolean {
@@ -97,10 +104,16 @@ function isAuthenticated(): boolean {
 
 export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
   initialScanId,
+  initialAddress,
+  initialChainId,
 }) => {
   const navigate = useNavigate();
-  const [address, setAddress] = useState("");
-  const [chainId, setChainId] = useState("1");
+  const [address, setAddress] = useState(initialAddress || "");
+  const [chainId, setChainId] = useState(initialChainId || "1");
+  const [chains, setChains] = useState<ScanChain[]>([]);
+  const [severityFilter, setSeverityFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [flagSearch, setFlagSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sharing, setSharing] = useState(false);
@@ -108,6 +121,41 @@ export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
   const [runSlither, setRunSlither] = useState(false);
   const [result, setResult] = useState<AddressScanResult | null>(null);
   const [walletLinks, setWalletLinks] = useState<WalletRiskLinks | null>(null);
+
+  useEffect(() => {
+    scanApi
+      .getChains()
+      .then((r) => {
+        const payload = r.data as { data?: { chains?: ScanChain[] } };
+        const list = payload.data?.chains;
+        if (list?.length) setChains(list);
+      })
+      .catch(() => {
+        /* fallback chains in select */
+      });
+  }, []);
+
+  useEffect(() => {
+    if (initialAddress) setAddress(initialAddress);
+    if (initialChainId) setChainId(initialChainId);
+  }, [initialAddress, initialChainId]);
+
+  const filteredHeuristics = useMemo(() => {
+    if (!result) return [];
+    return result.heuristics.filter((f) => {
+      if (severityFilter !== "all" && f.severity !== severityFilter) return false;
+      if (categoryFilter !== "all" && f.category !== categoryFilter) return false;
+      if (flagSearch.trim()) {
+        const q = flagSearch.toLowerCase();
+        return (
+          f.title.toLowerCase().includes(q) ||
+          f.description.toLowerCase().includes(q) ||
+          f.id.toLowerCase().includes(q)
+        );
+      }
+      return true;
+    });
+  }, [result, severityFilter, categoryFilter, flagSearch]);
 
   const redirectToSignIn = useCallback(
     (message: string) => {
@@ -293,7 +341,7 @@ export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
         <CardHeader>
           <CardTitle className="text-base sm:text-lg">Scan by address</CardTitle>
           <CardDescription className="text-xs sm:text-sm">
-            Check a deployed contract on Ethereum or BSC.
+            Scan any deployed contract across supported EVM chains (De.Fi-style scanner).
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -304,8 +352,23 @@ export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1">Ethereum</SelectItem>
-                <SelectItem value="56">BNB Smart Chain</SelectItem>
+                {chains.length > 0
+                  ? chains.map((c) => (
+                      <SelectItem key={c.chainId} value={String(c.chainId)}>
+                        {c.name}
+                      </SelectItem>
+                    ))
+                  : (
+                    <>
+                      <SelectItem value="1">Ethereum</SelectItem>
+                      <SelectItem value="56">BNB Smart Chain</SelectItem>
+                      <SelectItem value="8453">Base</SelectItem>
+                      <SelectItem value="42161">Arbitrum</SelectItem>
+                      <SelectItem value="137">Polygon</SelectItem>
+                      <SelectItem value="10">Optimism</SelectItem>
+                      <SelectItem value="43114">Avalanche</SelectItem>
+                    </>
+                  )}
               </SelectContent>
             </Select>
           </div>
@@ -397,15 +460,62 @@ export const AddressScanPanel: React.FC<AddressScanPanelProps> = ({
                   {sharing ? "Creating…" : shareCopied ? "Link copied!" : "Copy share link"}
                 </Button>
               ) : null}
+              <Button type="button" variant="secondary" size="sm" asChild>
+                <Link to={`/shield?chainId=${result.chainId}&address=${result.address}`}>
+                  Open in Shield
+                </Link>
+              </Button>
               <Button type="button" variant="outline" size="sm" onClick={loadWalletTools}>
-                Wallet / allowance links
+                External revoke links
               </Button>
             </div>
-            {result.heuristics.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No risk flags detected.</p>
+            <div className="rounded-md border border-border p-3 space-y-2 bg-muted/10">
+              <p className="text-xs font-medium text-foreground">Advanced filters</p>
+              <div className="grid gap-2 sm:grid-cols-3">
+                <Input
+                  placeholder="Search flags…"
+                  value={flagSearch}
+                  onChange={(e) => setFlagSearch(e.target.value)}
+                  className="text-sm h-8"
+                />
+                <Select value={severityFilter} onValueChange={setSeverityFilter}>
+                  <SelectTrigger className="h-8 text-sm">
+                    <SelectValue placeholder="Severity" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All severities</SelectItem>
+                    <SelectItem value="critical">Critical</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="info">Info</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger className="h-8 text-sm">
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All categories</SelectItem>
+                    <SelectItem value="ownership">Ownership</SelectItem>
+                    <SelectItem value="trading">Trading</SelectItem>
+                    <SelectItem value="liquidity">Liquidity</SelectItem>
+                    <SelectItem value="proxy">Proxy</SelectItem>
+                    <SelectItem value="code">Code</SelectItem>
+                    <SelectItem value="verification">Verification</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {filteredHeuristics.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                {result.heuristics.length === 0
+                  ? "No risk flags detected."
+                  : "No flags match the current filters."}
+              </p>
             ) : (
               <ul className="space-y-2">
-                {result.heuristics.map((f) => (
+                {filteredHeuristics.map((f) => (
                   <li key={f.id} className="text-sm border border-border rounded-md p-2 sm:p-3">
                     <div className="mb-1 flex flex-wrap items-center gap-1.5">
                       <span className="min-w-0 break-words font-medium">{f.title}</span>

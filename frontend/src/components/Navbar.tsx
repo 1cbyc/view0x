@@ -53,6 +53,9 @@ const Navbar: React.FC = () => {
       <Link to="/analyze" className={linkClass} onClick={() => setMenuOpen(false)}>
         Scanner
       </Link>
+      <Link to="/shield" className={linkClass} onClick={() => setMenuOpen(false)}>
+        Shield
+      </Link>
       <Link to="/rekt" className={linkClass} onClick={() => setMenuOpen(false)}>
         Rekt Database
       </Link>
